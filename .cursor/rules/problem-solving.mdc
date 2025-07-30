@@ -1,0 +1,11 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Large File Issues: If a file is large and has significant structural problems, propose a solution rather than attempting to replace the entire file at once.
+
+Supabase SQL Changes: When creating new Supabase SQL commands, ensure they do not destroy current functionality or structure.
+
+
+Supabase Issue Fixing: When fixing issues in Supabase, always check the impact on existing functions and structure.

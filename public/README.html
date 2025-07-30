@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trader's Journal App - README</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #ffffff;
+        }
+        
+        h1 {
+            color: #1e40af;
+            font-size: 2.5em;
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 3px solid #1e40af;
+            padding-bottom: 15px;
+        }
+        
+        h2 {
+            color: #1e40af;
+            font-size: 1.8em;
+            margin-top: 40px;
+            margin-bottom: 20px;
+            border-left: 4px solid #1e40af;
+            padding-left: 15px;
+        }
+        
+        h3 {
+            color: #2563eb;
+            font-size: 1.4em;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        
+        h4 {
+            color: #3b82f6;
+            font-size: 1.2em;
+            margin-top: 25px;
+            margin-bottom: 10px;
+        }
+        
+        p {
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+        
+        .setup-step {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .warning {
+            background-color: #fee2e2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .info {
+            background-color: #dbeafe;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 0 5px 5px 0;
+        }
+        
+        .feature {
+            background-color: #f0f9ff;
+            border: 1px solid #0ea5e9;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 5px;
+        }
+        
+        code {
+            background-color: #f1f5f9;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            color: #dc2626;
+        }
+        
+        pre {
+            background-color: #1e293b;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 15px 0;
+        }
+        
+        ul, ol {
+            margin-bottom: 15px;
+            padding-left: 25px;
+        }
+        
+        li {
+            margin-bottom: 8px;
+        }
+        
+        .highlight {
+            background-color: #fef3c7;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        
+        th, td {
+            border: 1px solid #d1d5db;
+            padding: 10px;
+            text-align: left;
+        }
+        
+        th {
+            background-color: #1e40af;
+            color: white;
+        }
+        
+        tr:nth-child(even) {
+            background-color: #f9fafb;
+        }
+        
+        .footer {
+            margin-top: 50px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 0.9em;
+            border-top: 1px solid #d1d5db;
+            padding-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🚀 Trader's Journal App</h1>
+    
+    <div class="info">
+        <strong>Version:</strong> 2.0.0<br>
+        <strong>Last Updated:</strong> January 2025<br>
+        <strong>Framework:</strong> Next.js 14 with TypeScript<br>
+        <strong>Database:</strong> Supabase (PostgreSQL)<br>
+        <strong>Styling:</strong> Tailwind CSS + Shadcn/UI
+    </div>
+
+    <h2>📋 Table of Contents</h2>
+    <ul>
+        <li><a href="#overview">Project Overview</a></li>
+        <li><a href="#features">Key Features</a></li>
+        <li><a href="#tech-stack">Technology Stack</a></li>
+        <li><a href="#setup">Setup Instructions</a></li>
+        <li><a href="#environment">Environment Configuration</a></li>
+        <li><a href="#database">Database Setup</a></li>
+        <li><a href="#deployment">Deployment</a></li>
+        <li><a href="#api-endpoints">API Endpoints</a></li>
+        <li><a href="#troubleshooting">Troubleshooting</a></li>
+    </ul>
+
+    <h2 id="overview">🎯 Project Overview</h2>
+    <p>
+        Trader's Journal App is a comprehensive trading journal and analysis platform designed for active traders. 
+        The application provides tools for tracking trades, analyzing performance, managing risk, and connecting with other traders.
+    </p>
+    
+    <p>
+        Built with modern web technologies, the app offers a responsive design that works seamlessly across desktop and mobile devices, 
+        with real-time data synchronization and advanced analytics capabilities.
+    </p>
+
+    <h2 id="features">✨ Key Features</h2>
+    
+    <div class="feature">
+        <h4>📊 Trade Management</h4>
+        <ul>
+            <li>Comprehensive trade entry and editing</li>
+            <li>Risk calculator with position sizing</li>
+            <li>Trade tagging and categorization</li>
+            <li>Performance analytics and reporting</li>
+        </ul>
+    </div>
+
+    <div class="feature">
+        <h4>📈 Analysis Tools</h4>
+        <ul>
+            <li>Top-down analysis framework</li>
+            <li>AI-powered trade insights</li>
+            <li>Performance charts and metrics</li>
+            <li>Monthly and quarterly reports</li>
+        </ul>
+    </div>
+
+    <div class="feature">
+        <h4>👥 Social Features</h4>
+        <ul>
+            <li>Trader profiles and networking</li>
+            <li>Trade sharing and comments</li>
+            <li>Social forum discussions</li>
+            <li>Friend system and notifications</li>
+        </ul>
+    </div>
+
+    <div class="feature">
+        <h4>🔔 Notifications & Updates</h4>
+        <ul>
+            <li>Real-time notifications</li>
+            <li>Email alerts and updates</li>
+            <li>Medal achievement system</li>
+            <li>Project update announcements</li>
+        </ul>
+    </div>
+
+    <h2 id="tech-stack">🛠️ Technology Stack</h2>
+    
+    <h3>Frontend</h3>
+    <ul>
+        <li><strong>Framework:</strong> Next.js 14 (App Router)</li>
+        <li><strong>Language:</strong> TypeScript</li>
+        <li><strong>Styling:</strong> Tailwind CSS</li>
+        <li><strong>UI Components:</strong> Shadcn/UI</li>
+        <li><strong>State Management:</strong> React Hooks + Zustand</li>
+        <li><strong>Charts:</strong> Recharts</li>
+    </ul>
+
+    <h3>Backend & Database</h3>
+    <ul>
+        <li><strong>Database:</strong> Supabase (PostgreSQL)</li>
+        <li><strong>Authentication:</strong> Supabase Auth</li>
+        <li><strong>Storage:</strong> Supabase Storage</li>
+        <li><strong>API:</strong> Next.js API Routes</li>
+        <li><strong>ORM:</strong> Drizzle</li>
+        <li><strong>Validation:</strong> Zod</li>
+    </ul>
+
+    <h3>External Services</h3>
+    <ul>
+        <li><strong>Email:</strong> Resend</li>
+        <li><strong>AI Analysis:</strong> Custom AI integration</li>
+        <li><strong>Charts:</strong> TradingView integration</li>
+    </ul>
+
+    <h2 id="setup">⚙️ Setup Instructions</h2>
+
+    <div class="setup-step">
+        <h4>Step 1: Clone the Repository</h4>
+        <pre><code>git clone https://github.com/your-username/traders-journal.git
+cd traders-journal</code></pre>
+    </div>
+
+    <div class="setup-step">
+        <h4>Step 2: Install Dependencies</h4>
+        <pre><code>npm install</code></pre>
+    </div>
+
+    <div class="setup-step">
+        <h4>Step 3: Environment Configuration</h4>
+        <p>Copy the example environment file and configure your variables:</p>
+        <pre><code>cp .env.example .env.local</code></pre>
+    </div>
+
+    <div class="setup-step">
+        <h4>Step 4: Database Setup</h4>
+        <p>Set up your Supabase project and configure the database schema.</p>
+    </div>
+
+    <div class="setup-step">
+        <h4>Step 5: Run Development Server</h4>
+        <pre><code>npm run dev</code></pre>
+    </div>
+
+    <h2 id="environment">🔧 Environment Configuration</h2>
+
+    <div class="warning">
+        <strong>⚠️ Important:</strong> Never commit your actual environment variables to version control. 
+        Always use environment files for sensitive configuration.
+    </div>
+
+    <h3>Required Environment Variables</h3>
+    
+    <table>
+        <tr>
+            <th>Variable</th>
+            <th>Description</th>
+            <th>Example</th>
+        </tr>
+        <tr>
+            <td><code>NEXT_PUBLIC_SUPABASE_URL</code></td>
+            <td>Your Supabase project URL</td>
+            <td>https://your-project.supabase.co</td>
+        </tr>
+        <tr>
+            <td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+            <td>Supabase anonymous key</td>
+            <td>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</td>
+        </tr>
+        <tr>
+            <td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+            <td>Supabase service role key (server-side)</td>
+            <td>eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...</td>
+        </tr>
+        <tr>
+            <td><code>RESEND_API_KEY</code></td>
+            <td>Resend email service API key</td>
+            <td>re_1234567890abcdef...</td>
+        </tr>
+        <tr>
+            <td><code>NEXTAUTH_SECRET</code></td>
+            <td>NextAuth secret for session encryption</td>
+            <td>your-secret-key-here</td>
+        </tr>
+    </table>
+
+    <h2 id="database">🗄️ Database Setup</h2>
+
+    <h3>Supabase Configuration</h3>
+    <ol>
+        <li>Create a new Supabase project</li>
+        <li>Enable the required extensions (pgcrypto, uuid-ossp)</li>
+        <li>Run the database migrations</li>
+        <li>Configure Row Level Security (RLS) policies</li>
+        <li>Set up storage buckets for file uploads</li>
+    </ol>
+
+    <h3>Database Schema</h3>
+    <p>The application uses the following main tables:</p>
+    <ul>
+        <li><strong>profiles:</strong> User profile information</li>
+        <li><strong>trades:</strong> Trade records and analysis</li>
+        <li><strong>trade_setups:</strong> Top-down analysis setups</li>
+        <li><strong>friends:</strong> User connections and relationships</li>
+        <li><strong>messages:</strong> Direct messaging system</li>
+        <li><strong>notifications:</strong> User notifications</li>
+    </ul>
+
+    <h2 id="deployment">🚀 Deployment</h2>
+
+    <h3>Vercel Deployment (Recommended)</h3>
+    <div class="setup-step">
+        <ol>
+            <li>Connect your GitHub repository to Vercel</li>
+            <li>Configure environment variables in Vercel dashboard</li>
+            <li>Set up custom domain (optional)</li>
+            <li>Deploy and monitor the application</li>
+        </ol>
+    </div>
+
+    <h3>Other Deployment Options</h3>
+    <ul>
+        <li><strong>Netlify:</strong> Similar to Vercel, good for static sites</li>
+        <li><strong>Railway:</strong> Full-stack deployment with database</li>
+        <li><strong>DigitalOcean:</strong> VPS deployment for full control</li>
+    </ul>
+
+    <h2 id="api-endpoints">🔌 API Endpoints</h2>
+
+    <h3>Authentication</h3>
+    <ul>
+        <li><code>POST /api/auth/login</code> - User login</li>
+        <li><code>POST /api/auth/register</code> - User registration</li>
+        <li><code>POST /api/auth/logout</code> - User logout</li>
+    </ul>
+
+    <h3>Trades</h3>
+    <ul>
+        <li><code>GET /api/trades</code> - Fetch user trades</li>
+        <li><code>POST /api/trades</code> - Create new trade</li>
+        <li><code>PUT /api/trades/[id]</code> - Update trade</li>
+        <li><code>DELETE /api/trades/[id]</code> - Delete trade</li>
+    </ul>
+
+    <h3>Social Features</h3>
+    <ul>
+        <li><code>GET /api/traders</code> - Fetch traders list</li>
+        <li><code>POST /api/social/trade-setup</code> - Share trade setup</li>
+        <li><code>POST /api/notifications/friend-request</code> - Send friend request</li>
+    </ul>
+
+    <h2 id="troubleshooting">🔧 Troubleshooting</h2>
+
+    <h3>Common Issues</h3>
+
+    <div class="warning">
+        <h4>Database Connection Issues</h4>
+        <p><strong>Problem:</strong> Unable to connect to Supabase database</p>
+        <p><strong>Solution:</strong> Verify your environment variables and check Supabase project status</p>
+    </div>
+
+    <div class="warning">
+        <h4>Authentication Problems</h4>
+        <p><strong>Problem:</strong> Users unable to login or register</p>
+        <p><strong>Solution:</strong> Check Supabase Auth settings and email configuration</p>
+    </div>
+
+    <div class="warning">
+        <h4>File Upload Issues</h4>
+        <p><strong>Problem:</strong> Images or files not uploading</p>
+        <p><strong>Solution:</strong> Verify Supabase Storage bucket permissions and policies</p>
+    </div>
+
+    <h3>Performance Optimization</h3>
+    <ul>
+        <li>Enable Supabase connection pooling for production</li>
+        <li>Use Next.js Image optimization for better loading</li>
+        <li>Implement proper caching strategies</li>
+        <li>Monitor database query performance</li>
+    </ul>
+
+    <h3>Security Best Practices</h3>
+    <ul>
+        <li>Always use Row Level Security (RLS) in Supabase</li>
+        <li>Validate all user inputs with Zod schemas</li>
+        <li>Implement proper error handling</li>
+        <li>Regular security audits and updates</li>
+    </ul>
+
+    <div class="footer">
+        <p>
+            <strong>Trader's Journal App</strong><br>
+            Built with ❤️ using Next.js and Supabase<br>
+            For support, contact: support@tradersjournal.com
+        </p>
+    </div>
+</body>
+</html> 

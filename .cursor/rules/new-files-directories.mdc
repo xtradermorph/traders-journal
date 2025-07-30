@@ -1,0 +1,9 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Command: If new files or folders are required, provide the prompt for their creation. DO NOT create them directly.
+
+
+Command: If new directories are needed within app or supabase, ASK for confirmation to create them manually.

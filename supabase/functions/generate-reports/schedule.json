@@ -1,0 +1,32 @@
+{
+  "schedules": [
+    {
+      "name": "weekly-reports",
+      "schedule": "0 8 * * 1",
+      "params": {
+        "type": "weekly"
+      }
+    },
+    {
+      "name": "monthly-reports",
+      "schedule": "0 8 1 * *",
+      "params": {
+        "type": "monthly"
+      }
+    },
+    {
+      "name": "quarterly-reports",
+      "schedule": "0 8 1 1,4,7,10 *",
+      "params": {
+        "type": "quarterly"
+      }
+    },
+    {
+      "name": "yearly-reports",
+      "schedule": "0 8 1 1 *",
+      "params": {
+        "type": "yearly"
+      }
+    }
+  ]
+}

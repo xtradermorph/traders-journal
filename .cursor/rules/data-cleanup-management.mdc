@@ -1,0 +1,20 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Rule: Implement robust data management for all features involving data storage (messages, friends, comments, user removal) to ensure a clean database after deletions or removals.
+
+Command: Always advise on and implement cleanup functions for resources no longer needed.
+
+Command: If creating new features involving Supabase data, verify database setup for proper data cleanup when users delete information.
+
+
+Command: Confirm before performing any significant data cleanup or structural changes to the database.
+
+Rule: Use correct and consistent column names for user identification across tables, matching Supabase's user identification column names.
+
+Rule: Maintain the existing security model in all further development.
+
+
+Command: Provide SQL scripts to check for multiple permissive policies in Supabase. If found, advise on replacement with a single, equivalent policy.

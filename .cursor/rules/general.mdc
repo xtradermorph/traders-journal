@@ -1,0 +1,17 @@
+x.Cross10
+---
+description: 
+globs: 
+alwaysApply: true
+---
+When modifying any script, file, or code, DO NOT alter the existing design, structure, layout, or core functionality of the project unless explicitly instructed.
+
+When fixing an issue, DO NOT introduce changes to any other aspect of the project beyond the scope of the fix.
+
+When adding a new feature, DO NOT introduce changes to any other aspect of the project beyond the scope of the new feature.
+
+: When removing a feature, DO NOT introduce changes to any other aspect of the project beyond the scope of the removal.
+
+All changes and additions must prioritize functionality and stability.
+
+

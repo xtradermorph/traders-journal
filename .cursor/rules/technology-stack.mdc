@@ -1,0 +1,14 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Database: Supabase (SQL database)
+Framework: Next.js
+Styling: Tailwind CSS
+UI Components: Shadcn/UI
+Authentication: Supabase Auth Helpers
+ORM: Drizzle
+Validation: Zod
+
+Email Service: Resend (for forgot password and verify email)

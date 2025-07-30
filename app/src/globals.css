@@ -1,0 +1,316 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* System theme (default) - will be overridden by light or dark */
+:root {
+  --background: 0 0% 100%;
+  --foreground: 84 16% 6%;
+  --muted: 84 16% 90%;
+  --muted-foreground: 84 16% 35%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 84 16% 6%;
+  --card: 0 0% 98%;
+  --card-foreground: 84 16% 6%;
+  --border: 84 16% 85%;
+  --input: 84 16% 85%;
+  --primary: 28 100% 56%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 84 16% 90%;
+  --secondary-foreground: 84 16% 6%;
+  --accent: 25 100% 56%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 25 100% 56%;
+  --radius: 1rem;
+}
+
+/* Original app theme */
+.original-dark {
+  --background: 84 16% 6%;
+  --foreground: 0 0% 98%;
+  --muted: 84 16% 10%;
+  --muted-foreground: 84 16% 65%;
+  --popover: 84 16% 6%;
+  --popover-foreground: 0 0% 98%;
+  --card: 84 16% 8%;
+  --card-foreground: 0 0% 98%;
+  --border: 84 16% 10%;
+  --input: 84 16% 10%;
+  --primary: 28 100% 56%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 84 16% 12%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 25 100% 56%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 25 100% 56%;
+  --radius: 1rem;
+}
+
+/* Light theme */
+.light {
+  --background: 0 0% 100%;
+  --foreground: 84 16% 6%;
+  --muted: 84 16% 90%;
+  --muted-foreground: 84 16% 35%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 84 16% 6%;
+  --card: 0 0% 98%;
+  --card-foreground: 84 16% 6%;
+  --border: 84 16% 85%;
+  --input: 84 16% 85%;
+  --primary: 28 100% 56%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 84 16% 90%;
+  --secondary-foreground: 84 16% 6%;
+  --accent: 25 100% 56%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 0 0% 100%;
+  --ring: 25 100% 56%;
+  --radius: 1rem;
+}
+
+/* Dark theme (darker than original) */
+.dark {
+  --background: 84 16% 3%;
+  --foreground: 0 0% 98%;
+  --muted: 84 16% 5%;
+  --muted-foreground: 84 16% 60%;
+  --popover: 84 16% 3%;
+  --popover-foreground: 0 0% 98%;
+  --card: 84 16% 4%;
+  --card-foreground: 0 0% 98%;
+  --border: 84 16% 8%;
+  --input: 84 16% 8%;
+  --primary: 28 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 84 16% 8%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 25 100% 50%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 25%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 25 100% 50%;
+  --radius: 1rem;
+}
+
+/* Gunmetal theme */
+.gunmetal {
+  --background: 200 18% 12%;
+  --foreground: 0 0% 98%;
+  --muted: 200 18% 15%;
+  --muted-foreground: 200 18% 70%;
+  --popover: 200 18% 12%;
+  --popover-foreground: 0 0% 98%;
+  --card: 200 18% 14%;
+  --card-foreground: 0 0% 98%;
+  --border: 200 18% 18%;
+  --input: 200 18% 18%;
+  --primary: 28 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 200 18% 18%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 25 100% 50%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 25%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 25 100% 50%;
+  --radius: 1rem;
+}
+
+/* Charcoal Gray / Anthracite theme */
+.anthracite {
+  --background: 220 10% 10%;
+  --foreground: 0 0% 98%;
+  --muted: 220 10% 13%;
+  --muted-foreground: 220 10% 65%;
+  --popover: 220 10% 10%;
+  --popover-foreground: 0 0% 98%;
+  --card: 220 10% 12%;
+  --card-foreground: 0 0% 98%;
+  --border: 220 10% 16%;
+  --input: 220 10% 16%;
+  --primary: 28 100% 50%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 220 10% 16%;
+  --secondary-foreground: 0 0% 98%;
+  --accent: 25 100% 50%;
+  --accent-foreground: 0 0% 98%;
+  --destructive: 0 62.8% 25%;
+  --destructive-foreground: 0 0% 98%;
+  --ring: 25 100% 50%;
+  --radius: 1rem;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  } 
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+  } 
+} 
+
+/* Custom styles for modern UI */
+.card,
+.dialog,
+.popover,
+.dropdown-menu,
+.button,
+.input,
+.select,
+.textarea {
+  @apply rounded-xl shadow-sm transition-all duration-200;
+}
+
+.button {
+  @apply hover:shadow-md active:scale-95;
+}
+
+/* Gradient text for headings */
+.gradient-heading {
+  @apply bg-gradient-to-r from-primary to-blue-400 bg-clip-text text-transparent !important;
+}
+
+/* Calendar day styling */
+.calendar-day {
+  @apply transition-all duration-300 hover:scale-105 hover:shadow-md;
+}
+
+.calendar-day-positive {
+  @apply bg-green-100 hover:bg-green-200 border-green-300;
+}
+
+.calendar-day-negative {
+  @apply bg-red-100 hover:bg-red-200 border-red-300;
+}
+
+/* React Day Picker specific styling */
+.rdp {
+  @apply bg-background text-foreground;
+}
+
+.rdp-nav_button {
+  @apply text-foreground !important;
+}
+
+.rdp-nav_button svg {
+  @apply text-foreground !important;
+}
+
+.rdp-head_cell {
+  @apply text-center text-muted-foreground !important;
+}
+
+.rdp-day {
+  @apply text-foreground hover:bg-accent hover:text-accent-foreground !important;
+}
+
+.rdp-day_selected {
+  @apply bg-primary text-primary-foreground !important;
+}
+
+.rdp-day_today {
+  @apply bg-accent text-accent-foreground !important;
+}
+
+.rdp-day_outside {
+  @apply text-muted-foreground opacity-50 !important;
+}
+
+.rdp-day_disabled {
+  @apply text-muted-foreground opacity-50 !important;
+}
+
+/* Force calendar styling in all contexts */
+.rdp,
+.rdp * {
+  font-family: inherit !important;
+}
+
+.rdp-nav_button {
+  border: 1px solid hsl(var(--border)) !important;
+  background-color: transparent !important;
+}
+
+.rdp-nav_button:hover {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+/* Custom calendar wrapper styling */
+[data-radix-popper-content-wrapper] .rdp {
+  background-color: hsl(var(--background)) !important;
+  color: hsl(var(--foreground)) !important;
+  border: 1px solid hsl(var(--border)) !important;
+  border-radius: 0.5rem !important;
+}
+
+/* Ensure all calendar elements inherit proper colors */
+.rdp-caption_label,
+.rdp-nav_button,
+.rdp-day,
+.rdp-head_cell {
+  color: hsl(var(--foreground)) !important;
+}
+
+.rdp-head_cell {
+  color: hsl(var(--muted-foreground)) !important;
+  text-align: center !important;
+}
+
+.rdp-day_selected {
+  background-color: hsl(var(--primary)) !important;
+  color: hsl(var(--primary-foreground)) !important;
+}
+
+.rdp-day_today {
+  background-color: hsl(var(--accent)) !important;
+  color: hsl(var(--accent-foreground)) !important;
+}
+
+.rdp-day_outside,
+.rdp-day_disabled {
+  color: hsl(var(--muted-foreground)) !important;
+  opacity: 0.5 !important;
+}
+
+/* Enhanced form fields */
+input, select, textarea {
+  @apply rounded-lg border-2 focus:ring-2 focus:ring-primary/25 focus:border-primary transition-all duration-200;
+}
+
+/* Smooth dropdown animation for Radix DropdownMenu */
+[data-state="open"].animate-in,
+[data-state="closed"].animate-out {
+  transition-property: opacity, transform;
+  transition-duration: 240ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-state="open"].fade-in-0,
+[data-state="closed"].fade-out-0 {
+  opacity: 1;
+}
+[data-state="closed"].fade-out-0 {
+  opacity: 0;
+}
+[data-state="open"].zoom-in-95 {
+  transform: scale(1);
+}
+[data-state="closed"].zoom-out-95 {
+  transform: scale(0.95);
+}
+
+@keyframes knight-rider {
+  0% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+.animate-knight-rider {
+  background-size: 200% 100%;
+  animation: knight-rider 2s linear infinite alternate;
+}

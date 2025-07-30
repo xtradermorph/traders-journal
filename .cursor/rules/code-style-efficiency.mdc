@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Rule: Ensure type safety throughout the application.
+Rule: DO NOT duplicate entire files or code sections.
+Rule: DO NOT overcomplicate simple tasks or produce incorrect code.
+Rule: Use smaller code snippets and break down large tasks into manageable pieces.
+Rule: Stop using antml:function calls.
+
+Rule: Update code directly within the editor.
+
+Specific Feature Notes:
+
+
+    Risk Calculator (Production): Exchange rates for the risk calculator feature in a production environment must be fetched from an API. Adjust accordingly during final production deployment.

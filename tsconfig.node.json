@@ -1,0 +1,16 @@
+{
+    "compilerOptions": {
+      "composite": true,
+      "module": "ESNext",
+      "moduleResolution": "node",
+      "allowSyntheticDefaultImports": true,
+      "jsx": "preserve",
+      "jsxImportSource": "react",
+      "baseUrl": ".",
+      "paths": {
+        "@/*": ["./app/src/*"],
+        "@shared/*": ["./shared/*"]
+      }
+    },
+    "include": ["next.config.js", "app/**/*", "app/src/**/*", "shared/**/*"]
+  }
