@@ -141,8 +141,6 @@ export default function FeedbackCarousel() {
     ));
   };
 
-
-
   return (
     <div className="w-full max-w-6xl mx-auto px-2 py-16">
       <div className="text-center mb-12">
