@@ -85,12 +85,12 @@ export default function FeedbackCarousel() {
   const allowedFeedbackTypes: ('general' | 'praise' | 'bug')[] = ['general', 'praise', 'bug'];
   const filteredFeedback = mockFeedback.filter(feedback => 
     allowedFeedbackTypes.includes(feedback.feedbackType)
-  );
+  ) || [];
   const duplicatedFeedback = [...filteredFeedback, ...filteredFeedback];
 
   // Continuous scroll animation
   useEffect(() => {
-    if (isHovered || isDragging.current) return;
+    if (isHovered || isDragging.current || !filteredFeedback.length) return;
     const animation = () => {
       setScrollPosition((prev) => {
         let newPosition = prev + (scrollSpeed * scrollDirection);
@@ -113,7 +113,7 @@ export default function FeedbackCarousel() {
     dragStartScroll.current = scrollPosition;
   };
   const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
-    if (!isDragging.current || dragStartX.current === null) return;
+    if (!isDragging.current || dragStartX.current === null || !filteredFeedback.length) return;
     const deltaX = e.clientX - dragStartX.current;
     // Lower drag sensitivity for smoother scroll
     const dragSensitivity = 2.5; // Higher = slower drag
@@ -140,6 +140,11 @@ export default function FeedbackCarousel() {
       />
     ));
   };
+
+  // Don't render if no feedback is available
+  if (!filteredFeedback.length) {
+    return null;
+  }
 
   return (
     <div className="w-full max-w-6xl mx-auto px-2 py-16">
