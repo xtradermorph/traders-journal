@@ -314,7 +314,7 @@ const Dashboard = () => {
     return processed;
   })();
   // Sort by date descending (newest first), then take the most recent N
-  const recentProcessedTrades = processedTrades
+  const recentProcessedTrades = (processedTrades || [])
     .sort((a, b) => {
       const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
       if (dateDiff !== 0) return dateDiff;
@@ -329,6 +329,18 @@ const Dashboard = () => {
       refetch();
     }
   }, [user, authLoading, refetch]);
+
+  // Add loading state check
+  if (authLoading || isLoadingTrades) {
+    return (
+      <div className="w-full max-w-[100vw] sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-2 sm:my-6 md:my-8 flex flex-col min-h-[80vh] items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-lg text-muted-foreground">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-[100vw] sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-2 sm:my-6 md:my-8 flex flex-col min-h-[80vh]">
@@ -383,7 +395,7 @@ const Dashboard = () => {
       </div>
 
       {/* Performance Summary Cards */}
-      {filteredTrades.length >= 3 ? (
+      {filteredTrades && filteredTrades.length >= 3 ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
           <PerfSummaryCard
             title="Win Rate"
