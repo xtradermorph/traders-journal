@@ -1,0 +1,11 @@
+[build]
+  command = "npm install --include=optional && npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "18"
+  NPM_FLAGS = "--include=optional"
+  NEXT_PUBLIC_APP_VERSION = "0.1.0"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs" 

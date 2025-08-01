@@ -1,0 +1,22 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+Rule: For any required Supabase resource creation (e.g., buckets, policies, tables, columns, rows), ASK FOR APPROVAL. Provide the necessary details for manual creation.
+
+Rule: DO NOT write code that circumvents the need for Supabase setup for features requiring database interaction.
+
+
+Rule: Prioritize creating missing tables, rows, or columns in Supabase over modifying scripts to remove them. Only remove missing items from scripts if they are definitively not required for functionality.
+
+Schema Usage: always confirm supabase schema before fixing and creating new ones, only if unsure.
+SQL Policies:
+
+    Supabase SQL private policies for User Profiles and Trades Management.
+    Supabase SQL private policies for Profile Access Control.
+
+Database Operations: Supported operations include: getting user profile, updating user profile, fetching trade records, checking authentication status, logging out.
+
+
+Transaction Pooler: Already configured and integrated into the .env file.
