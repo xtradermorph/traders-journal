@@ -40,32 +40,17 @@ const Dashboard = () => {
   
   // Authentication redirect logic
   useEffect(() => {
-<<<<<<< HEAD
     if (isClient && !authLoading && !user) {
       console.log('Dashboard auth state:', { loading: authLoading, isAuthenticated: !!user, user });
       router.push('/login');
     }
   }, [user, authLoading, router, isClient]);
-=======
-    if (!authLoading && !user) {
-      console.log('Dashboard auth state:', { loading: authLoading, isAuthenticated: !!user, user });
-      router.push('/login');
-    }
-  }, [user, authLoading, router]);
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
   
   // Show loading while checking authentication or not client-side
   if (authLoading || !isClient) {
     return (
       <div className="w-full max-w-[98vw] sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-2 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-2 sm:my-6 md:my-8 flex flex-col min-h-[80vh] items-center justify-center">
-<<<<<<< HEAD
         <LoadingSpinner size="lg" text="Loading dashboard..." />
-=======
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
-        </div>
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
       </div>
     );
   }
@@ -98,11 +83,7 @@ const Dashboard = () => {
         return null;
       }
     },
-<<<<<<< HEAD
     enabled: !!user && !authLoading && isClient,
-=======
-    enabled: !!user && !authLoading,
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
     initialData: null,
     retry: 2,
     retryDelay: 1000
@@ -112,11 +93,7 @@ const Dashboard = () => {
   const { data: userSettings, isLoading: isLoadingSettings, refetch: refetchSettings } = useQuery({
     queryKey: ["userSettings", user?.id],
     queryFn: async () => {
-<<<<<<< HEAD
       if (!user || !isClient) return { recent_trades_count: 5, performance_view: 'total' };
-=======
-      if (!user) return { recent_trades_count: 5, performance_view: 'total' };
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
       try {
         const { data, error } = await supabase
           .from('user_settings')
@@ -143,11 +120,7 @@ const Dashboard = () => {
   const { data: trades, isLoading: isLoadingTrades, error: tradesError, refetch: refetchTrades } = useQuery({
     queryKey: ["trades", user?.id],
     queryFn: async () => {
-<<<<<<< HEAD
       if (!user || !isClient) return [];
-=======
-      if (!user) return [];
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
       try {
         const { data, error } = await supabase
           .from('trades')
@@ -164,11 +137,7 @@ const Dashboard = () => {
         return [];
       }
     },
-<<<<<<< HEAD
     enabled: !!user && !authLoading && isClient,
-=======
-    enabled: !!user && !authLoading,
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
     initialData: [],
     retry: 2,
     retryDelay: 1000
@@ -176,11 +145,8 @@ const Dashboard = () => {
 
   // Set up event listeners for storage changes and focus events
   useEffect(() => {
-<<<<<<< HEAD
     if (!isClient) return;
 
-=======
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'trades-updated') {
         refetchTrades();
@@ -219,17 +185,10 @@ const Dashboard = () => {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       window.removeEventListener('performance-view-change', handlePerformanceViewChange as EventListener);
     };
-<<<<<<< HEAD
   }, [refetchTrades, refetchUserProfile, refetchSettings, isClient]);
 
   const savePerformanceView = async (view: 'total' | 'currentWeek') => {
     if (!user || !isClient) return;
-=======
-  }, [refetchTrades, refetchUserProfile, refetchSettings]);
-
-  const savePerformanceView = async (view: 'total' | 'currentWeek') => {
-    if (!user) return;
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
     
     try {
       const { error } = await supabase
@@ -286,11 +245,8 @@ const Dashboard = () => {
 
   // Handle performance view toggle
   const handlePerformanceViewToggle = async () => {
-<<<<<<< HEAD
     if (!isClient) return;
     
-=======
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
     setToggleLoading(true);
     const newView = performanceView === 'total' ? 'currentWeek' : 'total';
     setPerformanceView(newView);
@@ -315,10 +271,7 @@ const Dashboard = () => {
   }
 
   const refreshTrades = () => {
-<<<<<<< HEAD
     if (!isClient) return;
-=======
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
     refetchTrades();
     refetchUserProfile();
     refetchSettings();
@@ -365,11 +318,7 @@ const Dashboard = () => {
             className="flex items-center gap-2"
           >
             {toggleLoading ? (
-<<<<<<< HEAD
               <LoadingSpinner size="sm" />
-=======
-              <div className="h-4 w-4 animate-spin border-2 border-primary border-t-transparent rounded-full"></div>
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
             ) : (
               <>
                 {performanceView === 'total' ? <TrendingUp className="h-4 w-4" /> : <Timer className="h-4 w-4" />}

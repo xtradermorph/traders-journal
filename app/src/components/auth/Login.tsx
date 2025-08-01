@@ -183,7 +183,6 @@ const Login = () => {
 
   return (
     <ClientOnly>
-<<<<<<< HEAD
       <div 
         className="min-h-screen bg-cover bg-center flex flex-col items-center justify-center p-4 relative"
         style={{ backgroundImage: "url('/images/auth-fullpage-background.jpg')" }}
@@ -197,16 +196,6 @@ const Login = () => {
                 Welcome back
               </h1>
               <p className="text-muted-foreground">
-=======
-      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800 p-4">
-        <div className="w-full max-w-md">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-8">
-            <div className="text-center mb-8">
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white mb-2">
-                Welcome back
-              </h1>
-              <p className="text-slate-600 dark:text-slate-400">
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
                 Sign in to your account to continue
               </p>
             </div>
@@ -323,11 +312,7 @@ const Login = () => {
                 
                 <Button
                   type="submit"
-<<<<<<< HEAD
                   className="w-full text-lg py-6"
-=======
-                  className="w-full"
->>>>>>> 5c8ee575187ca460f04a68a7a7d4fc43d8bebbda
                   disabled={isLoading || ((!isDevelopment || window.location.hostname === 'tradersjournal.pro') && !turnstileToken)}
                 >
                   {isLoading ? (
