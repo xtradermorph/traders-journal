@@ -256,6 +256,36 @@ const Dashboard = () => {
   
   const statsData = calculateDashboardStats(filteredTrades);
   
+  // Calculate additional stats needed for the dashboard
+  const additionalStats = (() => {
+    if (!filteredTrades || filteredTrades.length === 0) {
+      return {
+        winRate: 0,
+        totalProfit: 0,
+        avgTradeProfit: 0,
+        riskRewardRatio: 0
+      };
+    }
+    
+    const profitableTrades = filteredTrades.filter(trade => (trade.profit_loss ?? 0) > 0);
+    const winRate = filteredTrades.length > 0 ? (profitableTrades.length / filteredTrades.length) * 100 : 0;
+    const totalProfit = filteredTrades.reduce((sum, trade) => sum + (trade.profit_loss ?? 0), 0);
+    const avgTradeProfit = filteredTrades.length > 0 ? totalProfit / filteredTrades.length : 0;
+    
+    // Calculate risk/reward ratio (simplified - using average profit vs average loss)
+    const losingTrades = filteredTrades.filter(trade => (trade.profit_loss ?? 0) < 0);
+    const avgLoss = losingTrades.length > 0 ? Math.abs(losingTrades.reduce((sum, trade) => sum + (trade.profit_loss ?? 0), 0)) / losingTrades.length : 1;
+    const avgWin = profitableTrades.length > 0 ? profitableTrades.reduce((sum, trade) => sum + (trade.profit_loss ?? 0), 0) / profitableTrades.length : 0;
+    const riskRewardRatio = avgLoss > 0 ? avgWin / avgLoss : 0;
+    
+    return {
+      winRate,
+      totalProfit,
+      avgTradeProfit,
+      riskRewardRatio
+    };
+  })();
+
   // Assign month-based numbers to all trades (matching Trade Records logic)
   const processedTrades = (() => {
     if (!trades || trades.length === 0) return [];
@@ -301,22 +331,22 @@ const Dashboard = () => {
   }, [user, authLoading, refetch]);
 
   return (
-    <div className="w-full max-w-[98vw] sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-2 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-2 sm:my-6 md:my-8 flex flex-col min-h-[80vh]">
+    <div className="w-full max-w-[100vw] sm:max-w-[95vw] md:max-w-[90vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-2 sm:my-6 md:my-8 flex flex-col min-h-[80vh]">
 
       {/* Trading Workflow Guide */}
       <TradingWorkflowGuide />
 
       {/* Performance View Toggle */}
-      <div className="mb-6 sm:mb-8">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
-            <h3 className="text-base sm:text-lg font-semibold bg-white/20 backdrop-blur-sm px-3 py-1 rounded-lg border border-white/30 text-white shadow-sm">Performance Summary</h3>
+      <div className="mb-4 sm:mb-6 md:mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:gap-3">
+            <h3 className="text-base sm:text-lg font-semibold bg-white/20 backdrop-blur-sm px-3 py-2 rounded-lg border border-white/30 text-white shadow-sm">Performance Summary</h3>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <div className="flex items-center space-x-2">
               <div 
                 className={cn(
-                  "relative inline-flex h-6 w-11 shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
+                  "relative inline-flex h-8 w-14 sm:h-6 sm:w-11 shrink-0 cursor-pointer items-center rounded-full border-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-not-allowed disabled:opacity-50",
                   performanceView === 'currentWeek' 
                     ? "bg-yellow-400/20 border-yellow-400/30" 
                     : "bg-white/20 border-white/30",
@@ -329,14 +359,14 @@ const Dashboard = () => {
                 }}
               >
                 <div className={cn(
-                  "pointer-events-none block h-5 w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out",
-                  performanceView === 'currentWeek' ? "translate-x-5" : "translate-x-0",
+                  "pointer-events-none block h-6 w-6 sm:h-5 sm:w-5 rounded-full bg-white shadow-lg ring-0 transition-transform duration-200 ease-in-out",
+                  performanceView === 'currentWeek' ? "translate-x-6 sm:translate-x-5" : "translate-x-0",
                   toggleLoading && "animate-pulse"
                 )} />
               </div>
               <Label 
                 className={cn(
-                  "text-sm font-medium cursor-pointer",
+                  "text-sm font-medium cursor-pointer select-none",
                   toggleLoading && "opacity-50 cursor-not-allowed"
                 )} 
                 onClick={() => {
@@ -353,61 +383,56 @@ const Dashboard = () => {
       </div>
 
       {/* Performance Summary Cards */}
-      {filteredTrades && filteredTrades.length >= 3 ? (
-      <div className="grid grid-cols-1 gap-3 sm:gap-4 md:gap-5 sm:grid-cols-2 lg:grid-cols-4">
-        {/* 1. Avg. Trades/Day */}
-        <PerfSummaryCard
-          title="Avg. Trades/Day"
-          value={statsData.hasData ? statsData.avgTradesPerDay.toFixed(2) : "0"}
-          icon="lucide lucide-calendar-check"
-          variant="primary"
-          change={undefined}
-          isLoading={isLoadingTrades}
-          valueColor={
-            statsData.avgTradesPerDay < 3 ? "text-green-500" :
-            statsData.avgTradesPerDay === 3 ? "text-yellow-500" :
-            statsData.avgTradesPerDay > 3 ? "text-red-500" : ""
-          }
-          iconWarning={statsData.avgTradesPerDay > 3}
-        />
-        {/* 2. Avg. Time in Trade */}
-        <PerfSummaryCard
-          title="Avg. Time in Trade"
-          value={statsData.hasData ? `${statsData.avgTimeInTrade.toFixed(1)} min` : "0 min"}
-          icon="lucide lucide-timer"
-          variant="secondary"
-          change={undefined}
-          isLoading={isLoadingTrades}
-        />
-        {/* 3. Avg. Positive Pips */}
-        <PerfSummaryCard
-          title="Avg. Positive Pips"
-          value={statsData.hasData ? statsData.avgPositivePips.toFixed(1) : "0"}
-          icon="lucide lucide-trending-up"
-          variant="accent"
-          change={undefined}
-          isLoading={isLoadingTrades}
-        />
-        {/* 4. % Positive Trades (highlighted) */}
-        <PerfSummaryCard
-          title="% Positive Trades"
-          value={statsData.hasData ? `${statsData.percentPositiveTrades.toFixed(1)}%` : "0%"}
-          icon="lucide lucide-percent-circle"
-          variant="accent"
-          change={undefined}
-          isLoading={isLoadingTrades}
-          valueColor={
-            statsData.percentPositiveTrades <= 20 ? "text-red-500" :
-            statsData.percentPositiveTrades <= 50 ? "text-yellow-500" :
-            statsData.percentPositiveTrades <= 60 ? "text-yellow-300" :
-            statsData.percentPositiveTrades <= 70 ? "text-green-500" :
-            statsData.percentPositiveTrades > 70 ? "text-yellow-400" : ""
-          }
-          highlight={statsData.percentPositiveTrades > 70}
-          cardHighlight={true}
-          iconWarning={statsData.percentPositiveTrades <= 20}
-        />
-      </div>
+      {filteredTrades.length >= 3 ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <PerfSummaryCard
+            title="Win Rate"
+            value={`${additionalStats.winRate.toFixed(1)}%`}
+            icon="lucide lucide-percent-circle"
+            valueColor={
+              additionalStats.winRate >= 70 ? "text-green-500" :
+              additionalStats.winRate >= 60 ? "text-yellow-300" :
+              additionalStats.winRate >= 50 ? "text-yellow-500" :
+              additionalStats.winRate >= 40 ? "text-orange-500" :
+              "text-red-500"
+            }
+            highlight={additionalStats.winRate >= 70}
+            cardHighlight={true}
+            iconWarning={additionalStats.winRate <= 40}
+          />
+          <PerfSummaryCard
+            title="Total P&L"
+            value={`$${additionalStats.totalProfit.toFixed(2)}`}
+            icon="lucide lucide-trending-up"
+            valueColor={additionalStats.totalProfit >= 0 ? "text-green-500" : "text-red-500"}
+            highlight={additionalStats.totalProfit >= 0}
+            cardHighlight={true}
+            iconWarning={additionalStats.totalProfit < 0}
+          />
+          <PerfSummaryCard
+            title="Avg Trade"
+            value={`$${additionalStats.avgTradeProfit.toFixed(2)}`}
+            icon="lucide lucide-timer"
+            valueColor={additionalStats.avgTradeProfit >= 0 ? "text-green-500" : "text-red-500"}
+            highlight={additionalStats.avgTradeProfit >= 0}
+            cardHighlight={true}
+            iconWarning={additionalStats.avgTradeProfit < 0}
+          />
+          <PerfSummaryCard
+            title="Risk/Reward"
+            value={additionalStats.riskRewardRatio.toFixed(2)}
+            icon="lucide lucide-calendar-check"
+            valueColor={
+              additionalStats.riskRewardRatio >= 2.0 ? "text-green-500" :
+              additionalStats.riskRewardRatio >= 1.5 ? "text-yellow-300" :
+              additionalStats.riskRewardRatio >= 1.0 ? "text-yellow-500" :
+              "text-red-500"
+            }
+            highlight={additionalStats.riskRewardRatio >= 2.0}
+            cardHighlight={true}
+            iconWarning={additionalStats.riskRewardRatio < 1.0}
+          />
+        </div>
       ) : (
         <div className="bg-muted/60 border border-muted rounded-lg p-4 sm:p-6 flex flex-col items-center justify-center text-center max-w-xl mx-auto shadow-sm mb-4">
           <strong className="text-sm sm:text-base text-foreground">
@@ -424,7 +449,7 @@ const Dashboard = () => {
       )}
 
       {/* Performance Analysis */}
-      <div className="mt-6 sm:mt-8">
+      <div className="mt-4 sm:mt-6 md:mt-8">
         <h3 className="text-base sm:text-lg font-semibold gradient-heading mb-3 sm:mb-4">Performance Analysis</h3>
         <PerformanceAnalysis
           stats={stats}
@@ -435,7 +460,7 @@ const Dashboard = () => {
       </div>
 
       {/* Chart Section */}
-      <div className="mt-6 sm:mt-8 grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
+      <div className="mt-4 sm:mt-6 md:mt-8 grid grid-cols-1 gap-4 sm:gap-5 lg:grid-cols-2">
         <ProfitLossChart trades={trades || []} isLoading={isLoadingTrades} />
         <CurrencyPairPerformance 
           stats={{
@@ -458,7 +483,7 @@ const Dashboard = () => {
       </div>
 
       {/* Calendar Section */}
-      <div className="mt-6 sm:mt-8">
+      <div className="mt-4 sm:mt-6 md:mt-8">
         <TradeCalendar 
           trades={trades || []} 
           isLoading={isLoadingTrades} 
@@ -467,7 +492,7 @@ const Dashboard = () => {
       </div>
       
       {/* AI Trading Insights */}
-      <div className="mt-6 sm:mt-8">
+      <div className="mt-4 sm:mt-6 md:mt-8">
         <h3 className="text-base sm:text-lg font-semibold gradient-heading mb-3 sm:mb-4">AI Trading Insights</h3>
         <AITradingInsights 
           trades={trades || []} 
@@ -477,7 +502,7 @@ const Dashboard = () => {
       </div>
 
       {/* Top Down Analysis History */}
-      <div className="mt-6 sm:mt-8">
+      <div className="mt-4 sm:mt-6 md:mt-8">
         <div className="flex justify-between items-center mb-3 sm:mb-4">
           <h3 className="text-base sm:text-lg font-semibold text-primary">Top Down Analysis History</h3>
           {tdaCount && tdaCount > 5 && (

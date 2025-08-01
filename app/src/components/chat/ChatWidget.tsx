@@ -2112,6 +2112,15 @@ const ChatWidget = () => {
       {isChatOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 sm:bg-transparent sm:relative sm:inset-auto sm:z-auto">
           <div className="absolute bottom-0 right-0 w-full h-full sm:w-96 sm:h-[600px] sm:bottom-auto sm:right-auto bg-white dark:bg-gray-900 rounded-t-lg sm:rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+            {/* Mobile close button overlay */}
+            <div className="absolute top-4 right-4 sm:hidden z-10">
+              <button
+                onClick={handleClose}
+                className="w-8 h-8 bg-gray-800/80 text-white rounded-full flex items-center justify-center backdrop-blur-sm"
+              >
+                ×
+              </button>
+            </div>
           <div className="flex items-center justify-between p-4 border-b bg-gradient-to-r from-slate-900 via-purple-900 to-slate-900 text-white shadow-lg">
             {activeConversation ? (
               <div className="flex items-center gap-2 flex-1 min-w-0">

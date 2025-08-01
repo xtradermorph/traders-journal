@@ -1,15 +1,17 @@
-const CACHE_NAME = 'traders-journal-v1.1';
+const CACHE_NAME = 'traders-journal-v1.2';
 const urlsToCache = [
   '/',
   '/dashboard',
   '/trade-records',
-  '/manifest.json',
+  '/social-forum',
+  '/profile',
+  '/top-down-analysis',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
-  // Add other static assets you want to cache
+  '/manifest.json'
 ];
 
-// Install event: cache static assets
+// Install event - cache resources
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -20,48 +22,25 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Fetch event: serve cached resources or fetch from network
+// Fetch event - serve from cache, fallback to network
 self.addEventListener('fetch', (event) => {
   event.respondWith(
     caches.match(event.request)
       .then((response) => {
-        // Cache hit - return response
-        if (response) {
-          return response;
-        }
-        
-        // IMPORTANT: Clone the request stream
-        const fetchRequest = event.request.clone();
-        
-        return fetch(fetchRequest).then((response) => {
-          // Check if we received a valid response
-          if (!response || response.status !== 200 || response.type !== 'basic') {
-            return response;
-          }
-          
-          // IMPORTANT: Clone the response stream
-          const responseToCache = response.clone();
-          
-          caches.open(CACHE_NAME)
-            .then((cache) => {
-              cache.put(event.request, responseToCache);
-            });
-          
-          return response;
-        });
+        // Return cached version or fetch from network
+        return response || fetch(event.request);
       })
   );
 });
 
-// Activate event: clean up old caches
+// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  const cacheWhitelist = [CACHE_NAME];
-  
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
         cacheNames.map((cacheName) => {
-          if (cacheWhitelist.indexOf(cacheName) === -1) {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Deleting old cache:', cacheName);
             return caches.delete(cacheName);
           }
         })
@@ -70,9 +49,8 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Optional: Push notification handling
+// Push notification handling
 self.addEventListener('push', (event) => {
-  const title = 'Trader\'s Journal Update';
   const options = {
     body: event.data ? event.data.text() : 'New update available',
     icon: '/icons/icon-192x192.png',
@@ -93,13 +71,17 @@ self.addEventListener('push', (event) => {
         title: 'Close',
         icon: '/icons/icon-96x96.png'
       }
-    ]
+    ],
+    requireInteraction: true,
+    tag: 'traders-journal-notification'
   };
-  
-  event.waitUntil(self.registration.showNotification(title, options));
+
+  event.waitUntil(
+    self.registration.showNotification('Trader\'s Journal', options)
+  );
 });
 
-// Handle notification clicks
+// Notification click handling
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   
@@ -107,5 +89,34 @@ self.addEventListener('notificationclick', (event) => {
     event.waitUntil(
       clients.openWindow('/dashboard')
     );
+  } else if (event.action === 'close') {
+    // Just close the notification
+    return;
+  } else {
+    // Default action - open the app
+    event.waitUntil(
+      clients.openWindow('/')
+    );
+  }
+});
+
+// Background sync for offline functionality
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'background-sync') {
+    event.waitUntil(
+      // Handle background sync tasks
+      console.log('Background sync triggered')
+    );
+  }
+});
+
+// Message handling for communication with main thread
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+  
+  if (event.data && event.data.type === 'GET_VERSION') {
+    event.ports[0].postMessage({ version: CACHE_NAME });
   }
 });
