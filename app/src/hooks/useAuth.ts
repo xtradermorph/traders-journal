@@ -39,6 +39,17 @@ export function useAuth() {
 
     const checkAuth = async () => {
       try {
+        if (!supabase || !supabase.auth) {
+          console.error('Supabase client not properly initialized');
+          setAuthState({
+            isAuthenticated: false,
+            loading: false,
+            session: null,
+            user: null
+          });
+          return;
+        }
+
         const { data: { session }, error } = await supabase.auth.getSession();
         
         if (error) {
@@ -71,18 +82,24 @@ export function useAuth() {
 
     checkAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setAuthState({
-          isAuthenticated: !!session,
-          loading: false,
-          session: session,
-          user: session?.user ?? null
-        });
-      }
-    );
+    try {
+      if (supabase && supabase.auth) {
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            setAuthState({
+              isAuthenticated: !!session,
+              loading: false,
+              session: session,
+              user: session?.user ?? null
+            });
+          }
+        );
 
-    return () => subscription.unsubscribe();
+        return () => subscription.unsubscribe();
+      }
+    } catch (error) {
+      console.error('Failed to set up auth state change listener:', error);
+    }
   }, [isClient]);
   
   return {
