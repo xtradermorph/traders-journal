@@ -46,7 +46,7 @@ export default function ExportTradesDialog({ isOpen, onClose, trades, onExport }
   // Calculate date restrictions
   const today = startOfDay(new Date());
   const earliestTradeDate = React.useMemo(() => {
-    if (!trades || trades.length === 0) return today;
+    if (!trades || !Array.isArray(trades) || trades.length === 0) return today;
     const dates = trades.map(trade => new Date(trade.date));
     return startOfDay(new Date(Math.min(...dates.map(d => d.getTime()))));
   }, [trades]);
@@ -59,6 +59,7 @@ export default function ExportTradesDialog({ isOpen, onClose, trades, onExport }
   // Get available months from trades
   const availableMonths = React.useMemo(() => {
     const months = new Set<string>();
+    if (!trades || !Array.isArray(trades)) return Array.from(months).sort().reverse();
     trades.forEach(trade => {
       const month = format(new Date(trade.date), 'yyyy-MM');
       months.add(month);
@@ -68,7 +69,7 @@ export default function ExportTradesDialog({ isOpen, onClose, trades, onExport }
 
   // Calculate filtered trades based on selected time frame
   const filteredTrades = React.useMemo(() => {
-    if (!trades || trades.length === 0) return [];
+    if (!trades || !Array.isArray(trades) || trades.length === 0) return [];
 
     switch (timeFrame) {
       case 'week':
@@ -109,7 +110,7 @@ export default function ExportTradesDialog({ isOpen, onClose, trades, onExport }
 
   // Calculate analysis data
   const analysisData = React.useMemo((): AnalysisData => {
-    if (!filteredTrades || filteredTrades.length === 0) {
+    if (!filteredTrades || !Array.isArray(filteredTrades) || filteredTrades.length === 0) {
       return {
         totalTrades: 0,
         positiveTrades: 0,

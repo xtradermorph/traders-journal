@@ -698,7 +698,7 @@ const SocialForumContent = () => {
         setPrivateSearchResults(data || []);
         setPrivateSearchPerformed(true); // Mark that a search has been performed
         // Show message if no exact match found (only for button click, not real-time search)
-        if (!data || data.length === 0) {
+        if (!data || !Array.isArray(data) || data.length === 0) {
         toast({
             id: 'no-user-found',
             title: 'User Not Found',

@@ -20,6 +20,7 @@ import { Eye, EyeOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Session, User } from '@supabase/supabase-js';
 import Image from 'next/image';
+import { Turnstile } from '../../ui/turnstile';
 
 const loginFormSchema = z.object({
   email: z.string().email("Invalid email address").min(1, "Email is required"),
@@ -44,6 +45,11 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileError, setTurnstileError] = useState<string | null>(null);
+  
+  // Check if we're in development mode
+  const isDevelopment = process.env.NODE_ENV === 'development';
   
   // Get redirect URL from query parameters
   const [redirectUrl, setRedirectUrl] = useState<string>('/dashboard');
@@ -182,6 +188,29 @@ const Login = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
+      // Skip Turnstile verification in development mode
+      if (!isDevelopment) {
+        // Verify Turnstile token
+        if (!turnstileToken) {
+          setTurnstileError('Please complete the security check');
+          return;
+        }
+
+        const verificationResponse = await fetch('/api/turnstile/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: turnstileToken,
+          }),
+        });
+
+        const verificationResult = await verificationResponse.json();
+        if (!verificationResult.success) {
+          setTurnstileError('Security check failed. Please try again.');
+          return;
+        }
+      }
+
       await loginMutation.mutateAsync(data);
     } catch (error) {
       console.error('Login submission error:', error);
@@ -327,10 +356,39 @@ const Login = () => {
               {error && (
                 <div className="text-red-500 text-sm">{error}</div>
               )}
+              
+              {/* Turnstile Security Check - Only show in production */}
+              {!isDevelopment && (
+                <div className="space-y-2">
+                  <div className="flex justify-center">
+                    <Turnstile
+                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
+                      onVerify={(token) => {
+                        setTurnstileToken(token);
+                        setTurnstileError(null);
+                      }}
+                      onError={(error) => {
+                        setTurnstileError('Security check failed. Please try again.');
+                        setTurnstileToken(null);
+                      }}
+                      onExpire={() => {
+                        setTurnstileToken(null);
+                        setTurnstileError('Security check expired. Please try again.');
+                      }}
+                    />
+                  </div>
+                  {turnstileError && (
+                    <div className="text-red-500 text-sm text-center">
+                      {turnstileError}
+                    </div>
+                  )}
+                </div>
+              )}
+              
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
+                disabled={isLoading || (!isDevelopment && !turnstileToken)}
               >
                 {isLoading ? (
                   <>
