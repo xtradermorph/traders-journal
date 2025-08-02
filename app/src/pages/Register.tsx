@@ -60,7 +60,7 @@ const Register = () => {
     setIsDevelopment(isDev);
   }, []);
 
-  const registerForm = useForm<RegisterFormValues>({
+  const registerForm = useForm({
     resolver: zodResolver(registerSchema),
     defaultValues: {
       username: "",
@@ -206,7 +206,9 @@ const Register = () => {
         <div className="absolute inset-0 bg-black/50"></div>
         
         <div className="relative z-10 w-full max-w-md">
-          <div className="bg-background/95 backdrop-blur-sm rounded-2xl shadow-2xl border border-border p-6 sm:p-8">
+          <div className="w-full max-w-md space-y-8 bg-cover bg-center p-8 sm:p-12 rounded-xl shadow-2xl"
+            style={{ backgroundImage: "url('/images/auth-card-background.jpg')" }}
+          >
             <div className="text-center mb-6">
               <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
                 Create Account
@@ -247,7 +249,28 @@ const Register = () => {
                           {...field}
                           type="email"
                           placeholder="Enter your email"
-                          className="h-12"
+                          className={`h-12 ${
+                            field.value && !field.value.includes('@') ? 'border-red-500 focus-visible:ring-red-500' : ''
+                          }`}
+                          onBlur={(e) => {
+                            field.onBlur();
+                            // Trigger validation on blur
+                            if (e.target.value && !e.target.value.includes('@')) {
+                              registerForm.setError('email', {
+                                type: 'manual',
+                                message: 'Please enter a valid email address'
+                              });
+                            } else if (e.target.value && e.target.value.includes('@')) {
+                              registerForm.clearErrors('email');
+                            }
+                          }}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // Clear error when user starts typing a valid email
+                            if (e.target.value.includes('@')) {
+                              registerForm.clearErrors('email');
+                            }
+                          }}
                         />
                       </FormControl>
                       <FormMessage />
@@ -405,17 +428,22 @@ const Register = () => {
                   </div>
                 )}
 
-                {/* Development mode notice */}
-                {isDevelopment && (
-                  <div className="text-sm text-amber-600 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-lg p-3 text-center">
-                    🔧 Development Mode: Security check bypassed
-                  </div>
-                )}
+                
 
                 <Button 
                   type="submit" 
                   className="w-full text-lg py-6"
-                  disabled={registerMutation.isPending || (!isDevelopment && !turnstileToken)}
+                  disabled={
+                    registerMutation.isPending || 
+                    (!isDevelopment && !turnstileToken) ||
+                    !registerForm.formState.isValid ||
+                    !registerForm.watch('agreeToTerms') ||
+                    !registerForm.watch('username') ||
+                    !registerForm.watch('email') ||
+                    !registerForm.watch('password') ||
+                    !registerForm.watch('confirmPassword') ||
+                    registerForm.watch('password') !== registerForm.watch('confirmPassword')
+                  }
                 >
                   {registerMutation.isPending ? "Creating account..." : "Create Account"}
                 </Button>

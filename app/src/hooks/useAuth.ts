@@ -23,19 +23,18 @@ export function useAuth() {
     setIsClient(true);
   }, []);
 
-  // Don't proceed if not on client side or if supabase is not available
-  if (!isClient || !supabase) {
-    return {
-      isAuthenticated: false,
-      user: null,
-      loading: true,
-      session: null
-    };
-  }
-  
-  // Check auth state with Supabase
+  // Check auth state with Supabase - ALWAYS call this useEffect
   useEffect(() => {
-    if (!isClient) return;
+    // Don't proceed if not on client side or if supabase is not available
+    if (!isClient || !supabase) {
+      setAuthState({
+        isAuthenticated: false,
+        loading: true,
+        session: null,
+        user: null
+      });
+      return;
+    }
 
     const checkAuth = async () => {
       try {
@@ -82,9 +81,11 @@ export function useAuth() {
 
     checkAuth();
 
+    let subscription: any = null;
+    
     try {
       if (supabase && supabase.auth) {
-        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
           async (event, session) => {
             setAuthState({
               isAuthenticated: !!session,
@@ -94,12 +95,17 @@ export function useAuth() {
             });
           }
         );
-
-        return () => subscription.unsubscribe();
+        subscription = authSubscription;
       }
     } catch (error) {
       console.error('Failed to set up auth state change listener:', error);
     }
+
+    return () => {
+      if (subscription) {
+        subscription.unsubscribe();
+      }
+    };
   }, [isClient]);
   
   return {
