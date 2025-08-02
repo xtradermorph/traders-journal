@@ -8,11 +8,33 @@ export async function GET() {
     const supabase = createClient(supabaseUrl, supabaseKey);
     
     // Check database connection with a simple query
-    const { count, error } = await supabase
-      .from('user_settings')
-      .select('*', { count: 'exact', head: true });
+    let recordCount = 0;
+    let dbConnected = false;
     
-    if (error) throw error;
+    try {
+      const { count, error } = await supabase
+        .from('user_settings')
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        console.error('Database health check error:', error);
+        // Try a different table if user_settings fails
+        const { count: profilesCount, error: profilesError } = await supabase
+          .from('profiles')
+          .select('*', { count: 'exact', head: true });
+        
+        if (profilesError) {
+          throw profilesError;
+        }
+        recordCount = profilesCount || 0;
+      } else {
+        recordCount = count || 0;
+      }
+      dbConnected = true;
+    } catch (dbError) {
+      console.error('Database connection failed:', dbError);
+      dbConnected = false;
+    }
     
     // Check Edge Function (optional)
     let functionStatus = 'unknown';
@@ -65,8 +87,8 @@ export async function GET() {
       status: overallStatus,
       timestamp: new Date().toISOString(),
       database: {
-        connected: true,
-        recordCount: count || 0
+        connected: dbConnected,
+        recordCount: recordCount
       },
       edgeFunction: {
         status: functionStatus

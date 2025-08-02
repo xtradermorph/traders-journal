@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, TrendingUp, User, Download, X, ImageIcon, Bell, Brain } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { downloadTDAAsWord } from '@/lib/tdaWordExport';
 import { 
@@ -284,29 +285,57 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <DialogTitle className="text-xl font-bold text-slate-800">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-sm">
+          <DialogHeader className="bg-black/80 backdrop-blur-md rounded-t-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-3 sm:p-4 md:p-6">
+            <div className="flex items-start justify-between w-full">
+              <div className="flex-1 min-w-0">
+                <DialogTitle className="text-white font-bold text-lg sm:text-xl md:text-2xl px-1 sm:px-2">
                   Top Down Analysis Details
                 </DialogTitle>
-                <p className="text-sm text-slate-600 mt-1">
+                <DialogDescription className="text-gray-200 mt-1 sm:mt-2 font-medium px-1 sm:px-2 text-sm sm:text-base">
                   {data.analysis?.currency_pair} - {formatDateTime(data.analysis?.analysis_date)}
-                </p>
+                </DialogDescription>
               </div>
               <div className="flex items-center space-x-2">
-                <Button
-                  onClick={handleDownload}
-                  disabled={isDownloading}
-                  className="bg-orange-500 hover:bg-orange-600 text-white"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  {isDownloading ? 'Downloading...' : 'Download'}
-                </Button>
-                <Button variant="ghost" size="sm" onClick={onClose}>
-                  <X className="h-4 w-4" />
-                </Button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleDownload}
+                        disabled={isDownloading}
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-white/10"
+                      >
+                        {isDownloading ? (
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        ) : (
+                          <Download className="h-5 w-5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                      {isDownloading ? 'Downloading...' : 'Download Word Document'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={onClose}
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-white/10"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                      Close
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </DialogHeader>
@@ -406,16 +435,23 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                         {/* Questions and Answers */}
                         <div className="space-y-3">
                           {questionsToShow.map((question: any) => {
-                            const answer = timeframeAnswers.find((a: any) => 
-                              a.question_id === question.id && a.timeframe === timeframe
-                            );
+                            // Find the answer by matching question text instead of ID
+                            const answer = data.answers.find((a: any) => {
+                              // First try to find the question in the database questions
+                              const dbQuestion = data.questions.find((q: any) => q.question_text === question.question_text);
+                              if (dbQuestion) {
+                                return a.question_id === dbQuestion.id;
+                              }
+                              // If not found, try direct text matching
+                              return a.answer_text && a.answer_text.includes(question.question_text);
+                            });
                             
                             return (
                               <div key={question.id} className="bg-white/50 rounded-lg p-3 border border-green-100">
                                 <h4 className="font-medium text-slate-800 mb-2">{question.question_text}</h4>
                                 <div className="text-sm text-slate-600">
                                   {(() => {
-                                    const answerText = answer?.answer_text || answer?.answer_value || 'No answer provided';
+                                    const answerText = answer ? (answer.answer_text || answer.answer_value || 'No answer provided') : 'No answer provided';
                                     if (answerText === 'RED' || answerText === 'Red') {
                                       return <span className="text-red-600 font-medium">{answerText}</span>;
                                     } else if (answerText === 'GREEN' || answerText === 'Green') {

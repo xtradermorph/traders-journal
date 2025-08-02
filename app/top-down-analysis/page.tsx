@@ -7,7 +7,7 @@ import { TopDownAnalysis } from '@/types/tda';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, TrendingUp, TrendingDown, Minus, AlertTriangle, Eye, Trash2, Loader2, Download, Plus, Search, Filter, Target } from 'lucide-react';
+import { Calendar, TrendingUp, TrendingDown, Minus, AlertTriangle, Eye, Trash2, Loader2, Download, Plus, Search, Filter, Target, ChevronDown, ChevronRight, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/PageHeader';
@@ -23,6 +23,21 @@ import DashboardFooter from '@/components/DashboardFooter';
 import PerformanceAnalysis from '@/components/PerformanceAnalysis';
 import TDADetailsDialog from '@/components/TDADetailsDialog';
 import { LoadingPage } from '../components/ui/loading-spinner';
+import { cn } from '@/lib/utils';
+
+interface MonthGroup {
+  month_year: string;
+  month_display: string;
+  analyses: TopDownAnalysis[];
+  isCurrentMonth: boolean;
+}
+
+interface YearGroup {
+  year: string;
+  year_display: string;
+  monthGroups: MonthGroup[];
+  isCurrentYear: boolean;
+}
 
 export default function TopDownAnalysisPage() {
   const { profile } = useUserProfile();
@@ -38,6 +53,8 @@ export default function TopDownAnalysisPage() {
   const [isDownloading, setIsDownloading] = useState(false);
   const [timeframeData, setTimeframeData] = useState<Record<string, string[]>>({});
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [openMonth, setOpenMonth] = useState<string | null>(null);
+  const [selectedYear, setSelectedYear] = useState<string | null>(null);
 
   // Fetch analyses
   const { data: analyses, isLoading, error } = useQuery({
@@ -185,6 +202,73 @@ export default function TopDownAnalysisPage() {
     return 'No timeframes';
   };
 
+  // Get year groups with month-based organization (exact same logic as trade records)
+  const getYearGroups = (analyses: TopDownAnalysis[]): YearGroup[] => {
+    if (!analyses || analyses.length === 0) return [];
+    
+    // Group by year first, then by month within each year
+    const groupedByYear: Record<string, Record<string, TopDownAnalysis[]>> = {};
+    
+    analyses.forEach(analysis => {
+      const analysisDate = new Date(analysis.created_at);
+      const year = analysisDate.getFullYear().toString();
+      const monthYear = `${analysisDate.getFullYear()}-${String(analysisDate.getMonth() + 1).padStart(2, '0')}`;
+      
+      if (!groupedByYear[year]) groupedByYear[year] = {};
+      if (!groupedByYear[year][monthYear]) groupedByYear[year][monthYear] = [];
+      groupedByYear[year][monthYear].push(analysis);
+    });
+    
+    // Create year groups
+    const yearGroups: YearGroup[] = Object.entries(groupedByYear).map(([year, yearAnalyses]) => {
+      const currentYear = new Date().getFullYear().toString();
+      const isCurrentYear = year === currentYear;
+      
+      // Create month groups for this year
+      const monthGroups: MonthGroup[] = Object.entries(yearAnalyses).map(([monthYear, monthAnalyses]) => ({
+        month_year: monthYear,
+        month_display: new Date(monthAnalyses[0].created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+        analyses: monthAnalyses,
+        isCurrentMonth: monthYear === new Date().toISOString().slice(0, 7),
+      }));
+      
+      // Sort months: current month first (if current year), then newest to oldest
+      monthGroups.sort((a, b) => {
+        if (isCurrentYear && a.isCurrentMonth && !b.isCurrentMonth) return -1;
+        if (isCurrentYear && !a.isCurrentMonth && b.isCurrentMonth) return 1;
+        return b.month_year.localeCompare(a.month_year);
+      });
+      
+      return {
+        year,
+        year_display: year,
+        monthGroups,
+        isCurrentYear,
+      };
+    });
+    
+    // Sort years: current year first, then newest to oldest
+    return yearGroups.sort((a, b) => {
+      if (a.isCurrentYear && !b.isCurrentYear) return -1;
+      if (!a.isCurrentYear && b.isCurrentYear) return 1;
+      return b.year.localeCompare(a.year);
+    });
+  };
+
+  // Get today's analyses
+  const getTodayAnalyses = (analyses: TopDownAnalysis[]): TopDownAnalysis[] => {
+    if (!analyses || analyses.length === 0) return [];
+
+    const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+    const todayAnalyses = analyses.filter(analysis => {
+      const analysisDate = new Date(analysis.created_at).toISOString().split('T')[0];
+      return analysisDate === today;
+    });
+
+    // Sort by creation time (newest first)
+    return todayAnalyses.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+  };
+
   // Filter analyses
   const filteredAnalyses = analyses?.filter(analysis => {
     const matchesSearch = searchTerm === '' || 
@@ -195,6 +279,9 @@ export default function TopDownAnalysisPage() {
     
     return matchesSearch && matchesCurrency;
   }) || [];
+
+  const yearGroups = filteredAnalyses ? getYearGroups(filteredAnalyses) : [];
+  const todayAnalyses = filteredAnalyses ? getTodayAnalyses(filteredAnalyses) : [];
 
   if (error) {
     return (
@@ -264,141 +351,346 @@ export default function TopDownAnalysisPage() {
                 </Select>
               </div>
 
-              {/* Analysis List */}
-              {filteredAnalyses.length === 0 ? (
-                <div className="bg-muted/60 border border-muted rounded-lg p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto shadow-sm mb-6 sm:mb-8">
-                  <Target className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-muted-foreground mb-3 sm:mb-4" />
-                  <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">No Top Down Analyses yet</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
-                    {searchTerm || currencyFilter !== 'all' 
-                          ? 'Try adjusting your filters or search terms.'
-                      : 'Start your first Top Down Analysis to gain valuable market insights and improve your trading strategy!'
-                        }
-                      </p>
-                  {!searchTerm && currencyFilter === 'all' && (
-                    <Button onClick={() => setIsTDAOpen(true)} className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
-                      <Plus className="h-3 w-3 sm:h-4 sm:w-4" /> Create First Analysis
-                        </Button>
-                      )}
-                    </div>
-              ) : (
-                <div className="space-y-3 sm:space-y-4">
-                  {filteredAnalyses.map((analysis) => (
-                    <Card key={analysis.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="pt-4 sm:pt-6">
-                        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3 space-y-2 sm:space-y-0">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-base sm:text-lg">{analysis.currency_pair}</h4>
-                          </div>
-                          <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                            <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                            {analysis.analysis_date ? (
-                              <>
-                                {new Date(analysis.analysis_date).toLocaleDateString('en-US', { 
-                                  year: 'numeric', month: 'short', day: 'numeric' 
-                                })}
-                                {analysis.analysis_time && (
-                                  <span className="ml-1 sm:ml-2">
-                                    {analysis.analysis_time}
-                                  </span>
-                                )}
-                              </>
-                            ) : (
-                              format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')
-                            )}
-                          </div>
-                        </div>
-                        
-                        <div className="flex flex-wrap items-center gap-2 mb-3">
-                          <Badge variant="outline" className="text-xs">
-                            {analysis.status}
-                          </Badge>
-                          <Badge variant={analysis.ai_summary ? "default" : "secondary"} className="text-xs">
-                            AI Analysis: {analysis.ai_summary ? "Enabled" : "Disabled"}
-                            </Badge>
-                        </div>
+               {/* Year Tabs */}
+               {filteredAnalyses && filteredAnalyses.length > 0 && (
+                 <div className="mb-6">
+                   {yearGroups.length > 0 ? (
+                     <div className="flex flex-wrap gap-2 border-b border-border pb-2">
+                       {yearGroups.map((yearGroup) => (
+                         <button
+                           key={yearGroup.year}
+                           onClick={() => setSelectedYear(selectedYear === yearGroup.year ? null : yearGroup.year)}
+                           className={cn(
+                             "px-4 py-2 text-sm font-medium rounded-md transition-colors border-2",
+                             selectedYear === yearGroup.year
+                               ? "bg-primary text-primary-foreground border-primary"
+                               : yearGroup.isCurrentYear
+                               ? "bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800 hover:from-blue-100 hover:to-indigo-100 dark:hover:from-blue-900/40 dark:hover:to-indigo-900/40 shadow-sm"
+                               : "bg-muted/50 text-muted-foreground hover:bg-muted border-transparent"
+                           )}
+                         >
+                           <div className="flex items-center gap-2">
+                             {yearGroup.isCurrentYear && <Star className="h-3 w-3 fill-current" />}
+                             <span>{yearGroup.isCurrentYear ? `${yearGroup.year_display} (Current)` : yearGroup.year_display}</span>
+                           </div>
+                         </button>
+                       ))}
+                     </div>
+                   ) : (
+                     <div className="text-center py-4 text-muted-foreground">
+                       {searchTerm || currencyFilter !== 'all' ? (
+                         <p>No analyses match your current filters.</p>
+                       ) : (
+                         <p>No analyses found.</p>
+                       )}
+                     </div>
+                   )}
+                 </div>
+               )}
 
-                        <div className="flex items-center gap-2 sm:gap-4 mb-3">
-                          <div>
-                            <span className="text-xs sm:text-sm font-semibold text-slate-700">Timeframes:</span>
-                            <span className="text-xs sm:text-sm text-slate-800 ml-1 sm:ml-2">{getSelectedTimeframes(analysis)}</span>
-                          </div>
-                        </div>
+               {/* Today's Analyses Section */}
+               {filteredAnalyses && filteredAnalyses.length > 0 && (
+                 <div className="mb-8">
+                   <h2 className="text-xl font-semibold text-foreground mb-4 pt-2 border-t border-border">
+                     Today's Analyses
+                   </h2>
+                   {todayAnalyses.length > 0 ? (
+                     <div className="space-y-2">
+                                               {todayAnalyses.map((analysis) => (
+                          <Card key={analysis.id} className="hover:shadow-md transition-shadow bg-gray-50/50 dark:bg-gray-800/50">
+                            <CardContent className="pt-3 pb-3">
+                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 space-y-2 sm:space-y-0">
+                               <div className="flex items-center gap-2">
+                                 <h4 className="font-semibold text-base sm:text-lg">{analysis.currency_pair}</h4>
+                               </div>
+                               <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                                 <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                                 {analysis.analysis_date ? (
+                                   <>
+                                     {new Date(analysis.analysis_date).toLocaleDateString('en-US', { 
+                                       year: 'numeric', month: 'short', day: 'numeric' 
+                                     })}
+                                     {analysis.analysis_time && (
+                                       <span className="ml-1 sm:ml-2">
+                                         {new Date(`2000-01-01T${analysis.analysis_time}`).toLocaleTimeString('en-US', {
+                                           hour: '2-digit',
+                                           minute: '2-digit',
+                                           hour12: true
+                                         })}
+                                       </span>
+                                     )}
+                                   </>
+                                 ) : (
+                                   format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')
+                                 )}
+                               </div>
+                             </div>
+                             
+                             <div className="flex flex-wrap items-center gap-2 mb-2">
+                               <Badge variant={analysis.status === 'COMPLETED' ? "default" : "outline"} className={`text-xs ${analysis.status === 'COMPLETED' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}>
+                                 {analysis.status}
+                               </Badge>
+                               <Badge variant={analysis.ai_summary ? "default" : "secondary"} className="text-xs">
+                                 AI Analysis: {analysis.ai_summary ? "Enabled" : "Disabled"}
+                               </Badge>
+                             </div>
 
-                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
-                          <div className="text-xs text-muted-foreground">
-                            {analysis.completed_at ? (
-                              <>Completed {format(new Date(analysis.completed_at), 'MMM dd, HH:mm')}</>
-                            ) : (
-                              <>Created {format(new Date(analysis.created_at), 'MMM dd, HH:mm')}</>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-1 sm:gap-2">
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleViewDetails(analysis)}
-                              className="text-xs sm:text-sm h-8 sm:h-9"
-                            >
-                              <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-                              <span className="hidden sm:inline">View Details</span>
-                              <span className="sm:hidden">View</span>
-                            </Button>
-                            
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleDownload(analysis)}
-                              disabled={isDownloading}
-                              title="Download as Word Document"
-                              className="h-8 sm:h-9"
-                            >
-                              {isDownloading ? (
-                                <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                              ) : (
-                                <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                              )}
-                            </Button>
-                            
-                            <AlertDialog>
-                              <AlertDialogTrigger asChild>
-                                <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 sm:h-9">
-                                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                                </Button>
-                              </AlertDialogTrigger>
-                              <AlertDialogContent>
-                                <AlertDialogHeader>
-                                  <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
-                                  <AlertDialogDescription>
-                                    Are you sure you want to delete this Top Down Analysis? This action cannot be undone and will permanently remove all associated data including screenshots and announcements.
-                                  </AlertDialogDescription>
-                                </AlertDialogHeader>
-                                <AlertDialogFooter>
-                                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                  <AlertDialogAction
-                                    onClick={() => handleDelete(analysis.id)}
-                                    className="bg-red-600 hover:bg-red-700"
-                                    disabled={deleteMutation.isPending}
-                                  >
-                                    {deleteMutation.isPending ? (
-                                      <>
-                                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                        Deleting...
-                                      </>
-                                    ) : (
-                                      'Delete'
-                                    )}
-                                  </AlertDialogAction>
-                                </AlertDialogFooter>
-                              </AlertDialogContent>
-                            </AlertDialog>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
+                             <div className="flex items-center justify-between gap-2 sm:gap-4">
+                               <div>
+                                 <span className="text-xs sm:text-sm font-semibold text-white">Timeframes:</span>
+                                 <span className="text-xs sm:text-sm text-orange-400 font-medium ml-1 sm:ml-2">{getSelectedTimeframes(analysis)}</span>
+                               </div>
+                               <div className="flex items-center gap-1 sm:gap-2">
+                                 <Button 
+                                   variant="outline" 
+                                   size="sm"
+                                   onClick={() => handleViewDetails(analysis)}
+                                   className="p-2 h-8 sm:h-9"
+                                   title="View Details"
+                                 >
+                                   <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                                 </Button>
+                                 
+                                 <Button 
+                                   variant="outline" 
+                                   size="sm"
+                                   onClick={() => handleDownload(analysis)}
+                                   disabled={isDownloading}
+                                   title="Download as Word Document"
+                                   className="h-8 sm:h-9"
+                                 >
+                                   {isDownloading ? (
+                                     <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                                   ) : (
+                                     <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                                   )}
+                                 </Button>
+                                 
+                                 <AlertDialog>
+                                   <AlertDialogTrigger asChild>
+                                     <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 sm:h-9">
+                                       <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                                     </Button>
+                                   </AlertDialogTrigger>
+                                   <AlertDialogContent>
+                                     <AlertDialogHeader>
+                                       <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+                                       <AlertDialogDescription>
+                                         Are you sure you want to delete this Top Down Analysis? This action cannot be undone and will permanently remove all associated data including screenshots and announcements.
+                                       </AlertDialogDescription>
+                                     </AlertDialogHeader>
+                                     <AlertDialogFooter>
+                                       <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                       <AlertDialogAction
+                                         onClick={() => handleDelete(analysis.id)}
+                                         className="bg-red-600 hover:bg-red-700"
+                                         disabled={deleteMutation.isPending}
+                                       >
+                                         {deleteMutation.isPending ? (
+                                           <>
+                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                             Deleting...
+                                           </>
+                                         ) : (
+                                           'Delete'
+                                         )}
+                                       </AlertDialogAction>
+                                     </AlertDialogFooter>
+                                   </AlertDialogContent>
+                                 </AlertDialog>
+                               </div>
+                             </div>
+                           </CardContent>
+                         </Card>
+                       ))}
+                     </div>
+                   ) : (
+                     <div className="text-center py-8 text-muted-foreground">
+                       {searchTerm || currencyFilter !== 'all' ? (
+                         <p>No analyses match your current filters for today.</p>
+                       ) : (
+                         <p>No analyses recorded today.</p>
+                       )}
+                     </div>
+                   )}
+                 </div>
+               )}
+
+               {/* Year-based Monthly Sections */}
+               {(() => {
+                 // Determine which year to show
+                 let yearToShow = yearGroups.find(group => group.isCurrentYear);
+                 
+                 // If a specific year is selected, show that year
+                 if (selectedYear) {
+                   yearToShow = yearGroups.find(group => group.year === selectedYear);
+                 }
+                 
+                 // If no year to show, return empty
+                 if (!yearToShow) return null;
+                 
+                 return yearToShow.monthGroups.map((group) => {
+                   // For current year: current month is always open, others are clickable
+                   // For past years: all months are clickable (collapsed by default)
+                   const isCurrentYear = yearToShow!.isCurrentYear;
+                   const isOpen = (isCurrentYear && group.isCurrentMonth) || openMonth === group.month_year;
+                   
+                   return (
+                     <div key={group.month_year} className="mb-10">
+                       {isCurrentYear && group.isCurrentMonth ? (
+                         // Current month in current year - always open, no chevron
+                         <div className="flex items-center w-full text-left text-xl font-semibold text-foreground mb-4 pt-2 border-t border-border select-none cursor-default">
+                           <span>{group.month_display}</span>
+                         </div>
+                       ) : (
+                         // Other months - clickable with chevron
+                         <button
+                           onClick={() => setOpenMonth(openMonth === group.month_year ? null : group.month_year)}
+                           className="flex items-center w-full text-left text-xl font-semibold text-foreground mb-4 pt-2 border-t border-border hover:text-primary transition-colors"
+                         >
+                           {isOpen ? (
+                             <ChevronDown className="h-5 w-5 mr-2 flex-shrink-0" />
+                           ) : (
+                             <ChevronRight className="h-5 w-5 mr-2 flex-shrink-0" />
+                           )}
+                           <span>{group.month_display}</span>
+                         </button>
+                       )}
+                       
+                       {isOpen && (
+                                                   <div className="space-y-2">
+                            {group.analyses.map((analysis) => (
+                              <Card key={analysis.id} className="hover:shadow-md transition-shadow bg-gray-50/50 dark:bg-gray-800/50">
+                                <CardContent className="pt-3 pb-3">
+                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 space-y-2 sm:space-y-0">
+                                   <div className="flex items-center gap-2">
+                                     <h4 className="font-semibold text-base sm:text-lg">{analysis.currency_pair}</h4>
+                                   </div>
+                                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
+                                     <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
+                                     {analysis.analysis_date ? (
+                                       <>
+                                         {new Date(analysis.analysis_date).toLocaleDateString('en-US', { 
+                                           year: 'numeric', month: 'short', day: 'numeric' 
+                                         })}
+                                         {analysis.analysis_time && (
+                                           <span className="ml-1 sm:ml-2">
+                                             {new Date(`2000-01-01T${analysis.analysis_time}`).toLocaleTimeString('en-US', {
+                                               hour: '2-digit',
+                                               minute: '2-digit',
+                                               hour12: true
+                                             })}
+                                           </span>
+                                         )}
+                                       </>
+                                     ) : (
+                                       format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')
+                                     )}
+                                   </div>
+                                 </div>
+                                 
+                                 <div className="flex flex-wrap items-center gap-2 mb-2">
+                                   <Badge variant={analysis.status === 'COMPLETED' ? "default" : "outline"} className={`text-xs ${analysis.status === 'COMPLETED' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}>
+                                     {analysis.status}
+                                   </Badge>
+                                   <Badge variant={analysis.ai_summary ? "default" : "secondary"} className="text-xs">
+                                     AI Analysis: {analysis.ai_summary ? "Enabled" : "Disabled"}
+                                   </Badge>
+                                 </div>
+
+                                 <div className="flex items-center justify-between gap-2 sm:gap-4">
+                                   <div>
+                                     <span className="text-xs sm:text-sm font-semibold text-white">Timeframes:</span>
+                                     <span className="text-xs sm:text-sm text-orange-400 font-medium ml-1 sm:ml-2">{getSelectedTimeframes(analysis)}</span>
+                                   </div>
+                                   <div className="flex items-center gap-1 sm:gap-2">
+                                     <Button 
+                                       variant="outline" 
+                                       size="sm"
+                                       onClick={() => handleViewDetails(analysis)}
+                                       className="p-2 h-8 sm:h-9"
+                                       title="View Details"
+                                     >
+                                       <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
+                                     </Button>
+                                     
+                                     <Button 
+                                       variant="outline" 
+                                       size="sm"
+                                       onClick={() => handleDownload(analysis)}
+                                       disabled={isDownloading}
+                                       title="Download as Word Document"
+                                       className="h-8 sm:h-9"
+                                     >
+                                       {isDownloading ? (
+                                         <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
+                                       ) : (
+                                         <Download className="h-3 w-3 sm:h-4 sm:w-4" />
+                                       )}
+                                     </Button>
+                                     
+                                     <AlertDialog>
+                                       <AlertDialogTrigger asChild>
+                                         <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 sm:h-9">
+                                           <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                                         </Button>
+                                       </AlertDialogTrigger>
+                                       <AlertDialogContent>
+                                         <AlertDialogHeader>
+                                           <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+                                           <AlertDialogDescription>
+                                             Are you sure you want to delete this Top Down Analysis? This action cannot be undone and will permanently remove all associated data including screenshots and announcements.
+                                           </AlertDialogDescription>
+                                         </AlertDialogHeader>
+                                         <AlertDialogFooter>
+                                           <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                           <AlertDialogAction
+                                             onClick={() => handleDelete(analysis.id)}
+                                             className="bg-red-600 hover:bg-red-700"
+                                             disabled={deleteMutation.isPending}
+                                           >
+                                             {deleteMutation.isPending ? (
+                                               <>
+                                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                                 Deleting...
+                                               </>
+                                             ) : (
+                                               'Delete'
+                                             )}
+                                           </AlertDialogAction>
+                                         </AlertDialogFooter>
+                                       </AlertDialogContent>
+                                     </AlertDialog>
+                                   </div>
+                                 </div>
+                               </CardContent>
+                             </Card>
+                           ))}
+                         </div>
+                       )}
+                     </div>
+                   );
+                 });
+               })()}
+
+               {/* No Analyses Message */}
+               {filteredAnalyses.length === 0 && (
+                 <div className="bg-muted/60 border border-muted rounded-lg p-4 sm:p-6 md:p-8 flex flex-col items-center justify-center text-center max-w-xl mx-auto shadow-sm mb-6 sm:mb-8">
+                   <Target className="h-8 w-8 sm:h-10 sm:w-10 md:h-12 md:w-12 text-muted-foreground mb-3 sm:mb-4" />
+                   <h3 className="text-base sm:text-lg font-semibold text-foreground mb-2">No Top Down Analyses yet</h3>
+                   <p className="text-xs sm:text-sm text-muted-foreground mb-3 sm:mb-4">
+                     {searchTerm || currencyFilter !== 'all' 
+                           ? 'Try adjusting your filters or search terms.'
+                       : 'Start your first Top Down Analysis to gain valuable market insights and improve your trading strategy!'
+                         }
+                       </p>
+                   {!searchTerm && currencyFilter === 'all' && (
+                     <Button onClick={() => setIsTDAOpen(true)} className="flex items-center gap-1 sm:gap-2 text-sm sm:text-base">
+                       <Plus className="h-3 w-3 sm:h-4 sm:w-4" /> Create First Analysis
+                         </Button>
+                       )}
+                     </div>
+               )}
             </div>
           </div>
           <DashboardFooter />

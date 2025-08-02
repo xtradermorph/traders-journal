@@ -218,18 +218,18 @@ const TraderCard = ({
       </CardContent>
       
       <CardFooter className="pt-0 px-3 sm:px-4 md:px-6 pb-3 sm:pb-4 md:pb-6">
-        <div className="flex flex-col sm:flex-row gap-2 w-full">
+        <div className="flex flex-col gap-2 w-full">
           <Button
             variant="outline"
             size="sm"
             onClick={() => onViewProfile(trader.id)}
-            className="flex-1 group-hover:bg-primary/5 group-hover:border-primary/20 transition-colors text-xs sm:text-sm"
+            className="w-full group-hover:bg-primary/5 group-hover:border-primary/20 transition-colors text-xs sm:text-sm"
           >
             <Eye className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
             <span className="hidden sm:inline">View Profile</span>
             <span className="sm:hidden">View</span>
           </Button>
-          <div className="flex gap-1 sm:gap-2 flex-shrink-0">
+          <div className="flex gap-1 sm:gap-2 justify-center">
             {renderActionButton()}
             <TooltipProvider>
               <Tooltip>

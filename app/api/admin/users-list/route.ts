@@ -34,20 +34,25 @@ export async function GET(req: NextRequest) {
     }
 
     // 3. Get user settings to check project updates preference
-    const { data: userSettings, error: settingsError } = await supabase
-      .from("user_settings")
-      .select("user_id, email_project_updates");
+    let settingsMap = new Map();
+    try {
+      const { data: userSettings, error: settingsError } = await supabase
+        .from("user_settings")
+        .select("user_id, email_project_updates");
 
-    if (settingsError) {
-      console.error('Error fetching user settings:', error);
-      return NextResponse.json({ message: "Failed to fetch user settings" }, { status: 500 });
+      if (settingsError) {
+        console.error('Error fetching user settings:', settingsError);
+        // If user_settings table doesn't exist, use empty map
+        settingsMap = new Map();
+      } else {
+        userSettings?.forEach(setting => {
+          settingsMap.set(setting.user_id, setting.email_project_updates);
+        });
+      }
+    } catch (error) {
+      console.error('Exception fetching user settings:', error);
+      settingsMap = new Map();
     }
-
-    // 4. Create a map of user settings
-    const settingsMap = new Map();
-    userSettings?.forEach(setting => {
-      settingsMap.set(setting.user_id, setting.email_project_updates);
-    });
 
     // 5. Combine user data with settings
     const usersWithSettings = users?.map(user => ({

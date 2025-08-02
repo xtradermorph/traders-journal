@@ -33,14 +33,23 @@ export async function GET(req: NextRequest) {
     }
 
     // 3. Get users with project updates enabled
-    const { count: subscribedUsers, error: subscribedError } = await supabase
-      .from("user_settings")
-      .select("*", { count: "exact", head: true })
-      .eq("email_project_updates", true);
+    let subscribedUsers = 0;
+    try {
+      const { count, error: subscribedError } = await supabase
+        .from("user_settings")
+        .select("*", { count: "exact", head: true })
+        .eq("email_project_updates", true);
 
-    if (subscribedError) {
-      console.error('Error fetching subscribed users:', subscribedError);
-      return NextResponse.json({ message: "Failed to fetch subscribed users" }, { status: 500 });
+      if (subscribedError) {
+        console.error('Error fetching subscribed users:', subscribedError);
+        // If user_settings table doesn't exist, set to 0
+        subscribedUsers = 0;
+      } else {
+        subscribedUsers = count || 0;
+      }
+    } catch (error) {
+      console.error('Exception fetching subscribed users:', error);
+      subscribedUsers = 0;
     }
 
     // 4. Get the last announcement sent (if we want to track this)
@@ -48,7 +57,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({
       totalUsers: totalUsers || 0,
-      subscribedUsers: subscribedUsers || 0,
+      subscribedUsers: subscribedUsers,
       lastSent: null // We can implement this later if needed
     });
 
