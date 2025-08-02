@@ -1,0 +1,4 @@
+[33mc3d373e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Fix LoadingSpinner styling and add auth safety checks
+[33m5b9c5f7[m Fix TypeError in FeedbackCarousel - Add null checks for filteredFeedback.length to prevent undefined access
+[33mb4320e7[m Fix merge conflicts in Login.tsx and Dashboard.tsx - All React hydration errors resolved and auth page backgrounds restored
+[33m8639670[m Complete fresh repository - All React hydration fixes and auth page backgrounds restored

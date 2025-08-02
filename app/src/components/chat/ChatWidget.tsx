@@ -235,8 +235,11 @@ function ChatListItem({ conversation, onClick, onPin, onUnpin, onMute, onUnmute,
           {openMenuId === conversation.group_id && (
             <div
               ref={menuRef}
-              className="absolute right-full top-1/2 -translate-y-1/2 flex flex-row gap-2 bg-background rounded shadow px-2 py-1 z-[99999] border min-w-[120px] animate-slide-left"
-              style={{ zIndex: 99999 }}
+              className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-row gap-2 bg-gray-800 text-white rounded shadow px-2 py-1 z-[999999] border border-gray-600 min-w-[120px] animate-slide-left"
+              style={{ 
+                zIndex: 999999,
+                transform: 'translateX(-100%) translateY(-50%)'
+              }}
             >
               {/* Pin/Unpin */}
               <Tooltip>
@@ -2111,7 +2114,7 @@ const ChatWidget = () => {
       {/* Chat Drawer */}
       {isChatOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 sm:bg-transparent sm:relative sm:inset-auto sm:z-auto">
-          <div className="absolute bottom-0 right-0 w-full h-full sm:w-96 sm:h-[600px] sm:bottom-auto sm:right-auto bg-white dark:bg-gray-900 rounded-t-lg sm:rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 flex flex-col overflow-hidden">
+          <div className="absolute top-0 right-0 w-full h-full sm:w-96 sm:h-[600px] sm:bottom-4 sm:right-4 sm:top-auto bg-gray-900 rounded-b-lg sm:rounded-lg shadow-2xl border border-gray-700 flex flex-col overflow-visible">
             {/* Mobile close button overlay */}
             <div className="absolute top-4 right-4 sm:hidden z-10">
               <button
@@ -2296,12 +2299,12 @@ const ChatWidget = () => {
           {/* Main content area with collapsible sections */}
           {!activeConversation && (
             <TooltipProvider>
-              <div className="flex-1 divide-y divide-border overflow-y-auto overflow-x-visible" style={{ maxHeight: 'calc(100vh - 200px)', overflow: 'visible' }}>
+              <div className="flex-1 divide-y divide-border overflow-y-auto overflow-x-visible" style={{ maxHeight: 'calc(100vh - 200px)', overflow: 'visible', position: 'relative' }}>
                 {/* Pinned chats at top, with label and bg-yellow-50 */}
                 {pinned.length > 0 && (
                   <>
                     <div className="px-4 py-1 text-xs font-bold text-yellow-700">Pinned</div>
-                    <div className="flex items-center gap-2 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: 'thin', overflow: 'visible' }}>
+                    <div className="flex items-center gap-2 overflow-x-auto px-4 pb-2" style={{ scrollbarWidth: 'thin', overflow: 'visible', position: 'relative' }}>
                       {pinned.map(convo => {
                         let avatarUrl = undefined;
                         let fallback = '';
@@ -2365,7 +2368,11 @@ const ChatWidget = () => {
                             
                             {/* Menu dropdown */}
                             {pinnedMenuId === convo.group_id && (
-                              <div data-pinned-menu className="absolute bottom-full right-0 mb-2 bg-background border rounded shadow-lg z-[99999] p-1 flex gap-1" style={{ zIndex: 99999, overflow: 'visible' }}>
+                              <div data-pinned-menu className="absolute bottom-full right-0 mb-2 bg-background border rounded shadow-lg z-[999999] p-1 flex gap-1" style={{ 
+                                zIndex: 999999,
+                                overflow: 'visible',
+                                position: 'absolute'
+                              }}>
                                 {/* Unpin */}
                                 <TooltipProvider>
                                   <Tooltip>

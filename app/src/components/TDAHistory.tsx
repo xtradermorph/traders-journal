@@ -182,7 +182,7 @@ const TDAHistory = () => {
         </CardHeader>
         <CardContent className="space-y-4">
             {analyses.map((analysis) => (
-            <div key={analysis.id} className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors">
+                            <div key={analysis.id} className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors bg-gray-50/50 dark:bg-gray-800/50">
               {/* Analysis Info */}
               <div className="flex-1 space-y-3">
                 <div className="flex items-center gap-4">
@@ -209,7 +209,7 @@ const TDAHistory = () => {
                       )}
                     </span>
                   </div>
-                    <Badge variant="outline">
+                    <Badge variant={analysis.status === 'COMPLETED' ? "default" : "outline"} className={analysis.status === 'COMPLETED' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}>
                       {analysis.status}
                     </Badge>
                 </div>
@@ -220,8 +220,8 @@ const TDAHistory = () => {
                     <span className="text-sm font-bold ml-2">{analysis.currency_pair}</span>
                     </div>
                   <div>
-                    <span className="text-sm font-semibold text-slate-700">Timeframes:</span>
-                    <span className="text-sm text-slate-800 ml-2">{getSelectedTimeframes(analysis)}</span>
+                    <span className="text-sm font-semibold text-white">Timeframes:</span>
+                    <span className="text-sm text-orange-400 font-medium ml-2">{getSelectedTimeframes(analysis)}</span>
                   </div>
                   <div>
                     <span className="text-sm font-semibold">AI Analysis:</span>
@@ -238,9 +238,9 @@ const TDAHistory = () => {
                       variant="outline" 
                       size="sm"
                       onClick={() => handleViewDetails(analysis)}
+                      className="p-2"
                     >
-                      <Eye className="h-4 w-4 mr-1" />
-                      View Details
+                      <Eye className="h-4 w-4" />
                     </Button>
                     
                 <AlertDialog>

@@ -110,7 +110,7 @@ const RecentTrades: React.FC<RecentTradesProps> = ({ trades, onTradeUpdated }) =
     <div className="mt-8">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium text-foreground">Recent Trades</h3>
-        {trades.length > 5 && (
+        {trades && Array.isArray(trades) && trades.length > 5 && (
         <Link href="/trade-records">
           <Button variant="link" className="text-sm font-medium p-0">
             View all
@@ -154,7 +154,7 @@ const RecentTrades: React.FC<RecentTradesProps> = ({ trades, onTradeUpdated }) =
                       ))}
                     </TableRow>
                   ))
-                ) : trades.length === 0 ? (
+                ) : !trades || !Array.isArray(trades) || trades.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={15} className="text-center py-4 text-muted-foreground text-xs">
                       No trades available
@@ -241,7 +241,7 @@ const RecentTrades: React.FC<RecentTradesProps> = ({ trades, onTradeUpdated }) =
                   </div>
                 ))}
               </div>
-            ) : trades.length === 0 ? (
+            ) : !trades || !Array.isArray(trades) || trades.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground text-sm">
                 No trades available
               </div>

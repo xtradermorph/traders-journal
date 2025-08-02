@@ -14,7 +14,7 @@ export interface ProcessedTrade extends Trade {
 
 // Returns trades with month_trade_number for each trade
 export function processTrades(trades: any[]): ProcessedTrade[] {
-  if (!trades || trades.length === 0) return [];
+  if (!trades || !Array.isArray(trades) || trades.length === 0) return [];
 
   // Group trades by month
   const groupedByMonth: Record<string, any[]> = {};
@@ -75,7 +75,7 @@ export function getCurrentWeekRange(): { startDate: Date; endDate: Date } {
 
 // Filter trades for current week (Monday to Sunday)
 export function filterTradesByCurrentWeek(trades: Trade[]): Trade[] {
-  if (!trades || trades.length === 0) return [];
+  if (!trades || !Array.isArray(trades) || trades.length === 0) return [];
   
   const { startDate, endDate } = getCurrentWeekRange();
   
@@ -87,7 +87,7 @@ export function filterTradesByCurrentWeek(trades: Trade[]): Trade[] {
 
 // Calculate dashboard stats for a specific set of trades
 export function calculateDashboardStats(trades: Trade[]) {
-  if (!trades || trades.length === 0) {
+  if (!trades || !Array.isArray(trades) || trades.length === 0) {
     return {
       avgTradesPerDay: 0,
       avgTimeInTrade: 0,

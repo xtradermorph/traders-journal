@@ -20,6 +20,7 @@ import { Eye, EyeOff, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Session, User } from '@supabase/supabase-js';
 import Image from 'next/image';
+import { Turnstile } from '../../../components/ui/turnstile';
 
 const loginFormSchema = z.object({
   email: z.string().email("Invalid email address").min(1, "Email is required"),
@@ -44,6 +45,23 @@ const Login = () => {
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileError, setTurnstileError] = useState<string | null>(null);
+  
+  // Check if we're in development mode
+  const [isDevelopment, setIsDevelopment] = useState(false);
+  
+  useEffect(() => {
+    // Check if we're in development mode (client-side only)
+    const isDev = process.env.NODE_ENV === 'development' || 
+                  window.location.hostname === 'localhost' || 
+                  window.location.hostname === '127.0.0.1';
+    setIsDevelopment(isDev);
+    
+    // For testing purposes, you can temporarily enable Turnstile in development
+    // by commenting out the line above and setting isDevelopment to false
+    // setIsDevelopment(false);
+  }, []);
   
   // Get redirect URL from query parameters
   const [redirectUrl, setRedirectUrl] = useState<string>('/dashboard');
@@ -57,7 +75,7 @@ const Login = () => {
       }
     }
   }, []);
-  const loginForm: UseFormReturn<LoginFormValues> = useForm<LoginFormValues>({
+  const loginForm = useForm({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
       email: "",
@@ -182,6 +200,27 @@ const Login = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
+      // Verify Turnstile token
+      if (!turnstileToken) {
+        setTurnstileError('Please complete the security check');
+        return;
+      }
+
+      const verificationResponse = await fetch('/api/turnstile/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: turnstileToken,
+          action: 'login',
+        }),
+      });
+
+      const verificationResult = await verificationResponse.json();
+      if (!verificationResult.success) {
+        setTurnstileError('Security check failed. Please try again.');
+        return;
+      }
+
       await loginMutation.mutateAsync(data);
     } catch (error) {
       console.error('Login submission error:', error);
@@ -253,84 +292,142 @@ const Login = () => {
             <Form {...loginForm}>
               <form onSubmit={handleSubmit} className="space-y-6">
                 <FormField
-                control={loginForm.control}
-                name="email"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Email</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="email"
-                        placeholder="Enter your email"
-                        {...field}
-                        disabled={isLoading}
-                        className="bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-primary/50"
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormField
-                control={loginForm.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Password</FormLabel>
-                    <FormControl>
-                      <div className="relative">
+                  control={loginForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email</FormLabel>
+                      <FormControl>
                         <Input
-                          type={showPassword ? "text" : "password"}
+                          type="email"
+                          placeholder="Enter your email"
                           {...field}
                           disabled={isLoading}
-                          className="bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-primary/50 pr-10"
+                          className={`bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-primary/50 ${
+                            field.value && !field.value.includes('@') ? 'border-red-500 focus-visible:ring-red-500' : ''
+                          }`}
+                          onBlur={(e) => {
+                            field.onBlur();
+                            // Trigger validation on blur
+                            if (e.target.value && !e.target.value.includes('@')) {
+                              loginForm.setError('email', {
+                                type: 'manual',
+                                message: 'Please enter a valid email address'
+                              });
+                            } else if (e.target.value && e.target.value.includes('@')) {
+                              loginForm.clearErrors('email');
+                            }
+                          }}
+                          onChange={(e) => {
+                            field.onChange(e);
+                            // Clear error when user starts typing a valid email
+                            if (e.target.value.includes('@')) {
+                              loginForm.clearErrors('email');
+                            }
+                          }}
                         />
-                        <button
-                          type="button"
-                          onClick={() => setShowPassword(!showPassword)}
-                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          tabIndex={-1}
-                        >
-                          {showPassword ? (
-                            <EyeOff className="h-5 w-5" />
-                          ) : (
-                            <Eye className="h-5 w-5" />
-                          )}
-                        </button>
-                      </div>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <div className="flex items-center justify-between">
-                <FormField
-                  control={loginForm.control}
-                  name="rememberMe"
-                  render={({ field: { onChange, value } }) => (
-                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
-                      <FormControl>
-                        <Checkbox checked={value} onCheckedChange={(checked) => onChange(checked)} />
                       </FormControl>
-                      <div className="space-y-1 leading-none">
-                        <FormLabel>
-                          Remember me
-                        </FormLabel>
-                      </div>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
-                <Button variant="link" className="p-0 h-auto" asChild>
-                  <Link href="/forgot-password">Forgot password?</Link>
-                </Button>
-              </div>
-              {error && (
-                <div className="text-red-500 text-sm">{error}</div>
-              )}
+                <FormField
+                  control={loginForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <Input
+                            type={showPassword ? "text" : "password"}
+                            {...field}
+                            disabled={isLoading}
+                            className="bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-primary/50 pr-10"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            tabIndex={-1}
+                          >
+                            {showPassword ? (
+                              <EyeOff className="h-5 w-5" />
+                            ) : (
+                              <Eye className="h-5 w-5" />
+                            )}
+                          </button>
+                        </div>
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <div className="flex items-center justify-between">
+                  <FormField
+                    control={loginForm.control}
+                    name="rememberMe"
+                    render={({ field: { onChange, value } }) => (
+                      <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                        <FormControl>
+                          <Checkbox checked={value} onCheckedChange={(checked) => onChange(checked)} />
+                        </FormControl>
+                        <div className="space-y-1 leading-none">
+                          <FormLabel>
+                            Remember me
+                          </FormLabel>
+                        </div>
+                      </FormItem>
+                    )}
+                  />
+                  <Button variant="link" className="p-0 h-auto" asChild>
+                    <Link href="/forgot-password">Forgot password?</Link>
+                  </Button>
+                </div>
+                {error && (
+                  <div className="text-red-500 text-sm">{error}</div>
+                )}
+                
+                {/* Turnstile Security Check */}
+                <div className="space-y-2">
+                  <div className="flex justify-center">
+                    <Turnstile
+                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
+                      onVerify={(token) => {
+                        setTurnstileToken(token);
+                        setTurnstileError(null);
+                      }}
+                      onError={(error) => {
+                        setTurnstileError('Security check failed. Please try again.');
+                        setTurnstileToken(null);
+                      }}
+                      onExpire={() => {
+                        setTurnstileToken(null);
+                        setTurnstileError('Security check expired. Please try again.');
+                      }}
+                      action="login"
+                      appearance="interaction-only"
+                      theme="auto"
+                      size="normal"
+                    />
+                  </div>
+                  {turnstileError && (
+                    <div className="text-red-500 text-sm text-center">
+                      {turnstileError}
+                    </div>
+                  )}
+                </div>
+                
               <Button
                 type="submit"
                 className="w-full"
-                disabled={isLoading}
+                disabled={
+                  isLoading || 
+                  !turnstileToken ||
+                  !loginForm.formState.isValid ||
+                  !loginForm.watch('email') ||
+                  !loginForm.watch('password')
+                }
               >
                 {isLoading ? (
                   <>
@@ -341,66 +438,67 @@ const Login = () => {
                   "Log in"
                 )}
               </Button>
-              
-              <div className="relative my-4">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border"></span>
+                
+                <div className="relative my-4">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border"></span>
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
+                  </div>
                 </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">Or continue with</span>
-                </div>
-              </div>
-              
-              <Button 
-                type="button" 
-                variant="outline" 
-                className="w-full flex items-center justify-center gap-2"
-                onClick={async () => {
-                  try {
-                    setIsLoading(true);
-                    setError(null);
-                    const { data, error } = await supabase.auth.signInWithOAuth({
-                      provider: 'google',
-                      options: {
-                        redirectTo: `${window.location.origin}/auth/callback`,
-                        queryParams: {
-                          access_type: 'offline',
-                          prompt: 'select_account'
+                
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2"
+                  onClick={async () => {
+                    try {
+                      setIsLoading(true);
+                      setError(null);
+                      const { data, error } = await supabase.auth.signInWithOAuth({
+                        provider: 'google',
+                        options: {
+                          redirectTo: `${window.location.origin}/auth/callback`,
+                          queryParams: {
+                            access_type: 'offline',
+                            prompt: 'select_account'
+                          }
                         }
+                      });
+                      
+                      if (error) {
+                        setError(error.message);
+                        console.error('Google sign-in error:', error);
+                      } else if (!data.url) {
+                        setError('Failed to get authentication URL');
+                      } else {
+                        // Redirect to Google's OAuth page
+                        window.location.href = data.url;
                       }
-                    });
-                    
-                    if (error) {
-                      setError(error.message);
-                      console.error('Google sign-in error:', error);
-                    } else if (!data.url) {
-                      setError('Failed to get authentication URL');
-                    } else {
-                      // Redirect to Google's OAuth page
-                      window.location.href = data.url;
+                    } catch (err) {
+                      console.error('Exception during Google sign-in:', err);
+                      setError('Failed to sign in with Google');
+                    } finally {
+                      setIsLoading(false);
                     }
-                  } catch (err) {
-                    console.error('Exception during Google sign-in:', err);
-                    setError('Failed to sign in with Google');
-                  } finally {
-                    setIsLoading(false);
-                  }
-                }}
-                disabled={isLoading}
-              >
-                <Image 
-                  src="/google-logo.svg" 
-                  alt="Google" 
-                  width={18} 
-                  height={18} 
-                />
-                Sign in with Google
-              </Button>
+                  }}
+                  disabled={isLoading}
+                >
+                  <Image 
+                    src="/google-logo.svg" 
+                    alt="Google" 
+                    width={18} 
+                    height={18} 
+                  />
+                  Sign in with Google
+                </Button>
               </form>
             </Form>
           </ClientOnly>
         </div>
       </div>
+      
       <div className="space-y-6">
         <Separator />
         <p className="text-center text-muted-foreground">

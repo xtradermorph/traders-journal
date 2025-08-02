@@ -314,15 +314,19 @@ const Dashboard = () => {
     return processed;
   })();
   // Sort by date descending (newest first), then take the most recent N
-  const recentProcessedTrades = (processedTrades || [])
-    .sort((a, b) => {
-      const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
-      if (dateDiff !== 0) return dateDiff;
-      if (b.entry_time && a.entry_time) return b.entry_time.localeCompare(a.entry_time);
-      if (b.created_at && a.created_at) return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      return 0;
-    })
-    .slice(0, userSettings?.recent_trades_count || 5);
+  const recentProcessedTrades = (() => {
+    if (!processedTrades || !Array.isArray(processedTrades) || processedTrades.length === 0) return [];
+    return processedTrades
+      .sort((a, b) => {
+        if (!a || !b || !a.date || !b.date) return 0;
+        const dateDiff = new Date(b.date).getTime() - new Date(a.date).getTime();
+        if (dateDiff !== 0) return dateDiff;
+        if (b.entry_time && a.entry_time) return b.entry_time.localeCompare(a.entry_time);
+        if (b.created_at && a.created_at) return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        return 0;
+      })
+      .slice(0, (userSettings && typeof userSettings.recent_trades_count === 'number') ? userSettings.recent_trades_count : 5);
+  })();
 
   useEffect(() => {
     if (user && !authLoading) {

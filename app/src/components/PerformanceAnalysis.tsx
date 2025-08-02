@@ -89,7 +89,7 @@ const PerformanceAnalysis = ({
   
   // Generate performance analysis text based on stats
   const generateAnalysis = () => {
-    if (!trades || trades.length === 0) {
+    if (!trades || !Array.isArray(trades) || trades.length === 0) {
       return (
         <div className="bg-muted/60 border border-muted rounded-lg p-6 flex flex-col items-center justify-center text-center max-w-xl mx-auto shadow-sm mb-4">
           <strong className="text-base text-foreground">No trade data available yet.</strong>
@@ -351,7 +351,7 @@ const PerformanceAnalysis = ({
 
   useEffect(() => {
     fetchAISummary();
-    if (trades && trades.length > 0) fetchAIStrategy();
+    if (trades && Array.isArray(trades) && trades.length > 0) fetchAIStrategy();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [trades]);
 
@@ -514,7 +514,7 @@ const PerformanceAnalysis = ({
             ) : (
               generateAnalysis()
             )}
-            {trades && trades.length > 0 && (
+            {trades && Array.isArray(trades) && trades.length > 0 && (
               <div className="mt-6">
                 <h4 className="font-bold text-lg text-foreground mb-2 flex items-center">
                   <span className="mr-2">🤖</span> AI Actionable Insights
@@ -592,7 +592,7 @@ const PerformanceAnalysis = ({
               </div>
             </div>
             {/* Results Section - visually separated, wider than filter card */}
-            {filteredTrades && filteredTrades.length > 0 && (
+            {filteredTrades && Array.isArray(filteredTrades) && filteredTrades.length > 0 && (
               <div className="max-w-5xl mx-auto w-full">
                 <h5 className="text-base font-semibold mb-3 ml-1">Filtered Results</h5>
                 {/* Desktop Table View */}
@@ -733,7 +733,7 @@ const PerformanceAnalysis = ({
               </div>
             )}
             {/* If no results and a filter has been applied, show notification */}
-            {filterApplied && filteredTrades && filteredTrades.length === 0 && (
+            {filterApplied && filteredTrades && Array.isArray(filteredTrades) && filteredTrades.length === 0 && (
               <div className="max-w-5xl mx-auto w-full text-center text-sm text-muted-foreground py-8">
                 No stored data found for the currency pair you selected.
             </div>
@@ -741,7 +741,7 @@ const PerformanceAnalysis = ({
           </TabsContent>
           
           <TabsContent value="tags" className="px-6 pb-6">
-            {(!trades || trades.length === 0) ? (
+            {(!trades || !Array.isArray(trades) || trades.length === 0) ? (
               <div className="bg-muted/60 border border-muted rounded-lg p-6 flex flex-col items-center justify-center text-center max-w-xl mx-auto shadow-sm">
                 <strong className="text-base text-foreground">No tag data available yet.</strong>
                 <span className="mt-2 text-sm text-muted-foreground">

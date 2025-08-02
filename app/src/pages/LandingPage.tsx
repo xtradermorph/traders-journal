@@ -11,14 +11,9 @@ import { useState, useEffect } from "react";
 export default function LandingPage() {
   const router = useRouter();
   const { isAuthenticated, loading } = useAuth();
-  const [isClient, setIsClient] = useState(false);
 
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  // Don't render until client-side and auth is loaded
-  if (!isClient || loading) {
+  // Don't render until auth is loaded
+  if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -44,7 +39,7 @@ export default function LandingPage() {
             <p className="mt-6 text-lg leading-8 text-muted-foreground">
               Track your trades, analyze your performance, and improve your trading strategy with our comprehensive trading journal.
             </p>
-            {isClient && !isAuthenticated && (
+            {!isAuthenticated && (
               <div className="mt-8 flex items-center justify-center gap-x-6">
                 <Button
                   size="lg"
@@ -125,7 +120,7 @@ export default function LandingPage() {
           Develop discipline and insight for consistent trading success.
           Leverage powerful tools to understand trading patterns and market behaviors.
         </p>
-        {isClient && !isAuthenticated && (
+                 {!isAuthenticated && (
           <div className="mt-10 flex items-center justify-center gap-x-6">
             <Button
               size="lg"
