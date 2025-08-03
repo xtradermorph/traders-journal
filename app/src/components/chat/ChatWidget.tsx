@@ -774,24 +774,13 @@ const ChatWidget = () => {
         }
       )
       .subscribe((status) => {
-<<<<<<< HEAD
         if (status === 'CHANNEL_ERROR' as any) {
-=======
-        if (status === 'CHANNEL_ERROR') {
->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d
           // Only log if it's not a normal disconnection
           console.warn('Chat conversations channel error - will retry automatically');
         } else if (status === 'TIMED_OUT') {
           console.warn('Chat conversations channel timeout - will retry automatically');
         } else if (status === 'CLOSED') {
           // Don't log normal closures
-<<<<<<< HEAD
-        } else if (status === 'CHANNEL_ERROR' as any) {
-=======
-        } else if (status === 'CHANNEL_ERROR') {
->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d
-          // Suppress browser-level WebSocket errors
-          return;
         }
       });
 
@@ -882,11 +871,7 @@ const ChatWidget = () => {
         }
       )
       .subscribe((status) => {
-<<<<<<< HEAD
         if (status === 'CHANNEL_ERROR' as any) {
-=======
-        if (status === 'CHANNEL_ERROR') {
->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d
           console.warn(`Chat channel error for ${activeConversation.group_id} - will retry automatically`);
         } else if (status === 'TIMED_OUT') {
           console.warn(`Chat channel timeout for ${activeConversation.group_id} - will retry automatically`);
