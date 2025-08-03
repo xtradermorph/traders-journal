@@ -3,3 +3,93 @@
 [33m5c8ee57[m Fix Dashboard client-side exception and improve error handling - Added comprehensive error handling with try-catch blocks for all data fetching - Added retry logic for failed queries - Made data processing functions safe with error boundaries - Added error state UI with reload button - Fixed type conflicts with stats calculation - Added useCallback for performance optimization - All previous functionality remains intact
 [33m52814c1[m Fix Turnstile visibility and dashboard loading issues - Fixed Turnstile not showing in production with better environment detection - Added client-side rendering protection to prevent hydration errors - Added explicit domain checks for tradersjournal.pro - Fixed TypeScript compilation errors in Login component - Added debug logging for environment detection - All previous functionality remains intact (TDA summary, screenshots, database updates)
 [33maeb0ecb[m Fix TDA summary display, screenshot upload, and database questions - Updated TDADetailsDialog to show summary-only view for DAILY/H1/M15 timeframes - Fixed screenshot upload to actually upload files to server for each timeframe - Added beautiful screenshot modal for viewing screenshots - Fixed DAILY timeframe database questions (Previous Candle Colour, Today's Pivot Point Range) - Updated color styling to handle both uppercase and lowercase options - Removed old auth system conflicts - Fixed trader card display issues - Updated Turnstile implementation with proper error handling
+warning: in the working copy of 'app/src/components/SocialForumContent.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/src/components/TDAHistory.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'app/src/components/chat/ChatWidget.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/app/src/components/SocialForumContent.tsx b/app/src/components/SocialForumContent.tsx[m
+[1mindex 98e8edc..3359ef1 100644[m
+[1m--- a/app/src/components/SocialForumContent.tsx[m
+[1m+++ b/app/src/components/SocialForumContent.tsx[m
+[36m@@ -486,11 +486,7 @@[m [mconst SocialForumContent = () => {[m
+         }, 2000);[m
+       })[m
+       .subscribe((status) => {[m
+[31m-<<<<<<< HEAD[m
+         if (status === 'CHANNEL_ERROR' as any) {[m
+[31m-=======[m
+[31m-        if (status === 'CHANNEL_ERROR') {[m
+[31m->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d[m
+           console.warn('Trade setups channel error - will retry automatically');[m
+         } else if (status === 'TIMED_OUT') {[m
+           console.warn('Trade setups channel timeout - will retry automatically');[m
+[36m@@ -530,11 +526,7 @@[m [mconst SocialForumContent = () => {[m
+         }[m
+       })[m
+       .subscribe((status) => {[m
+[31m-<<<<<<< HEAD[m
+         if (status === 'CHANNEL_ERROR' as any) {[m
+[31m-=======[m
+[31m-        if (status === 'CHANNEL_ERROR') {[m
+[31m->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d[m
+           console.warn('Trade setup comments channel error - will retry automatically');[m
+         } else if (status === 'TIMED_OUT') {[m
+           console.warn('Trade setup comments channel timeout - will retry automatically');[m
+[1mdiff --git a/app/src/components/TDAHistory.tsx b/app/src/components/TDAHistory.tsx[m
+[1mindex bfc5f88..8d6435a 100644[m
+[1m--- a/app/src/components/TDAHistory.tsx[m
+[1m+++ b/app/src/components/TDAHistory.tsx[m
+[36m@@ -85,13 +85,8 @@[m [mconst TDAHistory = () => {[m
+             }[m
+           }[m
+           [m
+[31m-<<<<<<< HEAD[m
+           if (!response || !response.ok) {[m
+             console.error(`HTTP error for analysis ${analysis.id}:`, response?.status, response?.statusText);[m
+[31m-=======[m
+[31m-          if (!response.ok) {[m
+[31m-            console.error(`HTTP error for analysis ${analysis.id}:`, response.status, response.statusText);[m
+[31m->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d[m
+             timeframeMap[analysis.id] = [];[m
+             continue;[m
+           }[m
+[1mdiff --git a/app/src/components/chat/ChatWidget.tsx b/app/src/components/chat/ChatWidget.tsx[m
+[1mindex 586baaa..b61ca63 100644[m
+[1m--- a/app/src/components/chat/ChatWidget.tsx[m
+[1m+++ b/app/src/components/chat/ChatWidget.tsx[m
+[36m@@ -774,24 +774,13 @@[m [mconst ChatWidget = () => {[m
+         }[m
+       )[m
+       .subscribe((status) => {[m
+[31m-<<<<<<< HEAD[m
+         if (status === 'CHANNEL_ERROR' as any) {[m
+[31m-=======[m
+[31m-        if (status === 'CHANNEL_ERROR') {[m
+[31m->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d[m
+           // Only log if it's not a normal disconnection[m
+           console.warn('Chat conversations channel error - will retry automatically');[m
+         } else if (status === 'TIMED_OUT') {[m
+           console.warn('Chat conversations channel timeout - will retry automatically');[m
+         } else if (status === 'CLOSED') {[m
+           // Don't log normal closures[m
+[31m-<<<<<<< HEAD[m
+[31m-        } else if (status === 'CHANNEL_ERROR' as any) {[m
+[31m-=======[m
+[31m-        } else if (status === 'CHANNEL_ERROR') {[m
+[31m->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d[m
+[31m-          // Suppress browser-level WebSocket errors[m
+[31m-          return;[m
+         }[m
+       });[m
+ [m
+[36m@@ -882,11 +871,7 @@[m [mconst ChatWidget = () => {[m
+         }[m
+       )[m
+       .subscribe((status) => {[m
+[31m-<<<<<<< HEAD[m
+         if (status === 'CHANNEL_ERROR' as any) {[m
+[31m-=======[m
+[31m-        if (status === 'CHANNEL_ERROR') {[m
+[31m->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d[m
+           console.warn(`Chat channel error for ${activeConversation.group_id} - will retry automatically`);[m
+         } else if (status === 'TIMED_OUT') {[m
+           console.warn(`Chat channel timeout for ${activeConversation.group_id} - will retry automatically`);[m

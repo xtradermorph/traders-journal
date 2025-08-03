@@ -85,13 +85,8 @@ const TDAHistory = () => {
             }
           }
           
-<<<<<<< HEAD
           if (!response || !response.ok) {
             console.error(`HTTP error for analysis ${analysis.id}:`, response?.status, response?.statusText);
-=======
-          if (!response.ok) {
-            console.error(`HTTP error for analysis ${analysis.id}:`, response.status, response.statusText);
->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d
             timeframeMap[analysis.id] = [];
             continue;
           }

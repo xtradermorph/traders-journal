@@ -486,11 +486,7 @@ const SocialForumContent = () => {
         }, 2000);
       })
       .subscribe((status) => {
-<<<<<<< HEAD
         if (status === 'CHANNEL_ERROR' as any) {
-=======
-        if (status === 'CHANNEL_ERROR') {
->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d
           console.warn('Trade setups channel error - will retry automatically');
         } else if (status === 'TIMED_OUT') {
           console.warn('Trade setups channel timeout - will retry automatically');
@@ -530,11 +526,7 @@ const SocialForumContent = () => {
         }
       })
       .subscribe((status) => {
-<<<<<<< HEAD
         if (status === 'CHANNEL_ERROR' as any) {
-=======
-        if (status === 'CHANNEL_ERROR') {
->>>>>>> 8bef8a3b24cb258ab59707cda6f087585c3ca24d
           console.warn('Trade setup comments channel error - will retry automatically');
         } else if (status === 'TIMED_OUT') {
           console.warn('Trade setup comments channel timeout - will retry automatically');
