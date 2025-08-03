@@ -285,7 +285,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-sm">
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-sm [&>button]:hidden">
           <DialogHeader className="bg-black/80 backdrop-blur-md rounded-t-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-3 sm:p-4 md:p-6">
             <div className="flex items-start justify-between w-full">
               <div className="flex-1 min-w-0">

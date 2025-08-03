@@ -80,69 +80,102 @@ const SupportManagementPage = () => {
   const [isCleaningUp, setIsCleaningUp] = useState(false);
 
   // Fetch support requests
-  const { data: supportRequests, isLoading, isError, refetch } = useQuery({
+  const { data: supportRequests, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['supportRequests'],
     queryFn: async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) throw new Error('Not authenticated');
-      
-      // Check if user is admin
-      const { data: profile, error: profileError } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', session.user.id)
-        .single();
+      try {
+        console.log('Fetching support requests...');
+        const { data: { session } } = await supabase.auth.getSession();
         
-      if (profileError || profile?.role !== 'admin') {
-        throw new Error('Not authorized');
-      }
-      
-      // Fetch all support requests
-      const { data, error } = await supabase
-        .from('support_requests')
-        .select('*')
-        .order('created_at', { ascending: false });
+        if (!session) {
+          console.error('No session found');
+          throw new Error('Not authenticated - Please log in');
+        }
         
-      if (error) throw error;
-      
-      console.log('Support requests fetched:', data); // Debug log
-      
-      // For requests with user_id, fetch their usernames
-      const requestsWithUsernames = await Promise.all(
-        data.map(async (request) => {
-          if (request.user_id) {
-            try {
-              const { data: profileData } = await supabase
-                .from('profiles')
-                .select('username')
-                .eq('id', request.user_id)
-                .single();
-                
+        console.log('User authenticated:', session.user.id);
+        
+        // Check if user is admin
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('Profile fetch error:', profileError);
+          throw new Error('Failed to verify user role');
+        }
+        
+        console.log('Profile fetched successfully:', profile);
+        console.log('User role:', profile?.role, 'Type:', typeof profile?.role);
+        
+        if (profile?.role.toLowerCase() !== 'admin') {
+          console.error('User is not admin:', profile?.role);
+          throw new Error('Not authorized - Admin access required');
+        }
+        
+        console.log('User is admin, fetching support requests...');
+        
+        // Fetch all support requests
+        const { data, error } = await supabase
+          .from('support_requests')
+          .select('*')
+          .order('created_at', { ascending: false });
+          
+        if (error) {
+          console.error('Support requests fetch error:', error);
+          throw new Error(`Database error: ${error.message}`);
+        }
+        
+        console.log('Support requests fetched successfully:', data?.length || 0, 'requests');
+        
+        // For requests with user_id, fetch their usernames
+        const requestsWithUsernames = await Promise.all(
+          data.map(async (request) => {
+            if (request.user_id) {
+              try {
+                const { data: profileData } = await supabase
+                  .from('profiles')
+                  .select('username')
+                  .eq('id', request.user_id)
+                  .single();
+                  
+                return {
+                  ...request,
+                  username: profileData?.username || 'Unknown User'
+                };
+              } catch (err) {
+                console.error('Error fetching profile for user_id:', request.user_id, err);
+                return {
+                  ...request,
+                  username: 'Unknown User'
+                };
+              }
+            } else {
+              // No user_id (guest submission)
               return {
                 ...request,
-                username: profileData?.username || 'Unknown User'
-              };
-            } catch (err) {
-              console.error('Error fetching profile for user_id:', request.user_id, err);
-              return {
-                ...request,
-                username: 'Unknown User'
+                username: 'Guest User'
               };
             }
-          } else {
-            // No user_id (guest submission)
-            return {
-              ...request,
-              username: 'Guest User'
-            };
-          }
-        })
-      );
-      
-      return requestsWithUsernames;
+          })
+        );
+        
+        console.log('Support requests with usernames processed successfully');
+        return requestsWithUsernames;
+      } catch (error) {
+        console.error('Support requests query error:', error);
+        throw error;
+      }
     },
     refetchInterval: 30000, // Refetch every 30 seconds
+    retry: (failureCount, error) => {
+      // Don't retry on authentication/authorization errors
+      if (error.message.includes('Not authenticated') || error.message.includes('Not authorized')) {
+        return false;
+      }
+      return failureCount < 3;
+    },
   });
 
   // Update request status
@@ -385,8 +418,25 @@ const SupportManagementPage = () => {
                       </TableRow>
                     ) : isError ? (
                       <TableRow>
-                        <TableCell colSpan={5} className="text-center py-10 text-destructive">
-                          Error loading support requests. Please try again.
+                        <TableCell colSpan={5} className="text-center py-10">
+                          <div className="text-destructive">
+                            <AlertCircle className="h-8 w-8 mx-auto mb-2" />
+                            <p className="font-medium">Error loading support requests</p>
+                            {error && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                {error.message}
+                              </p>
+                            )}
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => refetch()}
+                              className="mt-3"
+                            >
+                              <RefreshCw className="h-4 w-4 mr-2" />
+                              Try Again
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ) : !supportRequests || supportRequests.length === 0 ? (

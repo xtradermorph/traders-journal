@@ -2465,24 +2465,43 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
   return (
     <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className={`${expanded ? 'fixed inset-0 z-[9999] max-w-none w-screen h-screen rounded-none' : 'w-[98vw] sm:w-[95vw] md:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-4xl h-[98vh] sm:h-[95vh] md:h-[90vh] lg:h-[85vh] xl:h-[80vh] max-h-[90vh] overflow-y-auto mx-auto'} bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-sm`}>
+        <DialogContent className={`${expanded ? 'fixed inset-0 z-[9999] max-w-none w-screen h-screen rounded-none' : 'w-[98vw] sm:w-[95vw] md:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-4xl h-[98vh] sm:h-[95vh] md:h-[90vh] lg:h-[85vh] xl:h-[80vh] max-h-[90vh] overflow-y-auto mx-auto'} bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-sm [&>button]:hidden`}>
           <DialogHeader className="bg-black/80 backdrop-blur-md rounded-t-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-3 sm:p-4 md:p-6">
-          <div className="flex items-start justify-between w-full">
-            <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between w-full">
+              <div className="flex-1 min-w-0">
                 <DialogTitle className="text-white font-bold text-lg sm:text-xl md:text-2xl px-1 sm:px-2">
-                {currentStep === 0 && "Top Down Analysis Setup"}
-                {currentStep >= 1 && currentStep <= 3 && "Top Down Analysis"}
-                {currentStep === 4 && "Analysis Results"}
-              </DialogTitle>
+                  {currentStep === 0 && "Top Down Analysis Setup"}
+                  {currentStep >= 1 && currentStep <= 3 && "Top Down Analysis"}
+                  {currentStep === 4 && "Analysis Results"}
+                </DialogTitle>
                 <DialogDescription className="text-gray-200 mt-1 sm:mt-2 font-medium px-1 sm:px-2 text-sm sm:text-base">
-                {currentStep === 0 && "Configure your analysis parameters and select timeframes"}
-                {currentStep >= 1 && currentStep <= 3 && "Complete each timeframe analysis"}
-                {currentStep === 4 && enableAIAnalysis && "Review your analysis results and AI recommendations"}
-                {currentStep === 4 && !enableAIAnalysis && "Your analysis has been completed successfully"}
-              </DialogDescription>
+                  {currentStep === 0 && "Configure your analysis parameters and select timeframes"}
+                  {currentStep >= 1 && currentStep <= 3 && "Complete each timeframe analysis"}
+                  {currentStep === 4 && enableAIAnalysis && "Review your analysis results and AI recommendations"}
+                  {currentStep === 4 && !enableAIAnalysis && "Your analysis has been completed successfully"}
+                </DialogDescription>
+              </div>
+              <div className="flex items-center space-x-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleClose}
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-white/10"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                      Close
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
-          </div>
-        </DialogHeader>
+          </DialogHeader>
 
           {/* Success Message */}
           {saveSuccess && (

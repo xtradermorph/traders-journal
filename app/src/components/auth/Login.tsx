@@ -58,8 +58,19 @@ const Login = () => {
                   window.location.hostname === '127.0.0.1';
     setIsDevelopment(isDev);
     
+    // Debug logging
+    console.log('Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      hostname: window.location.hostname,
+      isDevelopment: isDev,
+      turnstileSiteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+      // For testing purposes, you can temporarily enable Turnstile in development
+      // by setting this to false
+      forceProductionMode: false
+    });
+    
     // For testing purposes, you can temporarily enable Turnstile in development
-    // by commenting out the line above and setting isDevelopment to false
+    // by uncommenting the line below
     // setIsDevelopment(false);
   }, []);
   
@@ -200,31 +211,41 @@ const Login = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      // Verify Turnstile token
-      if (!turnstileToken) {
+      setIsLoading(true);
+      setError(null);
+      setTurnstileError(null);
+      
+      // Check if Turnstile token is present (only in production)
+      if (!isDevelopment && !turnstileToken) {
         setTurnstileError('Please complete the security check');
+        setIsLoading(false);
         return;
       }
 
-      const verificationResponse = await fetch('/api/turnstile/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: turnstileToken,
-          action: 'login',
-        }),
-      });
+      // Verify Turnstile token (only in production)
+      if (!isDevelopment) {
+        const verificationResponse = await fetch('/api/turnstile/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: turnstileToken,
+            action: 'login',
+          }),
+        });
 
-      const verificationResult = await verificationResponse.json();
-      if (!verificationResult.success) {
-        setTurnstileError('Security check failed. Please try again.');
-        return;
+        const verificationResult = await verificationResponse.json();
+        if (!verificationResult.success) {
+          setTurnstileError('Security check failed. Please try again.');
+          setIsLoading(false);
+          return;
+        }
       }
-
+      
       await loginMutation.mutateAsync(data);
-    } catch (error) {
-      console.error('Login submission error:', error);
-      setError(error instanceof Error ? error.message : 'An error occurred during login');
+    } catch (error: any) {
+      // Error is handled by the mutation's onError callback
+      console.error('Submit error:', error);
+      setIsLoading(false);
     }
   };
 
@@ -390,26 +411,40 @@ const Login = () => {
                 
                 {/* Turnstile Security Check */}
                 <div className="space-y-2">
+                  <p className="text-center text-sm text-muted-foreground">
+                    Let us know you're human
+                  </p>
                   <div className="flex justify-center">
-                    <Turnstile
-                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
-                      onVerify={(token) => {
-                        setTurnstileToken(token);
-                        setTurnstileError(null);
-                      }}
-                      onError={(error) => {
-                        setTurnstileError('Security check failed. Please try again.');
-                        setTurnstileToken(null);
-                      }}
-                      onExpire={() => {
-                        setTurnstileToken(null);
-                        setTurnstileError('Security check expired. Please try again.');
-                      }}
-                      action="login"
-                      appearance="interaction-only"
-                      theme="auto"
-                      size="normal"
-                    />
+                    {!isDevelopment && (
+                      <Turnstile
+                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
+                        onVerify={(token) => {
+                          console.log('Turnstile verified with token:', token);
+                          setTurnstileToken(token);
+                          setTurnstileError(null);
+                        }}
+                        onError={(error) => {
+                          console.error('Turnstile error:', error);
+                          setTurnstileError('Security check failed. Please try again.');
+                          setTurnstileToken(null);
+                        }}
+                        onExpire={() => {
+                          console.log('Turnstile token expired');
+                          setTurnstileToken(null);
+                          setTurnstileError('Security check expired. Please try again.');
+                        }}
+                        action="login"
+                        appearance="interaction-only"
+                        theme="auto"
+                        size="normal"
+                      />
+                    )}
+                    {isDevelopment && (
+                      <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                        <p>Turnstile disabled in development mode</p>
+                        <p className="text-xs mt-1">Security check will be enabled in production</p>
+                      </div>
+                    )}
                   </div>
                   {turnstileError && (
                     <div className="text-red-500 text-sm text-center">
@@ -423,7 +458,7 @@ const Login = () => {
                 className="w-full"
                 disabled={
                   isLoading || 
-                  !turnstileToken ||
+                  (!isDevelopment && !turnstileToken) ||
                   !loginForm.formState.isValid ||
                   !loginForm.watch('email') ||
                   !loginForm.watch('password')

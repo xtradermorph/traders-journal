@@ -136,7 +136,7 @@ export async function GET() {
       totalChecks: results.checks.length,
       totalErrors: results.errors.length,
       tablesExist: Object.values(results.tables).filter((t: any) => t.exists).length,
-      isAdmin: results.userRole?.toUpperCase() === 'ADMIN'
+      isAdmin: results.userRole?.toLowerCase() === 'admin'
     };
 
     return NextResponse.json(results);

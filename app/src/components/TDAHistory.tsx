@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Label } from '@/components/ui/label';
 import TDADetailsDialog from './TDADetailsDialog';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const TDAHistory = () => {
   const { toast } = useToast();
@@ -57,14 +58,46 @@ const TDAHistory = () => {
       
       for (const analysis of analyses) {
         try {
-          const response = await fetch(`/api/tda/timeframe-analyses?analysis_id=${analysis.id}`);
-          if (response.ok) {
-            const data = await response.json();
-            const timeframes = data.timeframe_analyses?.map((ta: any) => ta.timeframe) || [];
-            timeframeMap[analysis.id] = timeframes;
+          console.log(`Fetching timeframes for analysis: ${analysis.id}`);
+          
+          // Retry mechanism for network issues
+          let response;
+          let retries = 0;
+          const maxRetries = 2;
+          
+          while (retries <= maxRetries) {
+            try {
+              response = await fetch(`/api/tda/timeframe-analyses?analysis_id=${analysis.id}`, {
+                method: 'GET',
+                headers: {
+                  'Content-Type': 'application/json',
+                },
+                signal: AbortSignal.timeout(10000), // 10 second timeout
+              });
+              break; // Success, exit retry loop
+            } catch (fetchError) {
+              retries++;
+              if (retries > maxRetries) {
+                throw fetchError;
+              }
+              console.log(`Retry ${retries} for analysis ${analysis.id} due to network error`);
+              await new Promise(resolve => setTimeout(resolve, 1000 * retries)); // Exponential backoff
+            }
           }
+          
+          if (!response.ok) {
+            console.error(`HTTP error for analysis ${analysis.id}:`, response.status, response.statusText);
+            timeframeMap[analysis.id] = [];
+            continue;
+          }
+          
+          const data = await response.json();
+          const timeframes = data.timeframe_analyses?.map((ta: any) => ta.timeframe) || [];
+          timeframeMap[analysis.id] = timeframes;
+          console.log(`Successfully fetched ${timeframes.length} timeframes for analysis ${analysis.id}`);
         } catch (error) {
           console.error('Error fetching timeframes for analysis:', analysis.id, error);
+          // Don't let one failed request break the entire component
           timeframeMap[analysis.id] = [];
         }
       }
@@ -133,7 +166,12 @@ const TDAHistory = () => {
       });
       return friendlyNames.join(', ');
     }
-    return 'No timeframes';
+    // If no timeframes found, check if we're still loading or if there was an error
+    if (analysis.id in timeframeData) {
+      return 'No timeframes';
+    } else {
+      return 'Loading...';
+    }
   };
 
   if (isLoading) {
@@ -182,95 +220,105 @@ const TDAHistory = () => {
         </CardHeader>
         <CardContent className="space-y-4">
             {analyses.map((analysis) => (
-                            <div key={analysis.id} className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 border rounded-lg hover:bg-muted/50 transition-colors bg-gray-50/50 dark:bg-gray-800/50">
-              {/* Analysis Info */}
-              <div className="flex-1 space-y-3">
-                <div className="flex items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <span className="text-sm font-medium">
-                      {analysis.analysis_date ? (
-                        <>
-                          {new Date(analysis.analysis_date).toLocaleDateString('en-US', { 
-                            year: 'numeric', month: 'short', day: 'numeric' 
-                          })}
-                          {analysis.analysis_time && (
-                            <span className="ml-2">
-                              {new Date(`2000-01-01T${analysis.analysis_time}`).toLocaleTimeString('en-US', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                hour12: true
-                              })}
-                            </span>
-                          )}
-                        </>
-                      ) : (
-                        format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')
-                      )}
-                    </span>
-                  </div>
+              <div key={analysis.id} className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 border rounded-lg hover:scale-105 transition-transform duration-200 bg-gray-50/50 dark:bg-gray-800/50">
+                {/* Analysis Info */}
+                <div className="flex-1 space-y-3">
+                  <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2">
+                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm font-medium">
+                        {analysis.analysis_date ? (
+                          <>
+                            {new Date(analysis.analysis_date).toLocaleDateString('en-US', { 
+                              year: 'numeric', month: 'short', day: 'numeric' 
+                            })}
+                            {analysis.analysis_time && (
+                              <span className="ml-2">
+                                {new Date(`2000-01-01T${analysis.analysis_time}`).toLocaleTimeString('en-US', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                  hour12: true
+                                })}
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')
+                        )}
+                      </span>
+                    </div>
                     <Badge variant={analysis.status === 'COMPLETED' ? "default" : "outline"} className={analysis.status === 'COMPLETED' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}>
                       {analysis.status}
                     </Badge>
-                </div>
+                  </div>
 
-                <div className="flex items-center gap-4">
-                  <div>
-                    <span className="text-sm font-semibold">Currency Pair:</span>
-                    <span className="text-sm font-bold ml-2">{analysis.currency_pair}</span>
+                  <div className="flex items-center gap-4">
+                    <div>
+                      <span className="text-sm font-semibold">Currency Pair:</span>
+                      <span className="text-sm font-bold ml-2">{analysis.currency_pair}</span>
                     </div>
-                  <div>
-                    <span className="text-sm font-semibold text-white">Timeframes:</span>
-                    <span className="text-sm text-orange-400 font-medium ml-2">{getSelectedTimeframes(analysis)}</span>
-                  </div>
-                  <div>
-                    <span className="text-sm font-semibold">AI Analysis:</span>
-                    <Badge variant={analysis.ai_summary ? "default" : "secondary"} className="ml-2 text-xs">
-                      {analysis.ai_summary ? "Enabled" : "Disabled"}
-                    </Badge>
+                    <div>
+                      <span className="text-sm font-semibold text-white">Timeframes:</span>
+                      <span className="text-sm text-orange-400 font-medium ml-2">{getSelectedTimeframes(analysis)}</span>
+                    </div>
+                    <div>
+                      <span className="text-sm font-semibold">AI Analysis:</span>
+                      <Badge variant={analysis.ai_summary ? "default" : "secondary"} className="ml-2 text-xs">
+                        {analysis.ai_summary ? "Enabled" : "Disabled"}
+                      </Badge>
+                    </div>
                   </div>
                 </div>
-              </div>
 
-              {/* Action Buttons */}
-                  <div className="flex items-center gap-2">
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      onClick={() => handleViewDetails(analysis)}
-                      className="p-2"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
-                    
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      variant="outline" 
-                      size="sm"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                    >
-                          <Trash2 className="h-4 w-4" />
+                {/* Action Buttons */}
+                <div className="flex items-center gap-2">
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewDetails(analysis)}
+                          className="p-2"
+                        >
+                          <Eye className="h-4 w-4" />
                         </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
-                          <AlertDialogDescription>
-                        Are you sure you want to delete this analysis? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDelete(analysis.id)}
-                            className="bg-red-600 hover:bg-red-700"
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>View Details</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                        title="Delete Analysis"
                       >
-                        Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this analysis? This action cannot be undone.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={() => handleDelete(analysis.id)}
+                          className="bg-red-600 hover:bg-red-700"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
             ))}

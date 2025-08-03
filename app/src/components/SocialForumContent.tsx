@@ -485,7 +485,15 @@ const SocialForumContent = () => {
           }
         }, 2000);
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('Trade setups channel error - will retry automatically');
+        } else if (status === 'TIMED_OUT') {
+          console.warn('Trade setups channel timeout - will retry automatically');
+        } else if (status === 'CLOSED') {
+          // Don't log normal closures
+        }
+      });
 
     // Real-time comments subscription
     const commentsChannel = supabase
@@ -517,7 +525,15 @@ const SocialForumContent = () => {
           }
         }
       })
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR') {
+          console.warn('Trade setup comments channel error - will retry automatically');
+        } else if (status === 'TIMED_OUT') {
+          console.warn('Trade setup comments channel timeout - will retry automatically');
+        } else if (status === 'CLOSED') {
+          // Don't log normal closures
+        }
+      });
 
     return () => {
       clearTimeout(timeoutId);

@@ -55,20 +55,30 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    console.log('TDA Timeframe Analyses GET request received');
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    if (authError) {
+      console.error('Authentication error:', authError);
+      return NextResponse.json({ error: 'Authentication failed' }, { status: 401 });
+    }
+    
+    if (!user) {
+      console.error('No user found');
+      return NextResponse.json({ error: 'User not authenticated' }, { status: 401 });
     }
 
     const { searchParams } = new URL(request.url);
     const analysisId = searchParams.get('analysis_id');
 
     if (!analysisId) {
+      console.error('No analysis_id provided');
       return NextResponse.json({ error: 'Analysis ID is required' }, { status: 400 });
     }
+
+    console.log(`Fetching timeframes for analysis: ${analysisId}, user: ${user.id}`);
 
     // Verify analysis ownership
     const { data: analysis, error: analysisError } = await supabase
@@ -78,7 +88,13 @@ export async function GET(request: NextRequest) {
       .eq('user_id', user.id)
       .single();
 
-    if (analysisError || !analysis) {
+    if (analysisError) {
+      console.error('Analysis ownership check error:', analysisError);
+      return NextResponse.json({ error: 'Failed to verify analysis ownership' }, { status: 500 });
+    }
+    
+    if (!analysis) {
+      console.error(`Analysis not found or not owned by user: ${analysisId}`);
       return NextResponse.json({ error: 'Analysis not found' }, { status: 404 });
     }
 
@@ -89,9 +105,11 @@ export async function GET(request: NextRequest) {
       .eq('analysis_id', analysisId);
 
     if (timeframeError) {
+      console.error('Timeframe analyses fetch error:', timeframeError);
       return NextResponse.json({ error: 'Failed to fetch timeframe analyses' }, { status: 500 });
     }
 
+    console.log(`Successfully fetched ${timeframeAnalyses?.length || 0} timeframe analyses`);
     return NextResponse.json({ timeframe_analyses: timeframeAnalyses || [] });
 
   } catch (error) {
