@@ -282,7 +282,7 @@ export function ProfileContent({ initialProfile, onProfileUpdate }: ProfileConte
       };
       // Check if there are any changes to save
       const hasChangesNow = Object.keys(updatedFields).some(key => {
-        // @ts-ignore - dynamic key access
+        // @ts-expect-error - dynamic key access
         const profileValue = profile?.[key as keyof UserProfile];
         const updatedValue = updatedFields[key as keyof UserProfile];
         return profileValue !== updatedValue;

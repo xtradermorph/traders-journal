@@ -13,11 +13,11 @@ export interface ProcessedTrade extends Trade {
 }
 
 // Returns trades with month_trade_number for each trade
-export function processTrades(trades: any[]): ProcessedTrade[] {
+export function processTrades(trades: Trade[]): ProcessedTrade[] {
   if (!trades || !Array.isArray(trades) || trades.length === 0) return [];
 
   // Group trades by month
-  const groupedByMonth: Record<string, any[]> = {};
+  const groupedByMonth: Record<string, Trade[]> = {};
   trades.forEach(trade => {
     const tradeDate = new Date(trade.date);
     const monthYear = `${tradeDate.getFullYear()}-${String(tradeDate.getMonth() + 1).padStart(2, '0')}`;
@@ -26,7 +26,7 @@ export function processTrades(trades: any[]): ProcessedTrade[] {
   });
 
   // For each month, sort by date ascending (oldest first), then by entry_time, then by created_at
-  let processed: ProcessedTrade[] = [];
+  const processed: ProcessedTrade[] = [];
   Object.values(groupedByMonth).forEach(monthTrades => {
     // Sort by date ascending (oldest first), then by entry_time, then by created_at
     const sorted = [...monthTrades].sort((a, b) => {

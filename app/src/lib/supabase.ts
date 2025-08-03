@@ -1,23 +1,7 @@
-'use client'
-
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import type { Database } from '@/types/supabase'
-import { AuthError, Session } from '@supabase/supabase-js'
+import { Session } from '@supabase/supabase-js'
 import { useState, useEffect } from 'react'
-import { cookies } from 'next/headers'
-
-interface CookieOptions {
-  name: string;
-  value: string;
-  options: {
-    path?: string;
-    domain?: string;
-    expires?: Date;
-    httpOnly?: boolean;
-    secure?: boolean;
-    sameSite?: 'lax' | 'strict' | 'none';
-  };
-}
 
 // Create a function to get the Supabase client
 export const getSupabaseClient = () => {

@@ -6,12 +6,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
-import { TradeSetup, UserProfile } from '../types';
+import { TradeSetup } from '../types';
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { ThumbsUp, MessageCircle, Share2, ArrowLeft, Flag, Eye, EyeOff, Calendar, Clock, BarChart3 } from "lucide-react";
+import { ThumbsUp, MessageCircle, Share2, Flag, Eye, EyeOff, Calendar, Clock, BarChart3 } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import Link from "next/link";
 
@@ -278,7 +278,7 @@ const TradeSetupDetail: React.FC<TradeSetupDetailProps> = ({ id }) => {
     if (confirm('Are you sure you want to report this trade setup?')) {
       try {
         // Create a report in Supabase
-        const { data, error } = await supabase
+        const { error } = await supabase
           .from('reports')
           .insert({
             reported_item_id: tradeSetup.id,

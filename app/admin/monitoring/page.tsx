@@ -367,9 +367,9 @@ export default function MonitoringPage() {
     const interval = setInterval(() => {
       fetchProjectUpdateStats();
       fetchUsers();
-    }, 2 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
+      }, 2 * 60 * 1000);
+  return () => clearInterval(interval);
+}, [fetchUsers]);
 
   const getEmailServiceInfo = (status: string) => {
     switch (status) {

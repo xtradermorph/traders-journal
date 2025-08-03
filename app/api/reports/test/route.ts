@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
     const supabase = createRouteHandlerClient({ cookies });
     
     // If userId is provided, test for that specific user, otherwise test for all users
-    let users: any[] = [];
+    let users: { user_id: string }[] = [];
     
     if (userId) {
       // Test for specific user

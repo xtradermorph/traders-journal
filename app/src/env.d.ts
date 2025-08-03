@@ -12,6 +12,9 @@ interface ImportMetaEnv {
 
 // Type declarations for external modules
 declare module 'html-docx-js/dist/html-docx' {
-  const htmlDocx: any;
+  const htmlDocx: {
+    asBlob: (html: string) => Blob;
+    asBlobUrl: (html: string) => string;
+  };
   export default htmlDocx;
 }

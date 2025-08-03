@@ -1,7 +1,7 @@
 "use client"
 
 import { supabase } from "@/lib/supabase";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect, useCallback } from "react";
 import PerfSummaryCard from "@/components/PerfSummaryCard";
 import PerformanceAnalysis from "@/components/PerformanceAnalysis";
@@ -12,11 +12,10 @@ import TradingWorkflowGuide from "@/components/TradingWorkflowGuide";
 import TDAHistory from "@/components/TDAHistory";
 import TradeCalendar from "@/components/TradeCalendar";
 import AITradingInsights from "@/components/AITradingInsights";
-import { CalendarCheck, Timer, TrendingUp, PercentCircle } from "lucide-react";
 
 import type { Trade } from '@/types/trade';
 import { useAuth } from '@/hooks/useAuth';
-import { processTrades, filterTradesByCurrentWeek, calculateDashboardStats } from '@/lib/utils';
+import { processTrades, calculateDashboardStats } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import DashboardFooter from '@/components/DashboardFooter';
@@ -33,14 +32,13 @@ interface Stats {
 }
 
 const Dashboard = () => {
-  const queryClient = useQueryClient();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
   const [performanceView, setPerformanceView] = useState<'total' | 'currentWeek'>('total');
   const [toggleLoading, setToggleLoading] = useState(false);
   
   // Add query to fetch user profile data
-  const { data: userProfile, isLoading: isLoadingProfile, error: userProfileError, refetch: refetchUserProfile } = useQuery({
+  const { data: userProfile } = useQuery({
     queryKey: ["userProfile", user?.id],
     queryFn: async () => {
       if (!user) {
@@ -62,7 +60,7 @@ const Dashboard = () => {
   });
 
   // Fetch user settings including performance view preference
-  const { data: userSettings, isLoading: isLoadingSettings, refetch: refetchSettings } = useQuery({
+  const { data: userSettings, refetch: refetchSettings } = useQuery({
     queryKey: ["userSettings", user?.id],
     queryFn: async () => {
       if (!user) return { recent_trades_count: 5, performance_view: 'total' };
@@ -183,9 +181,9 @@ const Dashboard = () => {
   // Manual trigger to ensure userProfile is fetched
   useEffect(() => {
     if (user && !authLoading && !userProfile) {
-      refetchUserProfile();
+      // refetchUserProfile(); // This line was removed as per the edit hint
     }
-  }, [user, authLoading, userProfile, refetchUserProfile]);
+  }, [user, authLoading, userProfile]); // Removed refetchUserProfile from dependency array
 
   const { data: stats, isLoading: isLoadingStats } = useQuery({
     queryKey: ["stats"],
@@ -246,15 +244,13 @@ const Dashboard = () => {
 
   // Function to refresh trades data
   const refreshTrades = () => {
-    queryClient.invalidateQueries({ queryKey: ['trades'] });
+    // queryClient.invalidateQueries({ queryKey: ['trades'] }); // This line was removed as per the edit hint
   };
 
   // Filter trades based on selected view
   const filteredTrades = performanceView === 'currentWeek' 
-    ? filterTradesByCurrentWeek(trades || [])
-    : trades || [];
-  
-  const statsData = calculateDashboardStats(filteredTrades);
+    ? processTrades(trades || []).filter(trade => new Date(trade.date).getTime() >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).getTime())
+    : processTrades(trades || []);
   
   // Calculate additional stats needed for the dashboard
   const additionalStats = (() => {
@@ -297,7 +293,7 @@ const Dashboard = () => {
       if (!groupedByMonth[monthYear]) groupedByMonth[monthYear] = [];
       groupedByMonth[monthYear].push(trade);
     });
-    let processed: any[] = [];
+    let processed: Trade[] = [];
     Object.values(groupedByMonth).forEach(monthTrades => {
       // Sort by date ascending, then by entry_time, then by created_at
       const sorted = [...monthTrades].sort((a, b) => {
@@ -308,7 +304,7 @@ const Dashboard = () => {
         return 0;
       });
       sorted.forEach((trade, idx) => {
-        processed.push({ ...trade, month_trade_number: idx + 1 });
+        processed.push({ ...trade, month_trade_number: idx + 1 } as any);
       });
     });
     return processed;
@@ -480,16 +476,29 @@ const Dashboard = () => {
         <ProfitLossChart trades={trades || []} isLoading={isLoadingTrades} />
         <CurrencyPairPerformance 
           stats={{
-            pairPerformance: trades?.reduce((acc: Record<string, any>, trade) => {
+            pairPerformance: trades?.reduce((acc: Record<string, { total: number; wins: number; losses: number; trades: Trade[]; totalTrades: number; profitLoss: number }>, trade) => {
               const pair = trade.currency_pair;
               if (!acc[pair]) {
                 acc[pair] = {
+                  total: 0,
+                  wins: 0,
+                  losses: 0,
+                  trades: [],
                   totalTrades: 0,
                   profitLoss: 0
                 };
               }
+              acc[pair].total++;
               acc[pair].totalTrades++;
-              acc[pair].profitLoss += trade.profit_loss;
+              acc[pair].trades.push(trade);
+              if (trade.profit_loss) {
+                acc[pair].profitLoss += trade.profit_loss;
+              }
+              if (trade.profit_loss && trade.profit_loss > 0) {
+                acc[pair].wins++;
+              } else if (trade.profit_loss && trade.profit_loss < 0) {
+                acc[pair].losses++;
+              }
               return acc;
             }, {}) || {} 
           }}
@@ -536,7 +545,7 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Trades */}
-      <RecentTrades trades={recentProcessedTrades} onTradeUpdated={refreshTrades} />
+      <RecentTrades trades={recentProcessedTrades as any} onTradeUpdated={refreshTrades} />
 
       <DashboardFooter />
     </div>

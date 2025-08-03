@@ -1,7 +1,4 @@
-'use client'
-
 import { supabase } from './index'
-import { Session, User } from '@supabase/supabase-js'
 
 // Auth state management
 export async function checkAuth() {

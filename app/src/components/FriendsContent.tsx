@@ -177,7 +177,7 @@ const FriendsContent = () => {
               profession
             )
           `)
-          .eq('user_id', session.user.id) as { data: FriendData[] | null, error: any };
+          .eq('user_id', session.user.id) as { data: FriendData[] | null, error: unknown };
 
         if (friendsError) throw friendsError;
 
@@ -186,7 +186,7 @@ const FriendsContent = () => {
         const { data: presenceData } = await supabase
           .from('user_presence')
           .select('*')
-          .in('user_id', friendIds) as { data: PresenceData[] | null, error: any };
+          .in('user_id', friendIds) as { data: PresenceData[] | null, error: unknown };
 
         // Combine friend data with online status
         const friendsWithStatus: Friend[] = (friendsData || []).map(f => {
@@ -217,7 +217,7 @@ const FriendsContent = () => {
           `)
           .eq('receiver_id', session.user.id)
           .eq('status', 'pending')
-          .order('created_at', { ascending: false }) as { data: FriendRequest[] | null, error: any };
+          .order('created_at', { ascending: false }) as { data: FriendRequest[] | null, error: unknown };
 
         if (requestsError) throw requestsError;
         setFriendRequests(requestsData || []);

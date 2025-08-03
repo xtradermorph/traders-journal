@@ -2,9 +2,9 @@ import { create } from 'zustand';
 
 interface ChatState {
   isChatOpen: boolean;
-  activeConversation: any; // Using 'any' for now, will be replaced with a proper type
+  activeConversation: Record<string, unknown> | null; // Using Record for now, will be replaced with a proper type
   openChat: (isOpen: boolean) => void;
-  setActiveConversation: (conversation: any) => void;
+  setActiveConversation: (conversation: Record<string, unknown> | null) => void;
   resetChat: () => void;
 }
 

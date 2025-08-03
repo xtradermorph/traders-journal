@@ -1,6 +1,3 @@
-'use client'
-
-import { useState } from 'react';
 import { useToast as useToastOriginal } from '@/components/ui/use-toast'
 
 export interface Toast {

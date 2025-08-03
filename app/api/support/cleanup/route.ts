@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     const cutoffDateString = cutoffDate.toISOString();
 
     // Delete old resolved/closed support requests
-    const { data, error, count } = await supabase
+    const { error, count } = await supabase
       .from('support_requests')
       .delete({ count: 'exact' })
       .in('status', status)

@@ -81,7 +81,7 @@ export async function GET() {
         let responseText = '';
         try {
           responseText = await functionResponse.text();
-        } catch (textError) {
+        } catch {
           // Ignore text reading errors
         }
         
@@ -196,17 +196,17 @@ export async function GET() {
         status: emailStatus
       }
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Health check failed:', error);
     return NextResponse.json(
       { 
         status: 'unhealthy', 
-        error: error.message,
+        error: error instanceof Error ? error.message : 'Unknown error',
         timestamp: new Date().toISOString(),
         database: {
           connected: false,
           recordCount: 0,
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         }
       },
       { status: 500 }

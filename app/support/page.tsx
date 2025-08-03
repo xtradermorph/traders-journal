@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -20,6 +20,7 @@ import { Mail, MessageSquare, FileText, ExternalLink, Send } from 'lucide-react'
 import DashboardFooter from '@/components/DashboardFooter';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import Link from 'next/link';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 const supportFormSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }).max(100, { message: 'Name cannot exceed 100 characters.' }),
@@ -30,11 +31,61 @@ const supportFormSchema = z.object({
 
 type SupportFormValues = z.infer<typeof supportFormSchema>;
 
+function useBackNavigation() {
+  const [backUrl, setBackUrl] = useState<string>("/");
+  
+  useEffect(() => {
+    const determineBackUrl = async () => {
+      // Check if there's a previous page in browser history
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        // Check if we came from a specific page via sessionStorage
+        const fromPage = sessionStorage.getItem('fromPage');
+        if (fromPage) {
+          sessionStorage.removeItem('fromPage');
+          setBackUrl(fromPage);
+          return;
+        }
+        
+        // Check referrer to see where we came from
+        const referrer = document.referrer;
+        if (referrer) {
+          const referrerUrl = new URL(referrer);
+          const currentUrl = new URL(window.location.href);
+          
+          // If referrer is from the same domain
+          if (referrerUrl.origin === currentUrl.origin) {
+            const referrerPath = referrerUrl.pathname;
+            
+            // Don't go back to the same page or to auth pages
+            if (referrerPath !== currentUrl.pathname && 
+                !referrerPath.includes('/auth') && 
+                !referrerPath.includes('/login') && 
+                !referrerPath.includes('/register')) {
+              setBackUrl(referrerPath);
+              return;
+            }
+          }
+        }
+      }
+      
+      // Fallback: check if user is authenticated and default appropriately
+      const supabase = createClientComponentClient();
+      const { data: { session } } = await supabase.auth.getSession();
+      setBackUrl(session ? "/dashboard" : "/");
+    };
+    
+    determineBackUrl();
+  }, []);
+  
+  return backUrl;
+}
+
 export default function SupportPage() {
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
+  const backUrl = useBackNavigation();
   
   const form = useForm<SupportFormValues>({
     resolver: zodResolver(supportFormSchema),
@@ -91,7 +142,7 @@ export default function SupportPage() {
 
   return (
     <>
-      <PageHeader title="Support" mainScrollRef={mainScrollRef} />
+      <PageHeader title="Support" mainScrollRef={mainScrollRef} showBackButton backUrl={backUrl} />
       <div className="min-h-screen relative flex items-center justify-center bg-gradient-to-br from-background to-muted/40">
         <div className="absolute inset-0 bg-white/90 backdrop-blur-md z-0 pointer-events-none" />
         <div className="relative w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-4 sm:my-6 md:my-8 z-10 flex flex-col min-h-[80vh]">

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from '@supabase/supabase-js';
-import { exportTradesToExcel, calculateAnalysisData, formatTradeData, formatAnalysisData } from "@/lib/excelExport";
+import { calculateAnalysisData, formatTradeData, formatAnalysisData } from "@/lib/excelExport";
 import { Trade } from "@/types/trade";
+import ExcelJS from 'exceljs';
 
 // Create server-side Supabase client
 const supabase = createClient(
@@ -64,7 +65,7 @@ export async function POST(req: NextRequest) {
     const fileName = `monthly_report_${year}_${month.toString().padStart(2, '0')}_${userProfile.username || userId}.xlsx`;
     
     // Create Excel buffer using the existing function
-    const workbook = await generateMonthlyExcelReport(monthlyTrades, fileName, month, year);
+    const workbook = await generateMonthlyExcelReport(monthlyTrades);
     const buffer = await workbook.xlsx.writeBuffer();
 
     // Return the Excel file as base64 encoded string
@@ -89,10 +90,7 @@ export async function POST(req: NextRequest) {
 }
 
 // Helper function to generate Excel report using existing functions
-async function generateMonthlyExcelReport(trades: Trade[], fileName: string, month: number, year: number) {
-  const ExcelJS = require('exceljs');
-  const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-
+async function generateMonthlyExcelReport(trades: Trade[]) {
   // Calculate analysis data using existing function
   const analysis = calculateAnalysisData(trades);
   
@@ -135,7 +133,7 @@ async function generateMonthlyExcelReport(trades: Trade[], fileName: string, mon
   };
   
   // Align headers - specific alignment for different columns
-  headerRow.eachCell((cell: any, colNumber: number) => {
+  headerRow.eachCell((cell: ExcelJS.Cell, colNumber: number) => {
     if (colNumber === 7) { // Duration (m) column
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
     } else if (colNumber === 11) { // Lot Size column
@@ -152,7 +150,7 @@ async function generateMonthlyExcelReport(trades: Trade[], fileName: string, mon
   });
   
   // Add trade data
-  tradeData.forEach((trade, index) => {
+  tradeData.forEach((trade) => {
     const row = worksheet.addRow({
       number: trade['#'],
       date: trade['Date'],
@@ -224,7 +222,7 @@ async function generateMonthlyExcelReport(trades: Trade[], fileName: string, mon
   worksheet.addRow({});
   
   // Add analysis data
-  analysisData.slice(0, 7).forEach((item, index) => {
+  analysisData.slice(0, 7).forEach((item) => {
     const row = worksheet.addRow({});
     
     const metricCell = row.getCell('number');
@@ -286,7 +284,7 @@ async function generateMonthlyExcelReport(trades: Trade[], fileName: string, mon
   
   for (let rowNum = analysisStartRow; rowNum <= analysisEndRow; rowNum++) {
     const row = worksheet.getRow(rowNum);
-    row.eachCell((cell: any) => {
+    row.eachCell((cell: ExcelJS.Cell) => {
       cell.protection = { locked: true };
     });
   }

@@ -24,7 +24,6 @@ function Calendar({
   const today = new Date()
   const currentYear = today.getFullYear()
   const currentMonth = today.getMonth()
-  const currentDay = today.getDate()
 
   // Use user registration date or default to 2020
   const earliestDate = userRegistrationDate || new Date(2020, 0, 1)
@@ -127,7 +126,6 @@ function Calendar({
     const year = currentViewMonth.getFullYear()
     const month = currentViewMonth.getMonth()
     const firstDay = new Date(year, month, 1)
-    const lastDay = new Date(year, month + 1, 0)
     const startDate = new Date(firstDay)
     startDate.setDate(startDate.getDate() - firstDay.getDay()) // Start from Sunday
 

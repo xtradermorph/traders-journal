@@ -165,7 +165,7 @@ export function exportTradesToExcel(trades: Trade[], fileName: string): Promise<
       });
       
       // Add trade data
-      tradeData.forEach((trade, index) => {
+      tradeData.forEach((trade) => {
         const row = worksheet.addRow({
           number: trade['#'],
           date: trade['Date'],
@@ -234,7 +234,7 @@ export function exportTradesToExcel(trades: Trade[], fileName: string): Promise<
       worksheet.addRow({});
       
       // Add analysis data - SIMPLE APPROACH without merging
-      analysisData.slice(0, 7).forEach((item, index) => {
+      analysisData.slice(0, 7).forEach((item) => {
         const row = worksheet.addRow({});
         
         // Set metric name in column A (left-aligned)

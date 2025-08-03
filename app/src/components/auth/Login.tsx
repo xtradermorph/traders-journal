@@ -3,7 +3,7 @@
 import React from "react";
 import { useState, useEffect } from "react";
 import { ClientOnly } from "@/components/ClientOnly";
-import { useForm, UseFormReturn, FieldValues, FieldErrors } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -17,8 +17,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, X } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { Session, User } from '@supabase/supabase-js';
+import { User } from '@supabase/supabase-js';
 import Image from 'next/image';
 import { Turnstile } from '../../../components/ui/turnstile';
 
@@ -36,7 +35,7 @@ interface LoginFormValues {
 
 interface LoginResponse {
   user: User;
-  session: Session;
+  session: any; // Changed from Session to any as Session is removed
   error?: Error;
 }
 
@@ -242,7 +241,7 @@ const Login = () => {
       }
       
       await loginMutation.mutateAsync(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error is handled by the mutation's onError callback
       console.error('Submit error:', error);
       setIsLoading(false);

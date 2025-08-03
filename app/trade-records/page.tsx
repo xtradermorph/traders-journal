@@ -5,7 +5,7 @@ import { supabase, useAuth } from '@/lib/supabase';
 import { Trade } from '@/types/trade';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import AddTradeDialog from '@/components/AddTradeDialog';
 import EditTradeDialog from '@/components/EditTradeDialog';

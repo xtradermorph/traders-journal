@@ -50,29 +50,31 @@ const PageHeader = ({ title, description, mainScrollRef, showBackButton, onBackC
       <div className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="flex h-16 items-center px-6">
           <div className="flex items-center gap-5">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-12 w-12 rounded-full hover:bg-orange-100 dark:hover:bg-orange-900/20"
-              onClick={onBackClick}
-              asChild={!onBackClick}
-            >
-              {onBackClick ? (
-                <div className="flex items-center justify-center">
-                  <div className="relative flex items-center justify-center rounded-full bg-orange-500/10 p-2.5">
-                    <ArrowLeft className="h-7 w-7 text-orange-600 dark:text-orange-400" />
+            {showBackButton && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-12 w-12 rounded-full hover:bg-orange-100 dark:hover:bg-orange-900/20"
+                onClick={onBackClick}
+                asChild={!onBackClick}
+              >
+                {onBackClick ? (
+                  <div className="flex items-center justify-center">
+                    <div className="relative flex items-center justify-center rounded-full bg-orange-500/10 p-2.5">
+                      <ArrowLeft className="h-7 w-7 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <span className="sr-only">Back</span>
                   </div>
-                  <span className="sr-only">Back</span>
-                </div>
-              ) : (
-                <Link href={backUrl || "/dashboard"} className="flex items-center justify-center">
-                  <div className="relative flex items-center justify-center rounded-full bg-orange-500/10 p-2.5">
-                    <ArrowLeft className="h-7 w-7 text-orange-600 dark:text-orange-400" />
-                  </div>
-                  <span className="sr-only">Back</span>
-                </Link>
-              )}
-            </Button>
+                ) : (
+                  <Link href={backUrl || "/dashboard"} className="flex items-center justify-center">
+                    <div className="relative flex items-center justify-center rounded-full bg-orange-500/10 p-2.5">
+                      <ArrowLeft className="h-7 w-7 text-orange-600 dark:text-orange-400" />
+                    </div>
+                    <span className="sr-only">Back</span>
+                  </Link>
+                )}
+              </Button>
+            )}
             <div>
               <h1 className="text-2xl font-semibold gradient-heading">{title}</h1>
               {description && <p className="text-sm text-gray-500">{description}</p>}

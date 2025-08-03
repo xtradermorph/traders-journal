@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,7 +15,7 @@ export default function AdminAnnouncementPage() {
   const [loading, setLoading] = useState(false);
   const [isAdmin, setIsAdmin] = useState<boolean | null>(null);
   const { toast } = useToast();
-  const router = useRouter();
+
   const supabase = createClientComponentClient();
 
   useEffect(() => {
@@ -57,7 +56,7 @@ export default function AdminAnnouncementPage() {
         const err = await res.json();
         toast({ title: "Error", description: err.message || "Failed to send announcement." });
       }
-    } catch (err) {
+    } catch {
       toast({ title: "Error", description: "Failed to send announcement." });
     } finally {
       setLoading(false);

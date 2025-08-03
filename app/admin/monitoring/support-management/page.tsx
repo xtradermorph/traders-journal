@@ -117,7 +117,7 @@ const SupportManagementPage = () => {
         console.log('User is admin, fetching support requests...');
         
         // Fetch all support requests
-        const { data, error } = await supabase
+        const { data } = await supabase
           .from('support_requests')
           .select('*')
           .order('created_at', { ascending: false });
@@ -179,7 +179,10 @@ const SupportManagementPage = () => {
   });
 
   // Update request status
-  const updateRequestStatus = async (id: string, status: string) => {
+  const updateRequestStatus = async (
+    id: string,
+    status: 'new' | 'in_progress' | 'resolved' | 'closed'
+  ) => {
     setUpdatingStatus(true);
     try {
       const { error } = await supabase
@@ -200,7 +203,7 @@ const SupportManagementPage = () => {
       if (selectedRequest && selectedRequest.id === id) {
         setSelectedRequest({
           ...selectedRequest,
-          status: status as any,
+          status: status as 'new' | 'in_progress' | 'resolved' | 'closed',
           updated_at: new Date().toISOString()
         });
       }
@@ -322,21 +325,7 @@ const SupportManagementPage = () => {
     setViewDialogOpen(true);
   };
   
-  // Check if a request has replies
-  const checkHasReplies = async (requestId: string) => {
-    try {
-      const { data, error, count } = await supabase
-        .from('support_replies')
-        .select('*', { count: 'exact' })
-        .eq('support_request_id', requestId)
-        .limit(1);
-        
-      return count && count > 0;
-    } catch (error) {
-      console.error('Error checking for replies:', error);
-      return false;
-    }
-  };
+
 
   return (
     <div ref={mainScrollRef}>
@@ -674,7 +663,7 @@ const SupportManagementPage = () => {
           <DialogHeader>
             <DialogTitle>Reply to Support Request</DialogTitle>
             <DialogDescription>
-              Send a reply to the user's support request
+              Send a reply to the user&apos;s support request
             </DialogDescription>
           </DialogHeader>
           

@@ -35,12 +35,6 @@ interface RegisterFormValues {
   agreeToTerms: boolean;
 }
 
-interface RegisterResponse {
-  user: User;
-  session: Session;
-  error?: Error;
-}
-
 const Register = () => {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
@@ -122,7 +116,7 @@ const Register = () => {
         
         // Use direct client-side signup
         console.log('Attempting direct client-side signup');
-        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: data.email.toLowerCase().trim(),
           password: data.password,
           options: {
@@ -138,26 +132,21 @@ const Register = () => {
           throw new Error(signUpError.message || 'Registration failed');
         }
         
-        if (!authData.user) {
-          throw new Error('No user data returned');
+        // Create profile manually if user data is available
+        if (signUpData && signUpData.user) {
+          const { error: profileError } = await supabase.from('profiles').insert({
+            id: signUpData.user.id,
+            username: data.username,
+            email: data.email.toLowerCase().trim(),
+            created_at: new Date().toISOString()
+          });
+          if (profileError) {
+            console.error('Profile creation error:', profileError);
+            // Don't throw error here as user is already created
+          }
         }
         
-        console.log('User created successfully:', authData.user);
-        
-        // Create profile manually
-        const { error: profileError } = await supabase.from('profiles').insert({
-          id: authData.user.id,
-          username: data.username,
-          email: data.email.toLowerCase().trim(),
-          created_at: new Date().toISOString()
-        });
-        
-        if (profileError) {
-          console.error('Profile creation error:', profileError);
-          // Don't throw error here as user is already created
-        }
-        
-        return authData;
+        return signUpData;
       } catch (error) {
         console.error('Registration error:', error);
         throw error;
@@ -213,7 +202,7 @@ const Register = () => {
       }
       
       await registerMutation.mutateAsync(data);
-    } catch (error: any) {
+    } catch (error: unknown) {
       // Error is handled by the mutation's onError callback
       console.error('Submit error:', error);
       setIsLoading(false);
@@ -520,7 +509,7 @@ const Register = () => {
                     try {
                       setIsLoading(true);
                       setError(null);
-                      const { data, error } = await supabase.auth.signInWithOAuth({
+                      const { error } = await supabase.auth.signInWithOAuth({
                         provider: 'google',
                         options: {
                           redirectTo: `${window.location.origin}/auth/callback`,
@@ -534,11 +523,8 @@ const Register = () => {
                       if (error) {
                         setError(error.message);
                         console.error('Google sign-in error:', error);
-                      } else if (!data.url) {
-                        setError('Failed to get authentication URL');
                       } else {
-                        // Redirect to Google's OAuth page
-                        window.location.href = data.url;
+                        setError('Failed to get authentication URL');
                       }
                     } catch (err) {
                       console.error('Exception during Google sign-in:', err);

@@ -74,7 +74,7 @@ export async function getProfilesByIds(userIds: string[]) {
 /**
  * Update a user profile
  */
-export async function updateUserProfile(userId: string, profileData: any) {
+export async function updateUserProfile(userId: string, profileData: Record<string, unknown>) {
   try {
     // Try using the RPC function first
     const { data: rpcData, error: rpcError } = await supabase
@@ -106,7 +106,7 @@ export async function updateUserProfile(userId: string, profileData: any) {
 /**
  * Insert a new profile
  */
-export async function insertProfile(profileData: any) {
+export async function insertProfile(profileData: Record<string, unknown>) {
   try {
     const { data, error } = await supabase
       .from('profiles')

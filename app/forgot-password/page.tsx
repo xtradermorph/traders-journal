@@ -39,11 +39,11 @@ export default function ForgotPassword() {
   
       // Redirect back to login page
       router.push('/login');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         id: `error-${Date.now()}`,
         title: 'Error',
-        description: error.message
+        description: error instanceof Error ? error.message : 'An unknown error occurred'
       });
     } finally {
       setIsLoading(false);

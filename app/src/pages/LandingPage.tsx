@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { FeatureSection } from "@/components/landing/FeatureSection";
 import FeedbackCarousel from "@/components/FeedbackCarousel";
-import { useState, useEffect } from "react";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -180,18 +179,18 @@ export default function LandingPage() {
               <h3 className="text-lg font-semibold">Legal</h3>
               <ul className="space-y-1">
                 <li>
-                    <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'true'); } catch {} }}>
+                    <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/'); } catch {} }}>
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                    <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'true'); } catch {} }}>
-                    Terms & Conditions
+                    <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/'); } catch {} }}>
+                    Terms of Service
                   </Link>
                 </li>
                 <li>
-                  <Link href="/disclaimer" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'true'); } catch {} }}>
-                    Trading Disclaimer
+                  <Link href="/disclaimer" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/'); } catch {} }}>
+                    Disclaimer
                   </Link>
                 </li>
               </ul>
@@ -226,14 +225,14 @@ export default function LandingPage() {
                 {new Date().getFullYear()} Trader&apos;s Journal. All rights reserved.
               </p>
               <div className="flex items-center gap-4">
-                  <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'true'); } catch {} }}>
-                  Privacy
+                  <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/'); } catch {} }}>
+                  Privacy Policy
                 </Link>
-                  <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'true'); } catch {} }}>
-                  Terms
+                  <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/'); } catch {} }}>
+                  Terms of Service
                 </Link>
-                <Link href="/cookies" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'true'); } catch {} }}>
-                  Cookies
+                <Link href="/cookies" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/'); } catch {} }}>
+                  Cookies Policy
                 </Link>
               </div>
             </div>

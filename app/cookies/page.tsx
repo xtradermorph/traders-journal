@@ -1,32 +1,61 @@
-'use client'
+"use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-function useIsAuthenticatedOrFromLanding() {
-  const [backUrl, setBackUrl] = useState<string>("/dashboard");
+function useBackNavigation() {
+  const [backUrl, setBackUrl] = useState<string>("/");
+  
   useEffect(() => {
-    let fromLanding = false;
-    try {
-      fromLanding = sessionStorage.getItem('fromLanding') === 'true';
-      if (fromLanding) sessionStorage.removeItem('fromLanding');
-    } catch {}
-    if (fromLanding) {
-      setBackUrl("/");
-      return;
-    }
-    const supabase = createClientComponentClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const determineBackUrl = async () => {
+      // Check if there's a previous page in browser history
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        // Check if we came from a specific page via sessionStorage
+        const fromPage = sessionStorage.getItem('fromPage');
+        if (fromPage) {
+          sessionStorage.removeItem('fromPage');
+          setBackUrl(fromPage);
+          return;
+        }
+        
+        // Check referrer to see where we came from
+        const referrer = document.referrer;
+        if (referrer) {
+          const referrerUrl = new URL(referrer);
+          const currentUrl = new URL(window.location.href);
+          
+          // If referrer is from the same domain
+          if (referrerUrl.origin === currentUrl.origin) {
+            const referrerPath = referrerUrl.pathname;
+            
+            // Don't go back to the same page or to auth pages
+            if (referrerPath !== currentUrl.pathname && 
+                !referrerPath.includes('/auth') && 
+                !referrerPath.includes('/login') && 
+                !referrerPath.includes('/register')) {
+              setBackUrl(referrerPath);
+              return;
+            }
+          }
+        }
+      }
+      
+      // Fallback: check if user is authenticated and default appropriately
+      const supabase = createClientComponentClient();
+      const { data: { session } } = await supabase.auth.getSession();
       setBackUrl(session ? "/dashboard" : "/");
-    });
+    };
+    
+    determineBackUrl();
   }, []);
+  
   return backUrl;
 }
 
 export default function CookiesPage() {
-  const backUrl = useIsAuthenticatedOrFromLanding();
+  const backUrl = useBackNavigation();
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -66,7 +95,7 @@ export default function CookiesPage() {
         {/* Content */}
         <div className="bg-card rounded-2xl p-8 border border-border">
           <p className="text-muted-foreground mb-6">
-            This Cookies Policy explains how Trader's Journal uses cookies and similar technologies to provide, customize, evaluate, improve, promote and protect our services.
+            This Cookies Policy explains how Trader&apos;s Journal uses cookies and similar technologies to provide, customize, evaluate, improve, promote and protect our services.
           </p>
           
           <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">What Are Cookies?</h2>
@@ -107,22 +136,22 @@ export default function CookiesPage() {
           
           <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Browser Settings</h3>
           <p className="text-muted-foreground mb-4">
-            Most browsers allow you to view, manage, delete, and block cookies. You can usually find these settings in the "Privacy" or "Security" section of your browser settings.
+            Most browsers allow you to control cookies through their settings. You can usually find these settings in the &quot;Privacy&quot; or &quot;Security&quot; section of your browser&apos;s preferences.
           </p>
           
-          <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Opt-Out Options</h3>
-          <p className="text-muted-foreground mb-6">
-            You can opt out of certain types of cookies, particularly analytics cookies, through your browser settings or by using opt-out tools provided by third-party services.
+          <h3 className="text-xl font-semibold text-foreground mt-6 mb-3">Cookie Consent</h3>
+          <p className="text-muted-foreground mb-4">
+            When you first visit our platform, you&apos;ll see a cookie consent banner that allows you to choose which types of cookies you want to accept.
           </p>
           
           <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Updates to This Policy</h2>
           <p className="text-muted-foreground mb-6">
-            We may update this Cookies Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. We will notify you of any material changes.
+            We may update this Cookies Policy from time to time to reflect changes in our practices or for other operational, legal, or regulatory reasons. We will notify you of any material changes by posting the new policy on this page.
           </p>
           
           <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Contact Us</h2>
-          <p className="text-muted-foreground">
-            If you have any questions about our use of cookies, please contact us at <a href="mailto:support@tradersjournal.pro" className="text-primary underline hover:text-primary/80">support@tradersjournal.pro</a>.
+          <p className="text-muted-foreground mb-6">
+            If you have any questions about our use of cookies, please contact us through our support channels.
           </p>
         </div>
       </div>

@@ -49,11 +49,11 @@ export default function ResetPassword() {
       });
   
       router.push('/login');
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         id: `error-${Date.now()}`, // Add a unique ID for the error toast
         title: 'Error',
-        description: error.message
+        description: error instanceof Error ? error.message : 'An unknown error occurred'
       });
     } finally {
       setIsLoading(false);

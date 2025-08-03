@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 
-export const getTrades = async (filters: any) => {
+export const getTrades = async () => {
   const { data, error } = await supabase
     .from('trades')
     .select('*')

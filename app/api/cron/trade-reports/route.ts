@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const supabase = createRouteHandlerClient({ cookies });
     
@@ -13,14 +13,14 @@ export async function POST(req: NextRequest) {
     const currentMonth = now.getMonth(); // 0-11
     const currentYear = now.getFullYear();
     
-    let reportsSent = {
+    const reportsSent = {
       weekly: 0,
       monthly: 0,
       quarterly: 0,
       yearly: 0
     };
     
-    let errors: string[] = [];
+    const errors: string[] = [];
 
     // Check if it's Monday (weekly reports)
     if (currentDay === 1) {

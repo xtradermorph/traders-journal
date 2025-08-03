@@ -49,6 +49,10 @@ interface Comment {
   user?: UserProfile;
 }
 
+interface CommentWithReplies extends Comment {
+  replies: CommentWithReplies[];
+}
+
 const SocialForumContent = () => {
   console.log('SocialForumContent component loading...');
   
@@ -104,17 +108,17 @@ const SocialForumContent = () => {
   const [shareDialogOpen, setShareDialogOpen] = React.useState<{ [setupId: string]: boolean }>({});
   const [shareType, setShareType] = React.useState<'friends' | 'public' | 'private' | 'link'>('friends');
   const [searchQuery, setSearchQuery] = React.useState('');
-  const [searchResults, setSearchResults] = React.useState<any[]>([]);
+  const [searchResults, setSearchResults] = React.useState<UserProfile[]>([]);
   const [selectedUsers, setSelectedUsers] = React.useState<string[]>([]);
   const [sharing, setSharing] = React.useState(false);
-  const [friends, setFriends] = React.useState<any[]>([]);
+  const [friends, setFriends] = React.useState<UserProfile[]>([]);
   const [loadingFriends, setLoadingFriends] = React.useState(false);
 
   // Separate search state for public and private tabs
   const [publicSearchQuery, setPublicSearchQuery] = React.useState('');
-  const [publicSearchResults, setPublicSearchResults] = React.useState<any[]>([]);
+  const [publicSearchResults, setPublicSearchResults] = React.useState<UserProfile[]>([]);
   const [privateSearchQuery, setPrivateSearchQuery] = React.useState('');
-  const [privateSearchResults, setPrivateSearchResults] = React.useState<any[]>([]);
+  const [privateSearchResults, setPrivateSearchResults] = React.useState<UserProfile[]>([]);
   const [privateSearchPerformed, setPrivateSearchPerformed] = React.useState(false);
 
   // Delete confirmation state
@@ -486,7 +490,7 @@ const SocialForumContent = () => {
         }, 2000);
       })
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
+        if (status === 'CHANNEL_ERROR' as any) {
           console.warn('Trade setups channel error - will retry automatically');
         } else if (status === 'TIMED_OUT') {
           console.warn('Trade setups channel timeout - will retry automatically');
@@ -526,7 +530,7 @@ const SocialForumContent = () => {
         }
       })
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
+        if (status === 'CHANNEL_ERROR' as any) {
           console.warn('Trade setup comments channel error - will retry automatically');
         } else if (status === 'TIMED_OUT') {
           console.warn('Trade setup comments channel timeout - will retry automatically');
@@ -893,7 +897,7 @@ const SocialForumContent = () => {
     });
   };
 
-  const handleFilterChange = (key: keyof typeof filters, value: any) => {
+  const handleFilterChange = (key: keyof typeof filters, value: string) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
@@ -1042,9 +1046,9 @@ const SocialForumContent = () => {
   };
 
   // Helper: build nested comment tree
-  function buildCommentTree(comments: Comment[]): any[] {
-    const map: { [id: string]: any } = {};
-    const roots: any[] = [];
+  function buildCommentTree(comments: Comment[]): CommentWithReplies[] {
+    const map: { [id: string]: CommentWithReplies } = {};
+    const roots: CommentWithReplies[] = [];
     comments.forEach((c) => (map[c.id] = { ...c, replies: [] }));
     comments.forEach((c) => {
       if (c.parent_id && map[c.parent_id]) {
@@ -1057,7 +1061,7 @@ const SocialForumContent = () => {
   }
 
   // Recursive comment renderer
-  function renderComment(setupId: string, comment: any, depth = 0) {
+  function renderComment(setupId: string, comment: CommentWithReplies, depth = 0) {
     const isOwner = comment.user_id === state.user_id;
     const isReplying = replyingTo[setupId] === comment.id;
     
@@ -1564,7 +1568,7 @@ const SocialForumContent = () => {
   }
 
   // Handle share with user selection
-  const handleShareWithUser = (user: any) => {
+  const handleShareWithUser = (user: UserProfile) => {
     if (selectedUsers.includes(user.id)) {
       setSelectedUsers(prev => prev.filter(id => id !== user.id));
     } else {
@@ -1740,7 +1744,7 @@ const SocialForumContent = () => {
                   <User className="h-16 w-16 text-muted-foreground mb-4" />
                   <h3 className="text-xl font-medium mb-2">My Trade Setups</h3>
                   <p className="text-muted-foreground text-center mb-4">
-                    You haven't created any trade setups yet. Create your first one!
+                    You haven&apos;t created any trade setups yet. Create your first one!
                   </p>
                   <Button onClick={handleCreateTradeSetup}>
                     Create Your First Setup
@@ -1812,7 +1816,7 @@ const SocialForumContent = () => {
             </DialogDescription>
           </DialogHeader>
               
-              <Tabs value={shareType} onValueChange={(value: any) => setShareType(value)}>
+              <Tabs value={shareType} onValueChange={(value: string) => setShareType(value)}>
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="friends">Friends</TabsTrigger>
                   <TabsTrigger value="public">Public Users</TabsTrigger>
@@ -1917,13 +1921,13 @@ const SocialForumContent = () => {
                             }`}>
                               {result.username}
                             </p>
-                            {result.first_name && result.last_name && (
+                            {(result as UserProfile).first_name && (result as UserProfile).last_name && (
                               <p className={`text-xs truncate ${
                                 selectedUsers.includes(result.id) 
                                   ? 'text-blue-100' 
                                   : 'text-gray-500 dark:text-gray-400'
                               }`}>
-                                {result.first_name} {result.last_name}
+                                {(result as UserProfile).first_name} {(result as UserProfile).last_name}
                               </p>
                             )}
                           </div>
@@ -1953,7 +1957,7 @@ const SocialForumContent = () => {
                   </Button>
                   <div className="max-h-60 overflow-y-auto">
                     {!privateSearchPerformed ? (
-                      <p className="text-muted-foreground text-center py-4">Enter a username and click "Search User" to find someone</p>
+                      <p className="text-muted-foreground text-center py-4">Enter a username and click &quot;Search User&quot; to find someone</p>
                     ) : privateSearchResults.length === 0 ? (
                       <p className="text-muted-foreground text-center py-4">No user found with that exact username</p>
                     ) : (
@@ -1985,13 +1989,13 @@ const SocialForumContent = () => {
                             }`}>
                               {result.username}
                             </p>
-                            {result.first_name && result.last_name && (
+                            {(result as UserProfile).first_name && (result as UserProfile).last_name && (
                               <p className={`text-xs truncate ${
                                 selectedUsers.includes(result.id) 
                                   ? 'text-blue-100' 
                                   : 'text-gray-500 dark:text-gray-400'
                               }`}>
-                                {result.first_name} {result.last_name}
+                                {(result as UserProfile).first_name} {(result as UserProfile).last_name}
                               </p>
                             )}
                           </div>

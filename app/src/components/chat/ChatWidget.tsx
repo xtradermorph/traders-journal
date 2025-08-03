@@ -43,20 +43,20 @@ type Conversation = {
 };
 
 // Helper to group messages by sender and date
-function groupMessages(messages: any[]) {
-  const groups: any[] = [];
+function groupMessages(messages: Array<Record<string, unknown>>) {
+  const groups: Array<Record<string, unknown>> = [];
   let lastSender: string | null = null;
   let lastDate: string | null = null;
-  let currentGroup: any = null;
+  let currentGroup: Record<string, unknown> | null = null;
   messages.forEach((msg) => {
-    const msgDate = format(new Date(msg.created_at), 'yyyy-MM-dd');
+    const msgDate = format(new Date(msg.created_at as string), 'yyyy-MM-dd');
     if (msg.sender_id !== lastSender || msgDate !== lastDate) {
       if (currentGroup) groups.push(currentGroup);
       currentGroup = { sender_id: msg.sender_id, date: msgDate, messages: [msg], profiles: msg.profiles };
-      lastSender = msg.sender_id;
+      lastSender = msg.sender_id as string;
       lastDate = msgDate;
     } else {
-      currentGroup.messages.push(msg);
+      (currentGroup!.messages as Array<Record<string, unknown>>).push(msg);
     }
   });
   if (currentGroup) groups.push(currentGroup);
@@ -774,16 +774,13 @@ const ChatWidget = () => {
         }
       )
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
+        if (status === 'CHANNEL_ERROR' as any) {
           // Only log if it's not a normal disconnection
           console.warn('Chat conversations channel error - will retry automatically');
         } else if (status === 'TIMED_OUT') {
           console.warn('Chat conversations channel timeout - will retry automatically');
         } else if (status === 'CLOSED') {
           // Don't log normal closures
-        } else if (status === 'CHANNEL_ERROR') {
-          // Suppress browser-level WebSocket errors
-          return;
         }
       });
 
@@ -874,7 +871,7 @@ const ChatWidget = () => {
         }
       )
       .subscribe((status) => {
-        if (status === 'CHANNEL_ERROR') {
+        if (status === 'CHANNEL_ERROR' as any) {
           console.warn(`Chat channel error for ${activeConversation.group_id} - will retry automatically`);
         } else if (status === 'TIMED_OUT') {
           console.warn(`Chat channel timeout for ${activeConversation.group_id} - will retry automatically`);

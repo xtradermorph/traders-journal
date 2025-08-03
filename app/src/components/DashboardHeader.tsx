@@ -1207,7 +1207,7 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
                     </Link>
                   </Button>
                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                    <Link href="/support" className="flex items-center w-full">
+                    <Link href="/support" className="flex items-center w-full" onClick={() => { setUserMenuOpen(false); try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
                       <LifeBuoy className="mr-2 h-4 w-4" />
                       <span>Support</span>
                     </Link>
@@ -1293,7 +1293,7 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
                     </Link>
                   </Button>
                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                    <Link href="/support" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
+                    <Link href="/support" className="flex items-center w-full" onClick={() => { setUserMenuOpen(false); try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
                       <LifeBuoy className="mr-2 h-4 w-4" />
                       <span>Support</span>
                     </Link>

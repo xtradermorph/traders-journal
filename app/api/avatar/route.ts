@@ -75,7 +75,7 @@ export async function POST(request: Request) {
     // Use the resized image for upload
     
     // Upload the file to Supabase Storage
-    const { data, error: uploadError } = await supabaseAdmin.storage
+    const { error: uploadError } = await supabaseAdmin.storage
       .from('avatars')
       .upload(fileName, resizedBuffer, {
         cacheControl: '3600',
@@ -109,7 +109,7 @@ export async function POST(request: Request) {
           const urlObj = new URL(oldAvatarUrl);
           const pathParts = urlObj.pathname.split('/');
           oldFileName = pathParts[pathParts.length - 1];
-        } catch (e) {
+        } catch {
           // Fallback: try to extract from string if not a valid URL
           const match = oldAvatarUrl.match(/avatars\/([^?&]+)/);
           if (match && match[1]) {

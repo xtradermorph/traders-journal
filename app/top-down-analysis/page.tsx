@@ -4,7 +4,6 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TopDownAnalysis } from '@/types/tda';
-import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar, Eye, Trash2, Loader2, Download, Plus, Target, ChevronDown, ChevronRight, Star } from 'lucide-react';

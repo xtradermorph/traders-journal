@@ -12,16 +12,16 @@ export default function DashboardFooter() {
           <Link href="/support" className="text-sm text-muted-foreground hover:text-primary transition-colors">
             Support
           </Link>
-          <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'true'); } catch {} }}>
-            Privacy
+          <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
+            Privacy Policy
           </Link>
-          <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'true'); } catch {} }}>
-            Terms
+          <Link href="/terms" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
+            Terms of Service
           </Link>
-          <Link href="/cookies" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'false'); } catch {} }}>
-            Cookies
+          <Link href="/cookies" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
+            Cookies Policy
           </Link>
-          <Link href="/disclaimer" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'false'); } catch {} }}>
+          <Link href="/disclaimer" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
             Disclaimer
           </Link>
         </div>

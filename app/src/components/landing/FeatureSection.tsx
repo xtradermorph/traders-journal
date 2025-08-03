@@ -1,5 +1,7 @@
 'use client'
 
+import Image from 'next/image';
+
 interface FeatureSectionProps {
   title: string;
   summary: string;
@@ -42,9 +44,10 @@ export function FeatureSection({
 
         {/* Image Section */}
         <div className="relative aspect-[16/9] overflow-hidden rounded-xl shadow-lg">
-          <img 
+          <Image 
             src={imagePath} 
             alt={imageAlt} 
+            fill
             className="object-cover w-full h-full hover:scale-105 transition-transform duration-500" 
           />
         </div>

@@ -94,7 +94,7 @@ export async function POST(request: Request) {
     }
 
     // Send email via Resend
-    const { data: emailData, error: emailError } = await resend.emails.send({
+    const { error: emailError } = await resend.emails.send({
       from: 'Trader\'s Journal Support <support@traders-journal.com>',
       to: [to],
       subject,
@@ -126,7 +126,6 @@ export async function POST(request: Request) {
     return NextResponse.json({ 
       success: true, 
       message: 'Reply sent successfully',
-      data: emailData
     });
   } catch (error) {
     console.error('Error in support reply API:', error);

@@ -3,11 +3,7 @@
 // In a production environment, these calls would be made through a backend API
 // to protect API keys and provide proper rate limiting and caching
 
-// Check if the API key exists
-const hasApiKey = !!process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-// Trade pattern analysis 
-export async function analyzeTradingPattern(trades: any[]): Promise<string> {
+export async function analyzeTradingPattern(trades: Array<Record<string, unknown>>): Promise<string> {
   if (!trades || trades.length === 0) {
     return "Not enough trading data to analyze patterns.";
   }
@@ -25,19 +21,18 @@ export async function analyzeTradingPattern(trades: any[]): Promise<string> {
       });
 
       // Calculate some basic metrics from the trades for personalization
-      const winningTrades = trades.filter(trade => (trade.profitLoss || trade.pnl) > 0);
-      const losingTrades = trades.filter(trade => (trade.profitLoss || trade.pnl) < 0);
+      const winningTrades = trades.filter(trade => ((trade.profitLoss as number) || (trade.pnl as number)) > 0);
       const winRate = (winningTrades.length / trades.length) * 100;
       
       // Group trades by currency pair for more personalized analysis
       const pairCounts: Record<string, {count: number, wins: number}> = {};
       trades.forEach(trade => {
-        const pair = trade.symbol || trade.pair || 'Unknown';
+        const pair = (trade.symbol as string) || (trade.pair as string) || 'Unknown';
         if (!pairCounts[pair]) {
           pairCounts[pair] = {count: 0, wins: 0};
         }
         pairCounts[pair].count++;
-        if ((trade.profitLoss || trade.pnl) > 0) {
+        if (((trade.profitLoss as number) || (trade.pnl as number)) > 0) {
           pairCounts[pair].wins++;
         }
       });
@@ -64,20 +59,20 @@ export async function analyzeTradingPattern(trades: any[]): Promise<string> {
       
       // Check for time-based patterns
       const morningTrades = trades.filter(trade => {
-        const hour = new Date(trade.entryTime || trade.openTime || 0).getHours();
+        const hour = new Date((trade.entryTime as number) || (trade.openTime as number) || 0).getHours();
         return hour >= 6 && hour < 12;
       });
       
       const afternoonTrades = trades.filter(trade => {
-        const hour = new Date(trade.entryTime || trade.openTime || 0).getHours();
+        const hour = new Date((trade.entryTime as number) || (trade.openTime as number) || 0).getHours();
         return hour >= 12 && hour < 18;
       });
       
       const morningWinRate = morningTrades.length > 0 ? 
-        (morningTrades.filter(t => (t.profitLoss || t.pnl) > 0).length / morningTrades.length) * 100 : 0;
+        (morningTrades.filter(t => ((t.profitLoss as number) || (t.pnl as number)) > 0).length / morningTrades.length) * 100 : 0;
       
       const afternoonWinRate = afternoonTrades.length > 0 ? 
-        (afternoonTrades.filter(t => (t.profitLoss || t.pnl) > 0).length / afternoonTrades.length) * 100 : 0;
+        (afternoonTrades.filter(t => ((t.profitLoss as number) || (t.pnl as number)) > 0).length / afternoonTrades.length) * 100 : 0;
       
       const bestTimeframe = morningWinRate > afternoonWinRate ? 'morning' : 'afternoon';
       
@@ -107,7 +102,7 @@ This analysis is based on your recent trading performance and current market con
 }
 
 // Risk assessment analysis
-export async function analyzeRiskProfile(trades: any[]): Promise<{
+export async function analyzeRiskProfile(trades: Array<Record<string, unknown>>): Promise<{
   riskScore: number; // 1-100 scale
   riskLevel: 'low' | 'moderate' | 'high' | 'extreme';
   analysis: string;
@@ -127,7 +122,7 @@ export async function analyzeRiskProfile(trades: any[]): Promise<{
     setTimeout(() => {
       // Calculate some basic metrics from the trades
       const totalTrades = trades.length;
-      const profitableTrades = trades.filter(trade => (trade.profitLoss || trade.pnl) > 0).length;
+      const profitableTrades = trades.filter(trade => ((trade.profitLoss as number) || (trade.pnl as number)) > 0).length;
       const winRate = (profitableTrades / totalTrades) * 100;
       
       // Simulate risk calculations based on win rate and other factors
@@ -188,7 +183,7 @@ export async function analyzeRiskProfile(trades: any[]): Promise<{
 }
 
 // Trading behavior analysis
-export async function analyzeTradingBehavior(trades: any[]): Promise<{
+export async function analyzeTradingBehavior(trades: Array<Record<string, unknown>>): Promise<{
   behavioralPatterns: {
     pattern: string;
     impact: 'positive' | 'negative' | 'neutral';
@@ -324,7 +319,7 @@ export async function analyzeMarketSentiment(currencyPair: string): Promise<{
 }
 
 // Strategy suggestions
-export async function generateTradingStrategySuggestions(performance: any): Promise<string> {
+export async function generateTradingStrategySuggestions(performance: Record<string, unknown>): Promise<string> {
   // In a production environment, this would call a real-time AI analysis API
   // For now, we'll simulate real-time analysis with current date and performance data
   return new Promise((resolve) => {
@@ -474,7 +469,7 @@ This analysis is based on current market data and technical indicators. Always c
 }
 
 // Trade setup analysis
-export async function analyzeTradeSetup(trades: any[]): Promise<string> {
+export async function analyzeTradeSetup(trades: Array<Record<string, unknown>>): Promise<string> {
   if (!trades || trades.length === 0) {
     return "Not enough trading data to analyze setups.";
   }
@@ -489,7 +484,7 @@ export async function analyzeTradeSetup(trades: any[]): Promise<string> {
       });
 
       // Analyze entry patterns
-      const successfulEntries = trades.filter(trade => (trade.profitLoss || trade.pnl) > 0);
+      const successfulEntries = trades.filter(trade => ((trade.profitLoss as number) || (trade.pnl as number)) > 0);
       const entryPatterns = successfulEntries.map(trade => trade.setupType || 'Unknown');
       
       // Count setup types
@@ -530,7 +525,7 @@ This analysis is based on your recent trading history. Use these insights to ref
 }
 
 // Trade management analysis
-export async function analyzeTradeManagement(trades: any[]): Promise<string> {
+export async function analyzeTradeManagement(trades: Array<Record<string, unknown>>): Promise<string> {
   if (!trades || trades.length === 0) {
     return "Not enough trading data to analyze trade management.";
   }
@@ -547,8 +542,8 @@ export async function analyzeTradeManagement(trades: any[]): Promise<string> {
       // Analyze management patterns
       const managedTrades = trades.filter(trade => trade.exitTime && trade.entryTime);
       const avgHoldingTime = managedTrades.reduce((acc, trade) => {
-        const entry = new Date(trade.entryTime).getTime();
-        const exit = new Date(trade.exitTime).getTime();
+        const entry = new Date((trade.entryTime as number) || 0).getTime();
+        const exit = new Date((trade.exitTime as number) || 0).getTime();
         return acc + (exit - entry);
       }, 0) / managedTrades.length;
 
@@ -581,7 +576,7 @@ This analysis is based on your recent trading activity. Use these insights to re
 }
 
 // Trade exit analysis
-export async function analyzeTradeExit(trades: any[]): Promise<string> {
+export async function analyzeTradeExit(trades: Array<Record<string, unknown>>): Promise<string> {
   if (!trades || trades.length === 0) {
     return "Not enough trading data to analyze exits.";
   }
@@ -596,15 +591,15 @@ export async function analyzeTradeExit(trades: any[]): Promise<string> {
       });
 
       // Analyze exit patterns
-      const winningTrades = trades.filter(trade => (trade.profitLoss || trade.pnl) > 0);
-      const losingTrades = trades.filter(trade => (trade.profitLoss || trade.pnl) < 0);
+      const winningTrades = trades.filter(trade => ((trade.profitLoss as number) || (trade.pnl as number)) > 0);
+      const losingTrades = trades.filter(trade => ((trade.profitLoss as number) || (trade.pnl as number)) < 0);
 
       resolve(`## Trade Exit Analysis (${formattedDate})
 
 ### Exit Performance
 - Win rate: ${((winningTrades.length / trades.length) * 100).toFixed(1)}%
-- Average profit on winning trades: ${(winningTrades.reduce((acc, trade) => acc + (trade.profitLoss || trade.pnl), 0) / winningTrades.length).toFixed(2)}
-- Average loss on losing trades: ${(losingTrades.reduce((acc, trade) => acc + (trade.profitLoss || trade.pnl), 0) / losingTrades.length).toFixed(2)}
+- Average profit on winning trades: ${(winningTrades.reduce((acc, trade) => acc + ((trade.profitLoss as number) || (trade.pnl as number)), 0) / winningTrades.length).toFixed(2)}
+- Average loss on losing trades: ${(losingTrades.reduce((acc, trade) => acc + ((trade.profitLoss as number) || (trade.pnl as number)), 0) / losingTrades.length).toFixed(2)}
 
 ### Exit Patterns
 1. Profit taking is generally timely
@@ -623,7 +618,7 @@ This analysis is based on your recent trading history. Use these insights to imp
 }
 
 // Trade review analysis
-export async function analyzeTradeReview(trades: any[]): Promise<string> {
+export async function analyzeTradeReview(trades: Array<Record<string, unknown>>): Promise<string> {
   if (!trades || trades.length === 0) {
     return "Not enough trading data to analyze trade reviews.";
   }

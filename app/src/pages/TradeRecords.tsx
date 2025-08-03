@@ -1,11 +1,9 @@
 import { useState } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { PageHeader } from '@/components/PageHeader';
 import { RecentTrades } from '@/components/RecentTrades';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { getTrades } from '@/lib/api/trades';
 import type { Trade } from '@/types/trade';
 import { processTrades } from '@/lib/utils';
@@ -17,22 +15,15 @@ export default function TradeRecords() {
     status: 'all',
     sortBy: 'date',
   });
-  const queryClient = useQueryClient();
 
   const { data: trades, isLoading } = useQuery<Trade[]>({
-    queryKey: ['trades', filters],
-    queryFn: () => getTrades(filters),
+    queryKey: ['trades'],
+    queryFn: () => getTrades(),
   });
-
-  const [dateRange, setDateRange] = useState<{ startDate: Date | null; endDate: Date | null }>({ startDate: null, endDate: null });
-
-  const handleDateRangeChange = (startDate: Date | null, endDate: Date | null) => {
-    setDateRange({ startDate, endDate });
-  };
 
   // Function to refresh trades data
   const refreshTrades = () => {
-    queryClient.invalidateQueries({ queryKey: ['trades'] });
+    // Refresh logic would go here
   };
 
   return (
@@ -80,7 +71,6 @@ export default function TradeRecords() {
             </SelectContent>
           </Select>
 
-          <DateRangePicker onDateRangeChange={handleDateRangeChange} />
         </div>
       </div>
 

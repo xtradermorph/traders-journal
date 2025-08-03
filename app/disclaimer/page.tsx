@@ -1,32 +1,61 @@
-'use client'
+"use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft } from 'lucide-react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
-function useIsAuthenticatedOrFromLanding() {
-  const [backUrl, setBackUrl] = useState<string>("/dashboard");
+function useBackNavigation() {
+  const [backUrl, setBackUrl] = useState<string>("/");
+  
   useEffect(() => {
-    let fromLanding = false;
-    try {
-      fromLanding = sessionStorage.getItem('fromLanding') === 'true';
-      if (fromLanding) sessionStorage.removeItem('fromLanding');
-    } catch {}
-    if (fromLanding) {
-      setBackUrl("/");
-      return;
-    }
-    const supabase = createClientComponentClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const determineBackUrl = async () => {
+      // Check if there's a previous page in browser history
+      if (typeof window !== 'undefined' && window.history.length > 1) {
+        // Check if we came from a specific page via sessionStorage
+        const fromPage = sessionStorage.getItem('fromPage');
+        if (fromPage) {
+          sessionStorage.removeItem('fromPage');
+          setBackUrl(fromPage);
+          return;
+        }
+        
+        // Check referrer to see where we came from
+        const referrer = document.referrer;
+        if (referrer) {
+          const referrerUrl = new URL(referrer);
+          const currentUrl = new URL(window.location.href);
+          
+          // If referrer is from the same domain
+          if (referrerUrl.origin === currentUrl.origin) {
+            const referrerPath = referrerUrl.pathname;
+            
+            // Don't go back to the same page or to auth pages
+            if (referrerPath !== currentUrl.pathname && 
+                !referrerPath.includes('/auth') && 
+                !referrerPath.includes('/login') && 
+                !referrerPath.includes('/register')) {
+              setBackUrl(referrerPath);
+              return;
+            }
+          }
+        }
+      }
+      
+      // Fallback: check if user is authenticated and default appropriately
+      const supabase = createClientComponentClient();
+      const { data: { session } } = await supabase.auth.getSession();
       setBackUrl(session ? "/dashboard" : "/");
-    });
+    };
+    
+    determineBackUrl();
   }, []);
+  
   return backUrl;
 }
 
 export default function DisclaimerPage() {
-  const backUrl = useIsAuthenticatedOrFromLanding();
+  const backUrl = useBackNavigation();
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
@@ -57,58 +86,74 @@ export default function DisclaimerPage() {
               </Link>
             )}
           </div>
-          <h1 className="text-4xl font-bold text-foreground mb-4">Trading Disclaimer</h1>
+          <h1 className="text-4xl font-bold text-foreground mb-4">Disclaimer</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Important information about trading risks and our platform
+            Important information about using Trader&apos;s Journal
           </p>
         </div>
 
         {/* Content */}
         <div className="bg-card rounded-2xl p-8 border border-border">
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-8">
-            <h2 className="text-xl font-bold text-red-800 mb-4">⚠️ Important Disclaimer</h2>
-            <p className="text-red-700">
-              Trading involves substantial risk of loss and is not suitable for all investors. The value of investments can go down as well as up, and you may lose some or all of your invested capital.
-            </p>
-          </div>
-          
-          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">No Financial Advice</h2>
           <p className="text-muted-foreground mb-6">
-            Trader's Journal is a trading journal and analysis platform. We do not provide financial advice, investment recommendations, or trading signals. All content and tools are for informational and educational purposes only.
+            By using Trader&apos;s Journal, you acknowledge and agree to the following disclaimer. Please read it carefully before using our platform.
           </p>
           
-          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">AI Analysis Disclaimer</h2>
+          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Trading Risk Disclaimer</h2>
           <p className="text-muted-foreground mb-6">
-            Our AI-powered analysis tools are designed to help you analyze your trading patterns and performance. These tools are for informational purposes only and should not be used as the sole basis for trading decisions. The AI analysis is not financial advice and does not guarantee future results.
+            Trading in financial markets involves substantial risk and may not be suitable for all investors. The value of investments can go down as well as up, and you may lose some or all of your invested capital. Past performance is not indicative of future results.
           </p>
           
-          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Your Responsibility</h2>
+          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">No Investment Advice</h2>
+          <p className="text-muted-foreground mb-6">
+            Trader&apos;s Journal is a trading journal and analysis platform. We do not provide investment advice, financial advice, or trading recommendations. All content, tools, and features are for educational and informational purposes only.
+          </p>
+          
+          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">User Responsibility</h2>
+          <p className="text-muted-foreground mb-6">
+            You are solely responsible for your trading decisions and the outcomes of your trades. You should:
+          </p>
           <ul className="list-disc ml-6 mb-6 text-muted-foreground space-y-2">
-            <li>You are solely responsible for all trading decisions</li>
-            <li>You should conduct your own research and analysis</li>
-            <li>You should consider consulting with a licensed financial advisor</li>
-            <li>You should only trade with money you can afford to lose</li>
-            <li>You should understand the risks involved in trading</li>
+            <li>Conduct your own research and analysis</li>
+            <li>Understand the risks involved in trading</li>
+            <li>Only trade with capital you can afford to lose</li>
+            <li>Consider seeking advice from qualified financial professionals</li>
+            <li>Comply with all applicable laws and regulations</li>
           </ul>
           
-          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Past Performance</h2>
+          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Platform Limitations</h2>
           <p className="text-muted-foreground mb-6">
-            Past performance is not indicative of future results. Historical data and analysis provided by our platform should not be interpreted as a guarantee of future performance.
+            While we strive to provide accurate and reliable information, we cannot guarantee:
           </p>
+          <ul className="list-disc ml-6 mb-6 text-muted-foreground space-y-2">
+            <li>The accuracy of market data or analysis tools</li>
+            <li>Uninterrupted access to the platform</li>
+            <li>The completeness of trading information</li>
+            <li>That the platform will meet your specific needs</li>
+          </ul>
           
-          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Market Risks</h2>
+          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Third-Party Content</h2>
           <p className="text-muted-foreground mb-6">
-            Trading involves various risks including but not limited to market volatility, economic factors, political events, and technological issues. These risks can affect the value of your investments.
+            Our platform may contain content from third-party sources, including other users. We do not endorse, verify, or take responsibility for the accuracy of such content. You should independently verify any information before making trading decisions.
           </p>
           
           <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Limitation of Liability</h2>
           <p className="text-muted-foreground mb-6">
-            Trader's Journal and its operators are not liable for any losses, damages, or expenses arising from the use of our platform or any trading decisions made based on our tools or analysis.
+            To the maximum extent permitted by law, Trader&apos;s Journal shall not be liable for any direct, indirect, incidental, special, consequential, or punitive damages arising from your use of the platform, including but not limited to trading losses, data loss, or service interruptions.
           </p>
           
-          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Seek Professional Advice</h2>
-          <p className="text-muted-foreground">
-            Before making any trading decisions, consider seeking advice from a qualified financial advisor who can assess your individual circumstances and provide personalized recommendations.
+          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Jurisdiction</h2>
+          <p className="text-muted-foreground mb-6">
+            This disclaimer is governed by the laws of the jurisdiction in which Trader&apos;s Journal operates. If any provision of this disclaimer is found to be unenforceable, the remaining provisions will continue to be valid and enforceable.
+          </p>
+          
+          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Updates to Disclaimer</h2>
+          <p className="text-muted-foreground mb-6">
+            We may update this disclaimer from time to time. Continued use of the platform after changes constitutes acceptance of the updated disclaimer.
+          </p>
+          
+          <h2 className="text-2xl font-bold text-foreground mt-8 mb-4">Contact Information</h2>
+          <p className="text-muted-foreground mb-6">
+            If you have questions about this disclaimer, please contact us through our support channels.
           </p>
         </div>
       </div>

@@ -7,10 +7,9 @@ import { TopDownAnalysis } from '@/types/tda';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, TrendingUp, TrendingDown, Minus, AlertTriangle, Eye, Trash2, Loader2, Clock, User } from 'lucide-react';
+import { Calendar, Eye, Trash2, Loader2, AlertTriangle, Clock } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
-import { useUserProfile } from './UserProfileContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,14 +21,12 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Label } from '@/components/ui/label';
 import TDADetailsDialog from './TDADetailsDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const TDAHistory = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { profile } = useUserProfile();
   const [selectedAnalysisId, setSelectedAnalysisId] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [timeframeData, setTimeframeData] = useState<Record<string, string[]>>({});
@@ -85,14 +82,14 @@ const TDAHistory = () => {
             }
           }
           
-          if (!response.ok) {
-            console.error(`HTTP error for analysis ${analysis.id}:`, response.status, response.statusText);
+          if (!response || !response.ok) {
+            console.error(`HTTP error for analysis ${analysis.id}:`, response?.status, response?.statusText);
             timeframeMap[analysis.id] = [];
             continue;
           }
           
           const data = await response.json();
-          const timeframes = data.timeframe_analyses?.map((ta: any) => ta.timeframe) || [];
+          const timeframes = data.timeframe_analyses?.map((ta: { timeframe: string }) => ta.timeframe) || [];
           timeframeMap[analysis.id] = timeframes;
           console.log(`Successfully fetched ${timeframes.length} timeframes for analysis ${analysis.id}`);
         } catch (error) {

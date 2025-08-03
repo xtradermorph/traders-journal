@@ -115,20 +115,20 @@ export async function POST(request: Request) {
           username
         }
       });
-    } catch (createUserError: any) {
+    } catch (createUserError: unknown) {
       console.error('Unexpected error during user creation:', createUserError);
       return NextResponse.json({ 
-        error: `Error during user creation: ${createUserError.message}`,
-        stack: createUserError.stack
+        error: `Error during user creation: ${createUserError instanceof Error ? createUserError.message : 'Unknown error'}`,
+        stack: createUserError instanceof Error ? createUserError.stack : undefined
       }, { status: 500 });
     }
     
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error('Unexpected error:', error);
     
     return NextResponse.json({ 
-      error: `Unexpected error: ${error.message}`,
-      stack: error.stack
+      error: `Unexpected error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      stack: error instanceof Error ? error.stack : undefined
     }, { status: 500 });
   }
 }

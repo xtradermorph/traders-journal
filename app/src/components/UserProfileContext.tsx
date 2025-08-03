@@ -62,7 +62,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
         const lastActive = presenceData?.last_seen_at ? new Date(presenceData.last_seen_at).getTime() : 0;
         setIsOnline(presenceData?.status === 'ONLINE' && (Date.now() - lastActive < 15 * 60 * 1000));
       }
-    } catch (e) {
+    } catch {
       setProfile(null);
       setIsOnline(false);
     } finally {
@@ -84,7 +84,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return;
         await supabase.from('user_presence').update({ status: 'ONLINE', last_seen_at: new Date().toISOString() }).eq('user_id', session.user.id);
-      } catch (e) {
+      } catch {
         // Ignore errors
       }
     };
@@ -124,7 +124,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
         const { data: { session } } = await supabase.auth.getSession();
         if (!session?.user) return;
         await supabase.from('user_presence').update({ status: 'OFFLINE' }).eq('user_id', session.user.id);
-      } catch (e) {}
+      } catch {}
     };
     window.addEventListener('beforeunload', handleUnload);
 
@@ -154,7 +154,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
     setSubmitting(true);
     try {
       // Check uniqueness
-      const { data: existing, error: checkError } = await supabase
+      const { data: existing } = await supabase
         .from('profiles')
         .select('id')
         .eq('username', values.username)
@@ -165,7 +165,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
         return;
       }
       // Update profile
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('profiles')
         .update({ username: values.username })
         .eq('id', profile?.id)
@@ -180,7 +180,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
       setShowUsernameModal(false);
       await supabase.auth.signOut();
       router.push('/login');
-    } catch (e) {
+    } catch {
       usernameForm.setError('username', { message: 'Unexpected error. Try again.' });
     } finally {
       setSubmitting(false);
@@ -189,7 +189,7 @@ export const UserProfileProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     // Listen for auth state changes and refetch profile
-    const { data: listener } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: listener } = supabase.auth.onAuthStateChange(() => {
       fetchProfile();
     });
     return () => {

@@ -559,7 +559,7 @@ export default function SettingsPage() {
   };
 
   // Update a setting
-  const updateSetting = (key: keyof UserSettings, value: any) => {
+  const updateSetting = (key: keyof UserSettings, value: UserSettings[keyof UserSettings]) => {
     const newSettings = { ...settings, [key]: value };
     setSettings(newSettings);
     

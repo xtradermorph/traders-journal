@@ -1,5 +1,3 @@
-import { Tables } from './supabase'
-
 export type MedalType = 'bronze' | 'silver' | 'gold' | 'platinum' | 'diamond'
 
 export type UserProfile = {

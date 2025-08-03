@@ -1,4 +1,4 @@
-import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle, ImageRun, ExternalHyperlink, PageBreak, Spacing, Tab, TabStopType, TabStopPosition } from 'docx';
+import { Document, Packer, Paragraph, TextRun, HeadingLevel, Table, TableRow, TableCell, WidthType, AlignmentType, BorderStyle } from 'docx';
 import { TopDownAnalysis, TDAQuestion, TDAAnswer, TDATimeframeAnalysis, TDAAnnouncement, TDAScreenshot } from '@/types/tda';
 import { format } from 'date-fns';
 
@@ -13,7 +13,7 @@ export interface TDADocumentData {
 }
 
 export async function generateTDAWordDocument(data: TDADocumentData): Promise<Uint8Array> {
-  const { analysis, timeframe_analyses, answers, questions, screenshots, announcements, analystName } = data;
+  const { analysis, analystName, questions, answers, announcements } = data;
 
   // Create document
   const doc = new Document({

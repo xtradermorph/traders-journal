@@ -90,7 +90,7 @@ export async function generateTradeReportExcel(trades: Trade[], reportType: stri
     });
     
     // Add trade data
-    tradeData.forEach((trade, index) => {
+    tradeData.forEach((trade) => {
       const row = worksheet.addRow({
         number: trade['#'],
         date: trade['Date'],

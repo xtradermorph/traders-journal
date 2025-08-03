@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subMonths, addMonths, isAfter, isBefore, startOfYear } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, subMonths, addMonths, isAfter, isBefore } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -81,23 +81,6 @@ const TradeCalendar = ({ trades, isLoading, userRegistrationDate }: TradeCalenda
       setCurrentMonth(new Date(now.getFullYear(), now.getMonth(), 1));
     }
   }, [userRegistrationDate]);
-
-  // Calculate the earliest trade date (for reference only)
-  const earliestTradeDate = useMemo(() => {
-    if (!trades || trades.length === 0) {
-      return null;
-    }
-    
-    const tradeDates = trades
-      .filter(trade => trade.date)
-      .map(trade => new Date(trade.date));
-    
-    if (tradeDates.length === 0) {
-      return null;
-    }
-    
-    return new Date(Math.min(...tradeDates.map(date => date.getTime())));
-  }, [trades]);
 
   // Calculate the latest allowed date (current month)
   const latestAllowedDate = useMemo(() => {
@@ -249,17 +232,10 @@ const TradeCalendar = ({ trades, isLoading, userRegistrationDate }: TradeCalenda
     return prevMonth.getFullYear() > registrationYear;
   })();
   
-  const canGoForward = !isAfter(addMonths(currentMonth, 1), latestAllowedDate);
-
 
 
   const showDayTrades = (date: Date, performance: { profit: number, count: number, trades: Trade[] }) => {
     const formattedDate = format(date, 'MMM dd, yyyy');
-  
-    // Create detailed trade information
-    const tradeDetails = performance.trades.map(trade => 
-      `${trade.currency_pair} (${trade.trade_type}): ${(trade.profit_loss || 0) > 0 ? '+' : ''}${(trade.profit_loss || 0).toFixed(2)} USD`
-    ).join('\n');
   
     // Show toast with trade details
     toast({

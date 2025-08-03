@@ -11,7 +11,7 @@ export default function ThemeSyncProvider({ children }: { children: React.ReactN
   useEffect(() => {
     // Helper to fetch and apply theme
     const applyUserTheme = async (userId: string) => {
-      const { data, error } = await supabase
+      const { data } = await supabase
         .from("user_settings")
         .select("theme")
         .eq("user_id", userId)

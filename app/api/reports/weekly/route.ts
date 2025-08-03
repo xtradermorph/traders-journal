@@ -6,7 +6,7 @@ import { generateTradeReportExcel, getDateRangeForReport, getReportPeriodLabel, 
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const supabase = createRouteHandlerClient({ cookies });
     
@@ -133,7 +133,17 @@ export async function POST(req: NextRequest) {
         `;
 
         // Send email with attachment if there are trades
-        const emailData: any = {
+        const emailData: {
+          to: string;
+          from: string;
+          subject: string;
+          html: string;
+          attachments?: Array<{
+            filename: string;
+            content: string;
+            contentType: string;
+          }>;
+        } = {
           to: userProfile.email,
           from: "Trader's Journal <noreply@tradersjournal.pro>",
           subject: emailSubject,

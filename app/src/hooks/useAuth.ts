@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react';
-import { Session, User, AuthChangeEvent } from '@supabase/supabase-js';
+import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
 export function useAuth() {
@@ -81,7 +81,7 @@ export function useAuth() {
 
     checkAuth();
 
-    let subscription: any = null;
+    let subscription: { unsubscribe: () => void } | null = null;
     
     try {
       if (supabase && supabase.auth) {

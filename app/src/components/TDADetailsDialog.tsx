@@ -7,6 +7,7 @@ import { Calendar, Clock, TrendingUp, User, Download, X, ImageIcon, Bell, Brain 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { downloadTDAAsWord } from '@/lib/tdaWordExport';
+import { TopDownAnalysis, TDAQuestion, TDAAnswer, TDATimeframeAnalysis, TDAAnnouncement, TDAScreenshot } from '@/types/tda';
 import { 
   Dialog as ScreenshotDialog, 
   DialogContent as ScreenshotDialogContent,
@@ -21,19 +22,19 @@ interface TDADetailsDialogProps {
 }
 
 interface AnalysisData {
-  analysis: any;
-  timeframe_analyses: any[];
-  answers: any[];
-  questions: any[];
-  screenshots: any[];
-  announcements: any[];
+  analysis: TopDownAnalysis;
+  timeframe_analyses: TDATimeframeAnalysis[];
+  answers: TDAAnswer[];
+  questions: TDAQuestion[];
+  screenshots: TDAScreenshot[];
+  announcements: TDAAnnouncement[];
 }
 
 export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADetailsDialogProps) {
   const [data, setData] = useState<AnalysisData | null>(null);
   const [loading, setLoading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [selectedScreenshot, setSelectedScreenshot] = useState<any>(null);
+  const [selectedScreenshot, setSelectedScreenshot] = useState<TDAScreenshot | null>(null);
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const { toast } = useToast();
 
@@ -242,7 +243,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
     if (isOpen && analysisId) {
       fetchAnalysisData();
     }
-  }, [isOpen, analysisId]);
+  }, [isOpen, analysisId, fetchAnalysisData]);
 
   if (loading) {
     return (
@@ -280,7 +281,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
   }
 
   // Get analyzed timeframes from timeframe_analyses
-  const analyzedTimeframes = (data.timeframe_analyses || []).map((ta: any) => ta.timeframe);
+  const analyzedTimeframes = (data.timeframe_analyses || []).map((ta: TDATimeframeAnalysis) => ta.timeframe as string);
 
   return (
     <>
@@ -402,7 +403,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                   <p className="text-slate-600 text-center py-4">No timeframe data available</p>
                 ) : (
                   analyzedTimeframes.map((timeframe: string) => {
-                    const timeframeAnalysis = data.timeframe_analyses?.find((ta: any) => ta.timeframe === timeframe);
+                    const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
                     const timeframeAnswers = data.answers || [];
                     const isSummaryOnly = isSummaryOnlyTimeframe(timeframe);
                     const questionsToShow = isSummaryOnly ? getSummaryQuestions(timeframe) : getHardcodedQuestions(timeframe);
@@ -434,11 +435,11 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
 
                         {/* Questions and Answers */}
                         <div className="space-y-3">
-                          {questionsToShow.map((question: any) => {
+                          {questionsToShow.map((question: TDAQuestion) => {
                             // Find the answer by matching question text instead of ID
-                            const answer = data.answers.find((a: any) => {
+                            const answer = data.answers.find((a: TDAAnswer) => {
                               // First try to find the question in the database questions
-                              const dbQuestion = data.questions.find((q: any) => q.question_text === question.question_text);
+                              const dbQuestion = data.questions.find((q: TDAQuestion) => q.question_text === question.question_text);
                               if (dbQuestion) {
                                 return a.question_id === dbQuestion.id;
                               }
@@ -483,7 +484,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {data.screenshots.map((screenshot: any) => (
+                    {data.screenshots.map((screenshot: TDAScreenshot) => (
                       <div key={screenshot.id} className="bg-white/70 rounded-lg p-3 border border-purple-200">
                         <img
                           src={screenshot.file_url}
@@ -519,7 +520,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {data.announcements.map((announcement: any) => (
+                    {data.announcements.map((announcement: TDAAnnouncement) => (
                       <div key={announcement.id} className="bg-white/70 rounded-lg p-3 border border-yellow-200">
                         <h4 className="font-medium text-slate-800 mb-1">{announcement.announcement_type}</h4>
                         <p className="text-sm text-slate-600 mb-2">{announcement.time}</p>

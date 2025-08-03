@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabase';
 import { Card, CardContent, CardFooter } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -19,7 +18,6 @@ import { PublicProfileView } from '@/components/PublicProfileView';
 import { sendFriendRequest, getFriendshipStatusString, acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from '../lib/friendsUtils';
 import { useChatStore } from '@/lib/store/chatStore';
 import DashboardFooter from '@/components/DashboardFooter';
-import { LoadingPage } from '../components/ui/loading-spinner';
 
 interface Trader {
   id: string;

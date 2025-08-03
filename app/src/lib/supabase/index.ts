@@ -14,21 +14,18 @@ export const supabase = (() => {
     // Return a mock client for SSR
     return {
       auth: {
-        getSession: async () => ({ data: { session: null }, error: null }),
+        getSession: () => Promise.resolve({ data: { session: null }, error: null }),
         onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-        signOut: async () => ({ error: null })
+        signOut: () => Promise.resolve({ error: null }),
       },
       from: () => ({
-        select: () => ({
-          eq: () => ({
-            single: async () => ({ data: null, error: null }),
-            order: () => ({ data: [], error: null })
-          })
-        }),
-        upsert: async () => ({ error: null })
+        select: () => ({ eq: () => ({ single: () => Promise.resolve({ data: null, error: null }) }) }),
+        insert: () => Promise.resolve({ data: null, error: null }),
+        update: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
+        delete: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
       }),
-      rpc: async () => ({ data: null, error: null })
-    } as any
+      rpc: () => Promise.resolve({ data: null, error: null }),
+    } as any;
   }
 
   if (!supabaseClient) {
@@ -53,7 +50,7 @@ export const supabase = (() => {
           upsert: async () => ({ error: new Error('Supabase client not available') })
         }),
         rpc: async () => ({ data: null, error: new Error('Supabase client not available') })
-      } as any
+      } as ReturnType<typeof createClientComponentClient<Database>>
     }
   }
 

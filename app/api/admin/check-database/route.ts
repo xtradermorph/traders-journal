@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
@@ -135,7 +135,7 @@ export async function GET() {
     results.summary = {
       totalChecks: results.checks.length,
       totalErrors: results.errors.length,
-      tablesExist: Object.values(results.tables).filter((t: any) => t.exists).length,
+      tablesExist: Object.values(results.tables as Record<string, { exists?: boolean }>).filter((t) => t.exists).length,
       isAdmin: results.userRole?.toLowerCase() === 'admin'
     };
 

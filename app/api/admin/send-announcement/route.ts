@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ message: "Failed to fetch emails" }, { status: 500 });
   }
 
-  const emails = profiles.map((p: any) => p.email).filter(Boolean);
+  const emails = profiles.map((p: { email: string }) => p.email).filter(Boolean);
 
   // 4. Send the email using Resend (batch or loop)
   try {
