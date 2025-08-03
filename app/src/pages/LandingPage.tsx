@@ -59,7 +59,7 @@ export default function LandingPage() {
         <div className="space-y-8">
           <FeatureSection
             title="Track Your Trades"
-            summary="Whether you're an experienced trader or just beginning, our sleek tool empowers you to master the markets effectively."
+            summary="Whether you&apos;re an experienced trader or just beginning, our sleek tool empowers you to master the markets effectively."
             description={[
               "Record entries, exits, and key observations for each trade",
               "Add screenshots and notes to document your trading journey",
@@ -142,7 +142,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Company Info */}
             <div className="space-y-2">
-              <h3 className="text-lg font-semibold">Trader's Journal</h3>
+              <h3 className="text-lg font-semibold">Trader&apos;s Journal</h3>
               <p className="text-sm text-muted-foreground">
                 Your comprehensive trading companion for better market analysis and performance tracking.
               </p>
@@ -223,7 +223,7 @@ export default function LandingPage() {
           <div className="mt-4 border-t border-border pt-4">
             <div className="flex flex-col md:flex-row justify-between items-center gap-2">
               <p className="text-sm text-muted-foreground">
-                {new Date().getFullYear()} Trader's Journal. All rights reserved.
+                {new Date().getFullYear()} Trader&apos;s Journal. All rights reserved.
               </p>
               <div className="flex items-center gap-4">
                   <Link href="/privacy" className="text-sm text-muted-foreground hover:text-primary transition-colors" onClick={() => { try { sessionStorage.setItem('fromLanding', 'true'); } catch {} }}>

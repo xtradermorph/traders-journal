@@ -15,12 +15,9 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, TrendingUp, Calendar, Clock, DollarSign, Tag, FileText } from "lucide-react";
+import { Loader2, DollarSign } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
 
 const currencyPairs = [
   "GBPUSD",
@@ -101,14 +98,14 @@ interface AddTradeDialogProps {
 const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCustomLotSize, setIsCustomLotSize] = useState(false);
   const [customLotSizeValue, setCustomLotSizeValue] = useState('');
   const [customLotSizeError, setCustomLotSizeError] = useState('');
   const [notesCharCount, setNotesCharCount] = useState(0);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [entryPriceRaw, setEntryPriceRaw] = useState('');
   const [exitPriceRaw, setExitPriceRaw] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
@@ -164,7 +161,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
       return 0;
     }
 
-    let entryTotalMinutes = entryHours * 60 + entryMinutes;
+    const entryTotalMinutes = entryHours * 60 + entryMinutes;
     let exitTotalMinutes = exitHours * 60 + exitMinutes;
 
     if (exitTotalMinutes < entryTotalMinutes) {
@@ -321,7 +318,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
         toast({
           id: 'trade-add-success',
           title: 'Trade Added Successfully',
-          description: 'New trade has been successfully recorded into your Trader\'s Journal.',
+          description: 'New trade has been successfully recorded into your Trader&apos;s Journal.',
           variant: 'default',
         });
         
@@ -1096,6 +1093,12 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
                     </ul>
                   </CardContent>
                 </Card>
+              )}
+
+              {saveSuccess && (
+                <Alert className="mb-4 bg-green-50 border-green-200 text-green-800">
+                  <AlertDescription>New trade has been successfully recorded into your Trader&apos;s Journal.</AlertDescription>
+                </Alert>
               )}
 
               <DialogFooter className="mt-6 space-x-3">

@@ -5,7 +5,6 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
@@ -29,7 +28,6 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
-  DialogClose,
 } from "@/components/ui/dialog";
 import {
   AlertDialog,
@@ -753,7 +751,7 @@ const SupportManagementPage = () => {
                 onChange={(e) => setCleanupDays(parseInt(e.target.value) || 30)}
               />
               <p className="text-sm text-muted-foreground">
-                Support requests with status "resolved" or "closed" that haven't been updated in {cleanupDays} days will be permanently deleted.
+                Support requests with status &quot;resolved&quot; or &quot;closed&quot; that haven&apos;t been updated in {cleanupDays} days will be permanently deleted.
               </p>
             </div>
           </div>

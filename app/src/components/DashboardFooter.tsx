@@ -26,7 +26,7 @@ export default function DashboardFooter() {
           </Link>
         </div>
         <p className="text-sm text-muted-foreground mt-2 md:mt-0">
-          {new Date().getFullYear()} Trader's Journal. All rights reserved.
+          {new Date().getFullYear()} Trader&apos;s Journal. All rights reserved.
         </p>
       </div>
     </footer>

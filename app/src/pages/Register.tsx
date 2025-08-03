@@ -172,14 +172,28 @@ const Register = () => {
       setError(null);
       setTurnstileError(null);
       
-      // Skip Turnstile check in development mode
-      if (!isDevelopment) {
-        // Check if Turnstile token is present
-        if (!turnstileToken) {
-          setTurnstileError('Please complete the security check');
-          setIsLoading(false);
-          return;
-        }
+      // Check if Turnstile token is present
+      if (!turnstileToken) {
+        setTurnstileError('Please complete the security check');
+        setIsLoading(false);
+        return;
+      }
+
+      // Verify Turnstile token
+      const verificationResponse = await fetch('/api/turnstile/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: turnstileToken,
+          action: 'register',
+        }),
+      });
+
+      const verificationResult = await verificationResponse.json();
+      if (!verificationResult.success) {
+        setTurnstileError('Security check failed. Please try again.');
+        setIsLoading(false);
+        return;
       }
       
       await registerMutation.mutateAsync(data);
@@ -214,7 +228,7 @@ const Register = () => {
                 Create Account
               </h1>
               <p className="text-muted-foreground">
-                Join Trader's Journal and start tracking your trades
+                Join Trader&apos;s Journal and start tracking your trades
               </p>
             </div>
 
@@ -398,35 +412,34 @@ const Register = () => {
                   <div className="text-red-500 text-sm">{error}</div>
                 )}
 
-                {/* Turnstile Security Check - Only show in production */}
-                {!isDevelopment && (
-                  <div className="space-y-2">
-                    <Turnstile
-                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
-                      onVerify={(token) => {
-                        setTurnstileToken(token);
-                        setTurnstileError(null);
-                      }}
-                      onError={(error) => {
-                        setTurnstileError('Security check failed. Please try again.');
-                        setTurnstileToken(null);
-                      }}
-                      onExpire={() => {
-                        setTurnstileToken(null);
-                        setTurnstileError('Security check expired. Please try again.');
-                      }}
-                      action="register"
-                      appearance="interaction-only"
-                      theme="auto"
-                      className="flex justify-center"
-                    />
-                    {turnstileError && (
-                      <div className="text-sm text-destructive text-center">
-                        {turnstileError}
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* Turnstile Security Check */}
+                <div className="space-y-2">
+                  <Turnstile
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
+                    onVerify={(token) => {
+                      setTurnstileToken(token);
+                      setTurnstileError(null);
+                    }}
+                    onError={(error) => {
+                      setTurnstileError('Security check failed. Please try again.');
+                      setTurnstileToken(null);
+                    }}
+                    onExpire={() => {
+                      setTurnstileToken(null);
+                      setTurnstileError('Security check expired. Please try again.');
+                    }}
+                    action="register"
+                    appearance="interaction-only"
+                    theme="auto"
+                    size="normal"
+                    className="flex justify-center"
+                  />
+                  {turnstileError && (
+                    <div className="text-sm text-destructive text-center">
+                      {turnstileError}
+                    </div>
+                  )}
+                </div>
 
                 
 
@@ -435,7 +448,7 @@ const Register = () => {
                   className="w-full text-lg py-6"
                   disabled={
                     registerMutation.isPending || 
-                    (!isDevelopment && !turnstileToken) ||
+                    !turnstileToken ||
                     !registerForm.formState.isValid ||
                     !registerForm.watch('agreeToTerms') ||
                     !registerForm.watch('username') ||

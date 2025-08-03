@@ -40,7 +40,7 @@ const getPageTitle = (pathname: string): string => {
   if (pathname.startsWith('/profile')) return "Profile";
   if (pathname.startsWith('/support')) return "Support";
   // Add more mappings as needed
-  return "Trader's Journal"; // Default title
+  return "Trader&apos;s Journal"; // Default title
 };
 
 const Layout = ({ children, pathname }: LayoutProps) => {
@@ -176,7 +176,7 @@ const Layout = ({ children, pathname }: LayoutProps) => {
             <Link href="/" className="hover:opacity-80 transition-opacity">
               <img src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images//proper%20logo.png" alt="Logo" className="h-20 w-20" />
             </Link>
-            <h1 className="ml-2 text-lg font-semibold text-neutral">Trader's Journal</h1>
+            <h1 className="ml-2 text-lg font-semibold text-neutral">Trader&apos;s Journal</h1>
           </div>
           <div className="flex gap-4">
             <Button variant="outline" size="lg" asChild>
@@ -234,7 +234,7 @@ const Layout = ({ children, pathname }: LayoutProps) => {
           <div className="container flex h-16 items-center justify-between py-4">
             <Link href="/" className="flex items-center space-x-2">
               <TrendingUp className="h-6 w-6" />
-              <span className="font-bold">Trader's Journal</span>
+              <span className="font-bold">Trader&apos;s Journal</span>
             </Link>
             <nav className="flex items-center space-x-4">
               <Link href="/login" className="text-sm font-medium hover:underline">

@@ -7,30 +7,17 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import {
-  LayoutDashboard, // Placeholder for a dashboard/page title icon if needed
-  ListOrdered, // For Trade Records
   User,
   Settings,
   LifeBuoy, // For Support
   LogOut,
-  PlusCircle, // For Add Trade button - will change to PlusIcon
   PlusIcon, // Added PlusIcon
-  MapPin, // For location display
   Users, // For Traders
   Globe, // For Social Forum discussions - modern community icon
   Search, // For search input
   UserPlus, // For follow button
   UserMinus, // For unfollow button
   UserCheck, // For (already) friends or accepted requests
-  Filter, // For filtering traders
   Zap, // For online status
   ZapOff, // For offline status
   UserX, // For remove friend, decline request
@@ -41,6 +28,7 @@ import {
   TrendingUp,
   MessagesSquare, // Added MessagesSquare
   BarChart3, // Added BarChart3
+  ListOrdered, // Added ListOrdered
 
 } from "lucide-react";
 import { supabase } from '@/lib/supabase';
@@ -70,7 +58,7 @@ import TopDownAnalysisDialog from './TopDownAnalysisDialog'; // Import TopDownAn
 import { useUserProfile } from "./UserProfileContext";
 import { getTrades } from '@/lib/api/trades';
 import { MedalType } from '@/types/user';
-import { Drawer, DrawerTrigger, DrawerContent, DrawerHeader, DrawerTitle, DrawerClose } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
 import { useTheme } from 'next-themes';
 
 import { useAuth } from '@/hooks/useAuth';

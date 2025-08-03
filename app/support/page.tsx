@@ -109,7 +109,7 @@ export default function SupportPage() {
                 <CardHeader>
                   <CardTitle>Frequently Asked Questions</CardTitle>
                   <CardDescription>
-                    Find answers to common questions about Trader's Journal.
+                    Find answers to common questions about Trader&apos;s Journal.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -117,9 +117,9 @@ export default function SupportPage() {
                     <AccordionItem value="item-1">
                       <AccordionTrigger>How do I add a new trade?</AccordionTrigger>
                       <AccordionContent>
-                        You can add a new trade by clicking the "Add Trade" button (plus icon) in the top-right corner of the dashboard. 
+                        You can add a new trade by clicking the &quot;Add Trade&quot; button (plus icon) in the top-right corner of the dashboard. 
                         Fill in all the required trade details including currency pair, entry/exit prices, lot size, and notes. 
-                        The system will automatically calculate pips and duration. Click "Save Trade" to record your trade.
+                        The system will automatically calculate pips and duration. Click &quot;Save Trade&quot; to record your trade.
                       </AccordionContent>
                     </AccordionItem>
                     
@@ -180,7 +180,7 @@ export default function SupportPage() {
                         The Social Forum allows you to connect with other traders and share insights:
                         <ul className="list-disc pl-6 mt-2 space-y-1">
                           <li>Share trade setups with charts and analysis</li>
-                          <li>Comment on and like other traders' posts</li>
+                          <li>Comment on and like other traders&apos; posts</li>
                           <li>Browse community discussions by currency pairs</li>
                           <li>Follow other traders and build your network</li>
                           <li>Access trending discussions and popular setups</li>
@@ -232,7 +232,7 @@ export default function SupportPage() {
                           <li><span className="font-medium">No medal:</span> Less than 60% positive trades or fewer than 10 trades total</li>
                         </ul>
                         <p className="mt-3 text-sm text-muted-foreground">
-                          Medals are awarded after you've recorded at least 10 trades. You'll receive email notifications when you earn new medals, 
+                          Medals are awarded after you&apos;ve recorded at least 10 trades. You&apos;ll receive email notifications when you earn new medals, 
                           and they appear on your profile to showcase your trading achievements.
                         </p>
                       </AccordionContent>
@@ -319,7 +319,7 @@ export default function SupportPage() {
                 <CardHeader>
                   <CardTitle>Contact Support</CardTitle>
                   <CardDescription>
-                    Need help with something specific? Send us a message and we'll get back to you as soon as possible.
+                    Need help with something specific? Send us a message and we&apos;ll get back to you as soon as possible.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -328,7 +328,7 @@ export default function SupportPage() {
                       <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
                       <AlertTitle className="text-green-800 dark:text-green-400">Message Sent Successfully</AlertTitle>
                       <AlertDescription className="text-green-700 dark:text-green-500">
-                        Thank you for contacting us. We've received your message and will respond as soon as possible.
+                        Thank you for contacting us. We&apos;ve received your message and will respond as soon as possible.
                       </AlertDescription>
                     </Alert>
                   )}
@@ -419,7 +419,7 @@ export default function SupportPage() {
                 <CardHeader>
                   <CardTitle>Resources</CardTitle>
                   <CardDescription>
-                    Helpful resources and documentation for Trader's Journal.
+                    Helpful resources and documentation for Trader&apos;s Journal.
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
@@ -433,7 +433,7 @@ export default function SupportPage() {
                       </CardHeader>
                       <CardContent>
                         <p className="text-sm text-muted-foreground mb-4">
-                          Learn how to use all features of Trader's Journal with our comprehensive user guide.
+                          Learn how to use all features of Trader&apos;s Journal with our comprehensive user guide.
                         </p>
                             <Button variant="outline" className="w-full" onClick={() => setGuideOpen(true)}>
                               <FileText className="mr-2 h-4 w-4" />
@@ -495,7 +495,7 @@ export default function SupportPage() {
       <Dialog open={guideOpen} onOpenChange={setGuideOpen}>
         <DialogContent className="max-w-2xl max-h-[80vh] bg-card/95 backdrop-blur-md border border-primary shadow-2xl flex flex-col">
           <DialogHeader>
-            <DialogTitle className="gradient-heading text-2xl">Trader's Journal User Guide</DialogTitle>
+            <DialogTitle className="gradient-heading text-2xl">Trader&apos;s Journal User Guide</DialogTitle>
             <DialogDescription className="mb-4">
               Everything you need to know to get the most out of your trading journal.
             </DialogDescription>
@@ -557,7 +557,7 @@ export default function SupportPage() {
             <ul>
               <li>Access the <b>Social Forum</b> to connect with other traders and share insights.</li>
               <li>Share trade setups with charts and analysis in the community.</li>
-              <li>Comment on and like other traders' posts.</li>
+              <li>Comment on and like other traders&apos; posts.</li>
               <li>Browse discussions by currency pairs and trending topics.</li>
               <li>Manage your friends and connections through the Traders section.</li>
             </ul>

@@ -4,23 +4,20 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TopDownAnalysis } from '@/types/tda';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, TrendingUp, TrendingDown, Minus, AlertTriangle, Eye, Trash2, Loader2, Download, Plus, Search, Filter, Target, ChevronDown, ChevronRight, Star } from 'lucide-react';
+import { Calendar, Eye, Trash2, Loader2, Download, Plus, Target, ChevronDown, ChevronRight, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadTDAAsWord, TDADocumentData } from '@/lib/tdaWordExport';
 import { useUserProfile } from '@/components/UserProfileContext';
 import TopDownAnalysisDialog from '@/components/TopDownAnalysisDialog';
-import { Skeleton } from '@/components/ui/skeleton';
 import DashboardFooter from '@/components/DashboardFooter';
-import PerformanceAnalysis from '@/components/PerformanceAnalysis';
 import TDADetailsDialog from '@/components/TDADetailsDialog';
 import { LoadingPage } from '../components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
@@ -45,8 +42,6 @@ export default function TopDownAnalysisPage() {
   const queryClient = useQueryClient();
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState<TopDownAnalysis | null>(null);
-  const [detailedAnalysis, setDetailedAnalysis] = useState<any>(null);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isTDAOpen, setIsTDAOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currencyFilter, setCurrencyFilter] = useState('all');
@@ -75,21 +70,21 @@ export default function TopDownAnalysisPage() {
     const fetchTimeframeData = async () => {
       if (!analyses || analyses.length === 0) return;
       
-      const timeframeMap: Record<string, string[]> = {};
-      
-      for (const analysis of analyses) {
-        try {
-          const response = await fetch(`/api/tda/timeframe-analyses?analysis_id=${analysis.id}`);
-          if (response.ok) {
-            const data = await response.json();
-            const timeframes = data.timeframe_analyses?.map((ta: any) => ta.timeframe) || [];
-            timeframeMap[analysis.id] = timeframes;
+              const timeframeMap: Record<string, string[]> = {};
+        
+        for (const analysis of analyses) {
+          try {
+            const response = await fetch(`/api/tda/timeframe-analyses?analysis_id=${analysis.id}`);
+            if (response.ok) {
+              const data = await response.json();
+              const timeframes = data.timeframe_analyses?.map((ta: { timeframe: string }) => ta.timeframe) || [];
+              timeframeMap[analysis.id] = timeframes;
+            }
+          } catch (error) {
+            console.error('Error fetching timeframes for analysis:', analysis.id, error);
+            timeframeMap[analysis.id] = [];
           }
-        } catch (error) {
-          console.error('Error fetching timeframes for analysis:', analysis.id, error);
-          timeframeMap[analysis.id] = [];
         }
-      }
       
       setTimeframeData(timeframeMap);
     };
@@ -392,12 +387,12 @@ export default function TopDownAnalysisPage() {
                {filteredAnalyses && filteredAnalyses.length > 0 && (
                  <div className="mb-8">
                    <h2 className="text-xl font-semibold text-foreground mb-4 pt-2 border-t border-border">
-                     Today's Analyses
+                     Today&apos;s Analyses
                    </h2>
                    {todayAnalyses.length > 0 ? (
                      <div className="space-y-2">
                                                {todayAnalyses.map((analysis) => (
-                          <Card key={analysis.id} className="hover:shadow-md transition-shadow bg-gray-50/50 dark:bg-gray-800/50">
+                          <Card key={analysis.id} className="hover:scale-95 transition-transform duration-200 bg-gray-50/50 dark:bg-gray-800/50">
                             <CardContent className="pt-3 pb-3">
                              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 space-y-2 sm:space-y-0">
                                <div className="flex items-center gap-2">
@@ -560,7 +555,7 @@ export default function TopDownAnalysisPage() {
                        {isOpen && (
                                                    <div className="space-y-2">
                             {group.analyses.map((analysis) => (
-                              <Card key={analysis.id} className="hover:shadow-md transition-shadow bg-gray-50/50 dark:bg-gray-800/50">
+                              <Card key={analysis.id} className="hover:scale-95 transition-transform duration-200 bg-gray-50/50 dark:bg-gray-800/50">
                                 <CardContent className="pt-3 pb-3">
                                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 space-y-2 sm:space-y-0">
                                    <div className="flex items-center gap-2">

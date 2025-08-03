@@ -57,6 +57,10 @@ const Login = () => {
                   window.location.hostname === 'localhost' || 
                   window.location.hostname === '127.0.0.1';
     setIsDevelopment(isDev);
+    
+    // For testing purposes, you can temporarily enable Turnstile in development
+    // by commenting out the line above and setting isDevelopment to false
+    // setIsDevelopment(false);
   }, []);
   
   // Get redirect URL from query parameters
@@ -196,27 +200,25 @@ const Login = () => {
 
   const onSubmit = async (data: LoginFormValues) => {
     try {
-      // Skip Turnstile verification in development mode
-      if (!isDevelopment) {
-        // Verify Turnstile token
-        if (!turnstileToken) {
-          setTurnstileError('Please complete the security check');
-          return;
-        }
+      // Verify Turnstile token
+      if (!turnstileToken) {
+        setTurnstileError('Please complete the security check');
+        return;
+      }
 
-        const verificationResponse = await fetch('/api/turnstile/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            token: turnstileToken,
-          }),
-        });
+      const verificationResponse = await fetch('/api/turnstile/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token: turnstileToken,
+          action: 'login',
+        }),
+      });
 
-        const verificationResult = await verificationResponse.json();
-        if (!verificationResult.success) {
-          setTurnstileError('Security check failed. Please try again.');
-          return;
-        }
+      const verificationResult = await verificationResponse.json();
+      if (!verificationResult.success) {
+        setTurnstileError('Security check failed. Please try again.');
+        return;
       }
 
       await loginMutation.mutateAsync(data);
@@ -282,7 +284,7 @@ const Login = () => {
             Log in to
           </h2>
           <h2 className="text-3xl font-bold gradient-heading">
-            Trader's Journal
+            Trader&apos;s Journal
           </h2>
         </div>
         <div className="space-y-6">
@@ -386,40 +388,42 @@ const Login = () => {
                   <div className="text-red-500 text-sm">{error}</div>
                 )}
                 
-                {/* Turnstile Security Check - Only show in production */}
-                {!isDevelopment && (
-                  <div className="space-y-2">
-                    <div className="flex justify-center">
-                      <Turnstile
-                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
-                        onVerify={(token) => {
-                          setTurnstileToken(token);
-                          setTurnstileError(null);
-                        }}
-                        onError={(error) => {
-                          setTurnstileError('Security check failed. Please try again.');
-                          setTurnstileToken(null);
-                        }}
-                        onExpire={() => {
-                          setTurnstileToken(null);
-                          setTurnstileError('Security check expired. Please try again.');
-                        }}
-                      />
-                    </div>
-                    {turnstileError && (
-                      <div className="text-red-500 text-sm text-center">
-                        {turnstileError}
-                      </div>
-                    )}
+                {/* Turnstile Security Check */}
+                <div className="space-y-2">
+                  <div className="flex justify-center">
+                    <Turnstile
+                      siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
+                      onVerify={(token) => {
+                        setTurnstileToken(token);
+                        setTurnstileError(null);
+                      }}
+                      onError={(error) => {
+                        setTurnstileError('Security check failed. Please try again.');
+                        setTurnstileToken(null);
+                      }}
+                      onExpire={() => {
+                        setTurnstileToken(null);
+                        setTurnstileError('Security check expired. Please try again.');
+                      }}
+                      action="login"
+                      appearance="interaction-only"
+                      theme="auto"
+                      size="normal"
+                    />
                   </div>
-                )}
+                  {turnstileError && (
+                    <div className="text-red-500 text-sm text-center">
+                      {turnstileError}
+                    </div>
+                  )}
+                </div>
                 
               <Button
                 type="submit"
                 className="w-full"
                 disabled={
                   isLoading || 
-                  (!isDevelopment && !turnstileToken) ||
+                  !turnstileToken ||
                   !loginForm.formState.isValid ||
                   !loginForm.watch('email') ||
                   !loginForm.watch('password')
@@ -498,9 +502,9 @@ const Login = () => {
       <div className="space-y-6">
         <Separator />
         <p className="text-center text-muted-foreground">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/register" className="text-foreground hover:text-primary transition-colors">
-            Sign up for Trader's Journal
+            Sign up for Trader&apos;s Journal
           </Link>
         </p>
       </div>

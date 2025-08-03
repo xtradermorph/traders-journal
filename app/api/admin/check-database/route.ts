@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createRouteHandlerClient({ cookies });
     
@@ -12,7 +12,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const results: any = {
+    const results: {
+      timestamp: string;
+      user_id: string;
+      checks: string[];
+      errors: string[];
+      tables: Record<string, unknown>;
+      userRole?: string;
+      policies?: string;
+      summary?: Record<string, unknown>;
+    } = {
       timestamp: new Date().toISOString(),
       user_id: user.id,
       checks: [],
@@ -39,7 +48,7 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       results.errors.push(`user_settings table exception: ${error}`);
-      results.tables.user_settings = { exists: false, error: error };
+      results.tables.user_settings = { exists: false, error: String(error) };
     }
 
     // Check profiles table
@@ -61,7 +70,7 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       results.errors.push(`profiles table exception: ${error}`);
-      results.tables.profiles = { exists: false, error: error };
+      results.tables.profiles = { exists: false, error: String(error) };
     }
 
     // Check trades table
@@ -83,7 +92,7 @@ export async function GET(request: NextRequest) {
       }
     } catch (error) {
       results.errors.push(`trades table exception: ${error}`);
-      results.tables.trades = { exists: false, error: error };
+      results.tables.trades = { exists: false, error: String(error) };
     }
 
     // Check if user has admin role

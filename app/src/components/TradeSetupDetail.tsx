@@ -451,7 +451,7 @@ const TradeSetupDetail: React.FC<TradeSetupDetailProps> = ({ id }) => {
         <CardContent className="flex flex-col items-center justify-center py-10">
           <h3 className="text-xl font-medium mb-2">Trade Setup Not Found</h3>
           <p className="text-muted-foreground text-center mb-4">
-            The trade setup you're looking for doesn't exist or has been removed.
+            The trade setup you&apos;re looking for doesn&apos;t exist or has been removed.
           </p>
           <Button asChild>
             <Link href="/social-forum">Back to Social Forum</Link>

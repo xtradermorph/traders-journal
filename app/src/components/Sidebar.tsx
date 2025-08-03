@@ -183,7 +183,7 @@ const Sidebar = () => {
               alt="Logo" 
               className="h-10 w-10" 
             />
-            <span className="ml-2 text-lg font-semibold text-foreground">Trader's Journal</span>
+            <span className="ml-2 text-lg font-semibold text-foreground">Trader&apos;s Journal</span>
           </Link>
         </div>
         

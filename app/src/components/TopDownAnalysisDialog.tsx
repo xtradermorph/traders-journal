@@ -169,6 +169,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
   const [showValidationDialog, setShowValidationDialog] = useState(false); // Validation dialog state
   const [openTooltipId, setOpenTooltipId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   // Add click outside handler for tooltips
@@ -264,10 +265,15 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     onSuccess: (data) => {
       setAnalysisId(data.analysis.id);
       setCurrentStep(1);
+      setSaveSuccess(true);
       toast({
         title: "Analysis Created",
         description: "Your Top Down Analysis has been created. Let's start with the first timeframe.",
       });
+      // Reset success message after 2 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 2000);
     },
     onError: (error: Error) => {
       toast({
@@ -399,10 +405,15 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     },
     onSuccess: () => {
       setCurrentStep(4); // Show results
+      setSaveSuccess(true);
       toast({
         title: "Analysis Complete",
         description: "Your Top Down Analysis has been completed successfully.",
       });
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
     },
     onError: (error: Error) => {
       toast({
@@ -2473,6 +2484,17 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
           </div>
         </DialogHeader>
 
+          {/* Success Message */}
+          {saveSuccess && (
+            <div className="mx-3 sm:mx-4 md:mx-6 mt-4">
+              <Alert className="bg-green-50 border-green-200 text-green-800">
+                <AlertDescription>
+                  Your Top Down Analysis has been successfully saved to your Trader&apos;s Journal.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
+
           <div className={`${expanded ? 'flex-1 overflow-y-auto p-6' : 'p-3 sm:p-4 md:p-6'} bg-transparent`}>
           {renderContent(expanded, validationState.hasTriedNext)}
         </div>
@@ -2588,7 +2610,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
                 transform: 'translateY(-100%)'
               }}
             >
-              <div className="text-xs font-medium mb-1">Why it's important:</div>
+              <div className="text-xs font-medium mb-1">Why it&apos;s important:</div>
               <div className="text-xs leading-relaxed">{question.info}</div>
               <div className="absolute top-full left-2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
             </div>

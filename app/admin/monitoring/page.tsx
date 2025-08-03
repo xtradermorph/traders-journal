@@ -8,10 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, Send, Users, Mail, AlertCircle, FileText, Download, X } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Loader2, Send, Users, Mail, AlertCircle, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import SupportManagementPage from './support-management/page';
 import htmlDocx from 'html-docx-js/dist/html-docx';
@@ -322,7 +321,7 @@ export default function MonitoringPage() {
     }, 5 * 60 * 1000);
     
     return () => clearInterval(interval);
-  }, []);
+  }, [checkHealth, fetchProjectUpdateStats, fetchUsers]);
 
   const getStatusBadge = (status: string) => {
     switch (status) {
