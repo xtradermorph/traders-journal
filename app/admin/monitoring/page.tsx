@@ -8,10 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
-import { Loader2, Send, Users, Mail, AlertCircle, FileText, Download, X } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Loader2, Send, Users, Mail, AlertCircle, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import SupportManagementPage from './support-management/page';
 import htmlDocx from 'html-docx-js/dist/html-docx';
@@ -25,11 +24,15 @@ interface HealthStatus {
   database?: {
     connected: boolean;
     recordCount: number;
+    error?: string;
   };
   edgeFunction?: {
     status: string;
   };
   cronJobs?: {
+    status: string;
+  };
+  emailService?: {
     status: string;
   };
   error?: string;
@@ -71,16 +74,29 @@ export default function MonitoringPage() {
   const checkHealth = async () => {
     setLoading(true);
     try {
-      const response = await fetch('/api/health');
+      const response = await fetch('/api/health', {
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
       const data = await response.json();
       setHealthStatus(data);
       setLastChecked(new Date());
     } catch (error) {
-      console.error('Error checking health:', error);
+      // Only log if it's not a network error or timeout
+      if (error instanceof Error && 
+          !error.message.includes('NetworkError') && 
+          !error.message.includes('timeout') &&
+          !error.message.includes('fetch') &&
+          !error.message.includes('The operation timed out') &&
+          !(error instanceof DOMException && error.name === 'TimeoutError')) {
+        console.error('Error checking health:', error);
+      }
       setHealthStatus({
         status: 'error',
         timestamp: new Date().toISOString(),
-        error: 'Failed to fetch health status'
+        error: error instanceof Error ? error.message : 'Failed to fetch health status'
       });
     } finally {
       setLoading(false);
@@ -89,19 +105,33 @@ export default function MonitoringPage() {
 
   const fetchProjectUpdateStats = async () => {
     try {
-      const response = await fetch('/api/admin/project-update-stats');
+      const response = await fetch('/api/admin/project-update-stats', {
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
       if (response.ok) {
         const data = await response.json();
         setProjectStats(data);
+      } else {
+        console.warn('Project update stats endpoint returned:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching project update stats:', error);
+      // Only log if it's not a network error or timeout
+      if (error instanceof Error && 
+          !error.message.includes('NetworkError') && 
+          !error.message.includes('timeout') &&
+          !error.message.includes('fetch') &&
+          !error.message.includes('The operation timed out') &&
+          !(error instanceof DOMException && error.name === 'TimeoutError')) {
+        console.error('Error fetching project update stats:', error);
+      }
     }
   };
 
   const fetchUsers = async () => {
     try {
-      const response = await fetch('/api/admin/users-list');
+      const response = await fetch('/api/admin/users-list', {
+        signal: AbortSignal.timeout(30000) // 30 second timeout
+      });
       if (response.ok) {
         const data = await response.json();
         setUsers(data.users || []);
@@ -111,14 +141,24 @@ export default function MonitoringPage() {
           subscribedUsers: data.subscribedUsers,
           lastSent: projectStats?.lastSent
         });
+      } else {
+        console.warn('Users list endpoint returned:', response.status);
       }
     } catch (error) {
-      console.error('Error fetching users:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch users list",
-        variant: "destructive"
-      });
+      // Only log if it's not a network error or timeout
+      if (error instanceof Error && 
+          !error.message.includes('NetworkError') && 
+          !error.message.includes('timeout') &&
+          !error.message.includes('fetch') &&
+          !error.message.includes('The operation timed out') &&
+          !(error instanceof DOMException && error.name === 'TimeoutError')) {
+        console.error('Error fetching users:', error);
+        toast({
+          title: "Error",
+          description: "Failed to fetch users list",
+          variant: "destructive"
+        });
+      }
     }
   };
 
@@ -311,18 +351,42 @@ export default function MonitoringPage() {
     }
   };
 
+  // Check health status
   useEffect(() => {
     checkHealth();
-    fetchProjectUpdateStats();
-    fetchUsers();
-    
-    // Set up auto-refresh every 5 minutes
-    const interval = setInterval(() => {
-      checkHealth();
-    }, 5 * 60 * 1000);
-    
+    // Check health every 5 minutes instead of every 30 seconds
+    const interval = setInterval(checkHealth, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch project stats and users
+  useEffect(() => {
+    fetchProjectUpdateStats();
+    fetchUsers();
+    // Fetch data every 2 minutes instead of every 30 seconds
+    const interval = setInterval(() => {
+      fetchProjectUpdateStats();
+      fetchUsers();
+    }, 2 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const getEmailServiceInfo = (status: string) => {
+    switch (status) {
+      case 'operational':
+        return 'Email service is working correctly';
+      case 'not_configured':
+        return 'RESEND_API_KEY environment variable is not set';
+      case 'unauthorized':
+        return 'Invalid API key - check your RESEND_API_KEY';
+      case 'forbidden':
+        return 'API key lacks required permissions';
+      case 'error':
+        return 'Connection error - check network and API configuration';
+      default:
+        return 'Unknown status';
+    }
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -335,9 +399,30 @@ export default function MonitoringPage() {
       case 'error':
         return <Badge className="bg-red-500 hover:bg-red-600">Error</Badge>;
       case 'inactive':
-        return <Badge className="bg-yellow-500 hover:bg-yellow-600">Inactive</Badge>;
+      case 'not_configured':
+        return <Badge className="bg-yellow-500 hover:bg-yellow-600">Not Configured</Badge>;
+      case 'unauthorized':
+        return <Badge className="bg-red-500 hover:bg-red-600">Unauthorized</Badge>;
+      case 'forbidden':
+        return <Badge className="bg-red-500 hover:bg-red-600">Forbidden</Badge>;
       default:
         return <Badge className="bg-gray-500 hover:bg-gray-600">Unknown</Badge>;
+    }
+  };
+
+  const refreshAllStatuses = async () => {
+    setLoading(true);
+    try {
+      // Refresh all statuses in parallel
+      await Promise.all([
+        checkHealth(),
+        fetchProjectUpdateStats(),
+        fetchUsers()
+      ]);
+    } catch (error) {
+      console.error('Error refreshing statuses:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -382,17 +467,17 @@ export default function MonitoringPage() {
           )}
         </div>
         <Button 
-          onClick={checkHealth} 
+          onClick={refreshAllStatuses} 
           disabled={loading}
           variant="outline"
         >
           {loading ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Checking...
+              Refreshing...
             </>
           ) : (
-            'Refresh Status'
+            'Refresh All Statuses'
           )}
         </Button>
       </div>
@@ -442,6 +527,11 @@ export default function MonitoringPage() {
               <div>
                 <p>Connection: {healthStatus.database.connected ? 'Active' : 'Failed'}</p>
                 <p className="mt-2">User Settings Count: {healthStatus.database.recordCount}</p>
+                {healthStatus.database.error && (
+                  <p className="text-red-500 mt-2 text-sm">
+                    Error: {healthStatus.database.error}
+                  </p>
+                )}
                 <p className="mt-4">
                   <a 
                     href="https://supabase.com/dashboard/project/ynyzwdddwkzakptenhuy/editor" 
@@ -508,6 +598,14 @@ export default function MonitoringPage() {
             {healthStatus?.cronJobs ? (
               <div>
                 <p>Status: {healthStatus.cronJobs.status}</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {healthStatus.cronJobs.status === 'active' 
+                    ? 'Cron job is running on schedule (daily at 6 AM UTC)'
+                    : healthStatus.cronJobs.status === 'inactive'
+                    ? 'Cron job has not executed recently (expected daily at 6 AM UTC)'
+                    : 'Cron job monitoring is not configured'
+                  }
+                </p>
                 <p className="mt-4">
                   <a 
                     href="https://supabase.com/dashboard/project/ynyzwdddwkzakptenhuy/sql" 
@@ -516,6 +614,16 @@ export default function MonitoringPage() {
                     className="text-blue-500 hover:underline"
                   >
                     Check SQL Editor
+                  </a>
+                </p>
+                <p className="mt-2">
+                  <a 
+                    href="https://supabase.com/dashboard/project/ynyzwdddwkzakptenhuy/functions" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
+                    View Edge Functions
                   </a>
                 </p>
               </div>
@@ -529,25 +637,40 @@ export default function MonitoringPage() {
         
         <Card>
           <CardHeader>
-            <CardTitle>Email Service</CardTitle>
+            <CardTitle className="flex justify-between">
+              Email Service
+              {healthStatus?.emailService && getStatusBadge(healthStatus.emailService.status)}
+            </CardTitle>
             <CardDescription>
               Resend email delivery status
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <p>
-              <a 
-                href="https://resend.com/dashboard" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="text-blue-500 hover:underline"
-              >
-                Open Resend Dashboard
-              </a>
-            </p>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Check delivery rates, bounces, and opens in the Resend dashboard
-            </p>
+            {healthStatus?.emailService ? (
+              <div>
+                <p>Status: {healthStatus.emailService.status}</p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  {getEmailServiceInfo(healthStatus.emailService.status)}
+                </p>
+                <p className="mt-4">
+                  <a 
+                    href="https://resend.com/dashboard" 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-blue-500 hover:underline"
+                  >
+                    Open Resend Dashboard
+                  </a>
+                </p>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Check delivery rates, bounces, and opens in the Resend dashboard
+                </p>
+              </div>
+            ) : (
+              <div className="flex justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -4,26 +4,24 @@ import React, { useRef, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase';
 import { TopDownAnalysis } from '@/types/tda';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Calendar, TrendingUp, TrendingDown, Minus, AlertTriangle, Eye, Trash2, Loader2, Download, Plus, Search, Filter, Target, ChevronDown, ChevronRight, Star } from 'lucide-react';
+import { Calendar, Eye, Trash2, Loader2, Download, Plus, Target, ChevronDown, ChevronRight, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/PageHeader';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { downloadTDAAsWord, TDADocumentData } from '@/lib/tdaWordExport';
 import { useUserProfile } from '@/components/UserProfileContext';
 import TopDownAnalysisDialog from '@/components/TopDownAnalysisDialog';
-import { Skeleton } from '@/components/ui/skeleton';
 import DashboardFooter from '@/components/DashboardFooter';
-import PerformanceAnalysis from '@/components/PerformanceAnalysis';
 import TDADetailsDialog from '@/components/TDADetailsDialog';
 import { LoadingPage } from '../components/ui/loading-spinner';
 import { cn } from '@/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface MonthGroup {
   month_year: string;
@@ -45,8 +43,6 @@ export default function TopDownAnalysisPage() {
   const queryClient = useQueryClient();
   const mainScrollRef = useRef<HTMLDivElement>(null);
   const [selectedAnalysis, setSelectedAnalysis] = useState<TopDownAnalysis | null>(null);
-  const [detailedAnalysis, setDetailedAnalysis] = useState<any>(null);
-  const [isLoadingDetails, setIsLoadingDetails] = useState(false);
   const [isTDAOpen, setIsTDAOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [currencyFilter, setCurrencyFilter] = useState('all');
@@ -75,21 +71,21 @@ export default function TopDownAnalysisPage() {
     const fetchTimeframeData = async () => {
       if (!analyses || analyses.length === 0) return;
       
-      const timeframeMap: Record<string, string[]> = {};
-      
-      for (const analysis of analyses) {
-        try {
-          const response = await fetch(`/api/tda/timeframe-analyses?analysis_id=${analysis.id}`);
-          if (response.ok) {
-            const data = await response.json();
-            const timeframes = data.timeframe_analyses?.map((ta: any) => ta.timeframe) || [];
-            timeframeMap[analysis.id] = timeframes;
+              const timeframeMap: Record<string, string[]> = {};
+        
+        for (const analysis of analyses) {
+          try {
+            const response = await fetch(`/api/tda/timeframe-analyses?analysis_id=${analysis.id}`);
+            if (response.ok) {
+              const data = await response.json();
+              const timeframes = data.timeframe_analyses?.map((ta: { timeframe: string }) => ta.timeframe) || [];
+              timeframeMap[analysis.id] = timeframes;
+            }
+          } catch (error) {
+            console.error('Error fetching timeframes for analysis:', analysis.id, error);
+            timeframeMap[analysis.id] = [];
           }
-        } catch (error) {
-          console.error('Error fetching timeframes for analysis:', analysis.id, error);
-          timeframeMap[analysis.id] = [];
         }
-      }
       
       setTimeframeData(timeframeMap);
     };
@@ -392,116 +388,137 @@ export default function TopDownAnalysisPage() {
                {filteredAnalyses && filteredAnalyses.length > 0 && (
                  <div className="mb-8">
                    <h2 className="text-xl font-semibold text-foreground mb-4 pt-2 border-t border-border">
-                     Today's Analyses
+                     Today&apos;s Analyses
                    </h2>
                    {todayAnalyses.length > 0 ? (
-                     <div className="space-y-2">
-                                               {todayAnalyses.map((analysis) => (
-                          <Card key={analysis.id} className="hover:shadow-md transition-shadow bg-gray-50/50 dark:bg-gray-800/50">
-                            <CardContent className="pt-3 pb-3">
-                             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 space-y-2 sm:space-y-0">
+                     <div className="space-y-4">
+                       {todayAnalyses.map((analysis) => (
+                         <div key={analysis.id} className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 border rounded-lg hover:scale-105 transition-transform duration-200 bg-gray-50/50 dark:bg-gray-800/50">
+                           {/* Analysis Info */}
+                           <div className="flex-1 space-y-3">
+                             <div className="flex items-center gap-4">
                                <div className="flex items-center gap-2">
-                                 <h4 className="font-semibold text-base sm:text-lg">{analysis.currency_pair}</h4>
+                                 <Calendar className="h-4 w-4 text-muted-foreground" />
+                                 <span className="text-sm font-medium">
+                                   {analysis.analysis_date ? (
+                                     <>
+                                       {new Date(analysis.analysis_date).toLocaleDateString('en-US', { 
+                                         year: 'numeric', month: 'short', day: 'numeric' 
+                                       })}
+                                       {analysis.analysis_time && (
+                                         <span className="ml-2">
+                                           {new Date(`2000-01-01T${analysis.analysis_time}`).toLocaleTimeString('en-US', {
+                                             hour: '2-digit',
+                                             minute: '2-digit',
+                                             hour12: true
+                                           })}
+                                         </span>
+                                       )}
+                                     </>
+                                   ) : (
+                                     format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')
+                                   )}
+                                 </span>
                                </div>
-                               <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                                 <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                                 {analysis.analysis_date ? (
-                                   <>
-                                     {new Date(analysis.analysis_date).toLocaleDateString('en-US', { 
-                                       year: 'numeric', month: 'short', day: 'numeric' 
-                                     })}
-                                     {analysis.analysis_time && (
-                                       <span className="ml-1 sm:ml-2">
-                                         {new Date(`2000-01-01T${analysis.analysis_time}`).toLocaleTimeString('en-US', {
-                                           hour: '2-digit',
-                                           minute: '2-digit',
-                                           hour12: true
-                                         })}
-                                       </span>
-                                     )}
-                                   </>
-                                 ) : (
-                                   format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')
-                                 )}
-                               </div>
-                             </div>
-                             
-                             <div className="flex flex-wrap items-center gap-2 mb-2">
-                               <Badge variant={analysis.status === 'COMPLETED' ? "default" : "outline"} className={`text-xs ${analysis.status === 'COMPLETED' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}>
+                               <Badge variant={analysis.status === 'COMPLETED' ? "default" : "outline"} className={analysis.status === 'COMPLETED' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}>
                                  {analysis.status}
-                               </Badge>
-                               <Badge variant={analysis.ai_summary ? "default" : "secondary"} className="text-xs">
-                                 AI Analysis: {analysis.ai_summary ? "Enabled" : "Disabled"}
                                </Badge>
                              </div>
 
-                             <div className="flex items-center justify-between gap-2 sm:gap-4">
+                             <div className="flex items-center gap-4">
                                <div>
-                                 <span className="text-xs sm:text-sm font-semibold text-white">Timeframes:</span>
-                                 <span className="text-xs sm:text-sm text-orange-400 font-medium ml-1 sm:ml-2">{getSelectedTimeframes(analysis)}</span>
+                                 <span className="text-sm font-semibold">Currency Pair:</span>
+                                 <span className="text-sm font-bold ml-2">{analysis.currency_pair}</span>
                                </div>
-                               <div className="flex items-center gap-1 sm:gap-2">
-                                 <Button 
-                                   variant="outline" 
-                                   size="sm"
-                                   onClick={() => handleViewDetails(analysis)}
-                                   className="p-2 h-8 sm:h-9"
-                                   title="View Details"
-                                 >
-                                   <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                                 </Button>
-                                 
-                                 <Button 
-                                   variant="outline" 
-                                   size="sm"
-                                   onClick={() => handleDownload(analysis)}
-                                   disabled={isDownloading}
-                                   title="Download as Word Document"
-                                   className="h-8 sm:h-9"
-                                 >
-                                   {isDownloading ? (
-                                     <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                                   ) : (
-                                     <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                                   )}
-                                 </Button>
-                                 
-                                 <AlertDialog>
-                                   <AlertDialogTrigger asChild>
-                                     <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 sm:h-9">
-                                       <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                                     </Button>
-                                   </AlertDialogTrigger>
-                                   <AlertDialogContent>
-                                     <AlertDialogHeader>
-                                       <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
-                                       <AlertDialogDescription>
-                                         Are you sure you want to delete this Top Down Analysis? This action cannot be undone and will permanently remove all associated data including screenshots and announcements.
-                                       </AlertDialogDescription>
-                                     </AlertDialogHeader>
-                                     <AlertDialogFooter>
-                                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                       <AlertDialogAction
-                                         onClick={() => handleDelete(analysis.id)}
-                                         className="bg-red-600 hover:bg-red-700"
-                                         disabled={deleteMutation.isPending}
-                                       >
-                                         {deleteMutation.isPending ? (
-                                           <>
-                                             <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                             Deleting...
-                                           </>
-                                         ) : (
-                                           'Delete'
-                                         )}
-                                       </AlertDialogAction>
-                                     </AlertDialogFooter>
-                                   </AlertDialogContent>
-                                 </AlertDialog>
+                               <div>
+                                 <span className="text-sm font-semibold text-white">Timeframes:</span>
+                                 <span className="text-sm text-orange-400 font-medium ml-2">{getSelectedTimeframes(analysis)}</span>
+                               </div>
+                               <div>
+                                 <span className="text-sm font-semibold">AI Analysis:</span>
+                                 <Badge variant={analysis.ai_summary ? "default" : "secondary"} className="ml-2 text-xs">
+                                   {analysis.ai_summary ? "Enabled" : "Disabled"}
+                                 </Badge>
                                </div>
                              </div>
-                           </CardContent>
-                         </Card>
+                           </div>
+
+                           {/* Action Buttons */}
+                           <div className="flex items-center gap-2">
+                             <TooltipProvider>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <Button 
+                                     variant="outline" 
+                                     size="sm"
+                                     onClick={() => handleViewDetails(analysis)}
+                                     className="p-2"
+                                     title="View Details"
+                                   >
+                                     <Eye className="h-4 w-4" />
+                                   </Button>
+                                 </TooltipTrigger>
+                                 <TooltipContent>
+                                   <p>View Analysis Details</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </TooltipProvider>
+                             
+                             <TooltipProvider>
+                               <Tooltip>
+                                 <TooltipTrigger asChild>
+                                   <Button 
+                                     variant="outline" 
+                                     size="sm"
+                                     onClick={() => handleDownload(analysis)}
+                                     disabled={isDownloading}
+                                     className="p-2"
+                                     title="Download Analysis"
+                                   >
+                                     {isDownloading ? (
+                                       <Loader2 className="h-4 w-4 animate-spin" />
+                                     ) : (
+                                       <Download className="h-4 w-4" />
+                                     )}
+                                   </Button>
+                                 </TooltipTrigger>
+                                 <TooltipContent>
+                                   <p>Download Analysis Report</p>
+                                 </TooltipContent>
+                               </Tooltip>
+                             </TooltipProvider>
+                             
+                             <AlertDialog>
+                               <AlertDialogTrigger asChild>
+                                 <Button 
+                                   variant="outline" 
+                                   size="sm"
+                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                   title="Delete Analysis"
+                                 >
+                                   <Trash2 className="h-4 w-4" />
+                                 </Button>
+                               </AlertDialogTrigger>
+                               <AlertDialogContent>
+                                 <AlertDialogHeader>
+                                   <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+                                   <AlertDialogDescription>
+                                     Are you sure you want to delete this analysis? This action cannot be undone.
+                                   </AlertDialogDescription>
+                                 </AlertDialogHeader>
+                                 <AlertDialogFooter>
+                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                   <AlertDialogAction
+                                     onClick={() => handleDelete(analysis.id)}
+                                     className="bg-red-600 hover:bg-red-700"
+                                   >
+                                     Delete
+                                   </AlertDialogAction>
+                                 </AlertDialogFooter>
+                               </AlertDialogContent>
+                             </AlertDialog>
+                           </div>
+                         </div>
                        ))}
                      </div>
                    ) : (
@@ -558,116 +575,137 @@ export default function TopDownAnalysisPage() {
                        )}
                        
                        {isOpen && (
-                                                   <div className="space-y-2">
+                          <div className="space-y-4">
                             {group.analyses.map((analysis) => (
-                              <Card key={analysis.id} className="hover:shadow-md transition-shadow bg-gray-50/50 dark:bg-gray-800/50">
-                                <CardContent className="pt-3 pb-3">
-                                 <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-2 space-y-2 sm:space-y-0">
-                                   <div className="flex items-center gap-2">
-                                     <h4 className="font-semibold text-base sm:text-lg">{analysis.currency_pair}</h4>
-                                   </div>
-                                   <div className="flex items-center gap-2 text-xs sm:text-sm text-muted-foreground">
-                                     <Calendar className="h-3 w-3 sm:h-4 sm:w-4" />
-                                     {analysis.analysis_date ? (
-                                       <>
-                                         {new Date(analysis.analysis_date).toLocaleDateString('en-US', { 
-                                           year: 'numeric', month: 'short', day: 'numeric' 
-                                         })}
-                                         {analysis.analysis_time && (
-                                           <span className="ml-1 sm:ml-2">
-                                             {new Date(`2000-01-01T${analysis.analysis_time}`).toLocaleTimeString('en-US', {
-                                               hour: '2-digit',
-                                               minute: '2-digit',
-                                               hour12: true
-                                             })}
-                                           </span>
-                                         )}
-                                       </>
-                                     ) : (
-                                       format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')
-                                     )}
-                                   </div>
-                                 </div>
-                                 
-                                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                                   <Badge variant={analysis.status === 'COMPLETED' ? "default" : "outline"} className={`text-xs ${analysis.status === 'COMPLETED' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}`}>
-                                     {analysis.status}
-                                   </Badge>
-                                   <Badge variant={analysis.ai_summary ? "default" : "secondary"} className="text-xs">
-                                     AI Analysis: {analysis.ai_summary ? "Enabled" : "Disabled"}
-                                   </Badge>
-                                 </div>
+                              <div key={analysis.id} className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 p-4 border rounded-lg hover:scale-105 transition-transform duration-200 bg-gray-50/50 dark:bg-gray-800/50">
+                                {/* Analysis Info */}
+                                <div className="flex-1 space-y-3">
+                                  <div className="flex items-center gap-4">
+                                    <div className="flex items-center gap-2">
+                                      <Calendar className="h-4 w-4 text-muted-foreground" />
+                                      <span className="text-sm font-medium">
+                                        {analysis.analysis_date ? (
+                                          <>
+                                            {new Date(analysis.analysis_date).toLocaleDateString('en-US', { 
+                                              year: 'numeric', month: 'short', day: 'numeric' 
+                                            })}
+                                            {analysis.analysis_time && (
+                                              <span className="ml-2">
+                                                {new Date(`2000-01-01T${analysis.analysis_time}`).toLocaleTimeString('en-US', {
+                                                  hour: '2-digit',
+                                                  minute: '2-digit',
+                                                  hour12: true
+                                                })}
+                                              </span>
+                                            )}
+                                          </>
+                                        ) : (
+                                          format(new Date(analysis.created_at), 'MMM dd, yyyy HH:mm')
+                                        )}
+                                      </span>
+                                    </div>
+                                    <Badge variant={analysis.status === 'COMPLETED' ? "default" : "outline"} className={analysis.status === 'COMPLETED' ? 'bg-green-500 hover:bg-green-600 text-white' : ''}>
+                                      {analysis.status}
+                                    </Badge>
+                                  </div>
 
-                                 <div className="flex items-center justify-between gap-2 sm:gap-4">
-                                   <div>
-                                     <span className="text-xs sm:text-sm font-semibold text-white">Timeframes:</span>
-                                     <span className="text-xs sm:text-sm text-orange-400 font-medium ml-1 sm:ml-2">{getSelectedTimeframes(analysis)}</span>
-                                   </div>
-                                   <div className="flex items-center gap-1 sm:gap-2">
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       onClick={() => handleViewDetails(analysis)}
-                                       className="p-2 h-8 sm:h-9"
-                                       title="View Details"
-                                     >
-                                       <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
-                                     </Button>
-                                     
-                                     <Button 
-                                       variant="outline" 
-                                       size="sm"
-                                       onClick={() => handleDownload(analysis)}
-                                       disabled={isDownloading}
-                                       title="Download as Word Document"
-                                       className="h-8 sm:h-9"
-                                     >
-                                       {isDownloading ? (
-                                         <Loader2 className="h-3 w-3 sm:h-4 sm:w-4 animate-spin" />
-                                       ) : (
-                                         <Download className="h-3 w-3 sm:h-4 sm:w-4" />
-                                       )}
-                                     </Button>
-                                     
-                                     <AlertDialog>
-                                       <AlertDialogTrigger asChild>
-                                         <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 sm:h-9">
-                                           <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                                         </Button>
-                                       </AlertDialogTrigger>
-                                       <AlertDialogContent>
-                                         <AlertDialogHeader>
-                                           <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
-                                           <AlertDialogDescription>
-                                             Are you sure you want to delete this Top Down Analysis? This action cannot be undone and will permanently remove all associated data including screenshots and announcements.
-                                           </AlertDialogDescription>
-                                         </AlertDialogHeader>
-                                         <AlertDialogFooter>
-                                           <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                           <AlertDialogAction
-                                             onClick={() => handleDelete(analysis.id)}
-                                             className="bg-red-600 hover:bg-red-700"
-                                             disabled={deleteMutation.isPending}
-                                           >
-                                             {deleteMutation.isPending ? (
-                                               <>
-                                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                                 Deleting...
-                                               </>
-                                             ) : (
-                                               'Delete'
-                                             )}
-                                           </AlertDialogAction>
-                                         </AlertDialogFooter>
-                                       </AlertDialogContent>
-                                     </AlertDialog>
-                                   </div>
-                                 </div>
-                               </CardContent>
-                             </Card>
-                           ))}
-                         </div>
-                       )}
+                                  <div className="flex items-center gap-4">
+                                    <div>
+                                      <span className="text-sm font-semibold">Currency Pair:</span>
+                                      <span className="text-sm font-bold ml-2">{analysis.currency_pair}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-sm font-semibold text-white">Timeframes:</span>
+                                      <span className="text-sm text-orange-400 font-medium ml-2">{getSelectedTimeframes(analysis)}</span>
+                                    </div>
+                                    <div>
+                                      <span className="text-sm font-semibold">AI Analysis:</span>
+                                      <Badge variant={analysis.ai_summary ? "default" : "secondary"} className="ml-2 text-xs">
+                                        {analysis.ai_summary ? "Enabled" : "Disabled"}
+                                      </Badge>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Action Buttons */}
+                                <div className="flex items-center gap-2">
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm"
+                                          onClick={() => handleViewDetails(analysis)}
+                                          className="p-2"
+                                          title="View Details"
+                                        >
+                                          <Eye className="h-4 w-4" />
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>View Analysis Details</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  
+                                  <TooltipProvider>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm"
+                                          onClick={() => handleDownload(analysis)}
+                                          disabled={isDownloading}
+                                          className="p-2"
+                                          title="Download Analysis"
+                                        >
+                                          {isDownloading ? (
+                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                          ) : (
+                                            <Download className="h-4 w-4" />
+                                          )}
+                                        </Button>
+                                      </TooltipTrigger>
+                                      <TooltipContent>
+                                        <p>Download Analysis Report</p>
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                  
+                                  <AlertDialog>
+                                    <AlertDialogTrigger asChild>
+                                      <Button 
+                                        variant="outline" 
+                                        size="sm"
+                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                        title="Delete Analysis"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </AlertDialogTrigger>
+                                    <AlertDialogContent>
+                                      <AlertDialogHeader>
+                                        <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+                                        <AlertDialogDescription>
+                                          Are you sure you want to delete this analysis? This action cannot be undone.
+                                        </AlertDialogDescription>
+                                      </AlertDialogHeader>
+                                      <AlertDialogFooter>
+                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                        <AlertDialogAction
+                                          onClick={() => handleDelete(analysis.id)}
+                                          className="bg-red-600 hover:bg-red-700"
+                                        >
+                                          Delete
+                                        </AlertDialogAction>
+                                      </AlertDialogFooter>
+                                    </AlertDialogContent>
+                                  </AlertDialog>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
                      </div>
                    );
                  });

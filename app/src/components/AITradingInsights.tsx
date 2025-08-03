@@ -24,7 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface AITradingInsightsProps {
   trades: any[];
-  stats: any;
+  stats: Record<string, unknown>;
   isLoading: boolean;
 }
 
@@ -377,7 +377,7 @@ const AITradingInsights = ({ trades, stats, isLoading }: AITradingInsightsProps)
                   {getCurrencyPairs().map((pair, idx) => (
                     pair ? (
                       <SelectItem key={pair + '-' + idx} value={pair as string}>
-                        {pair}
+                        {pair as string}
                       </SelectItem>
                     ) : null
                   ))}

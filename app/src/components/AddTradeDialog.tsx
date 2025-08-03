@@ -15,12 +15,10 @@ import { z } from "zod";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, TrendingUp, Calendar, Clock, DollarSign, Tag, FileText } from "lucide-react";
+import { Loader2, DollarSign, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const currencyPairs = [
   "GBPUSD",
@@ -101,14 +99,14 @@ interface AddTradeDialogProps {
 const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCustomLotSize, setIsCustomLotSize] = useState(false);
   const [customLotSizeValue, setCustomLotSizeValue] = useState('');
   const [customLotSizeError, setCustomLotSizeError] = useState('');
   const [notesCharCount, setNotesCharCount] = useState(0);
-  const [saveSuccess, setSaveSuccess] = useState(false);
   const [entryPriceRaw, setEntryPriceRaw] = useState('');
   const [exitPriceRaw, setExitPriceRaw] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
@@ -164,7 +162,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
       return 0;
     }
 
-    let entryTotalMinutes = entryHours * 60 + entryMinutes;
+    const entryTotalMinutes = entryHours * 60 + entryMinutes;
     let exitTotalMinutes = exitHours * 60 + exitMinutes;
 
     if (exitTotalMinutes < entryTotalMinutes) {
@@ -321,7 +319,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
         toast({
           id: 'trade-add-success',
           title: 'Trade Added Successfully',
-          description: 'New trade has been successfully recorded into your Trader\'s Journal.',
+          description: 'New trade has been successfully recorded into your Trader&apos;s Journal.',
           variant: 'default',
         });
         
@@ -454,7 +452,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
     return (
       <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
         
-        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50/95 to-slate-100/95 backdrop-blur-md border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] [&>button]:text-slate-700 [&>button]:hover:text-slate-900 [&>button]:hover:bg-slate-100/80">
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50/95 to-slate-100/95 backdrop-blur-md border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] [&>button]:text-slate-700 [&>button]:hover:text-slate-900 [&>button]:hover:bg-slate-100/80 [&>button]:hidden">
           <DialogHeader className="bg-black/80 backdrop-blur-md rounded-t-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-3 sm:p-4 md:p-6">
             <div className="flex items-start justify-between w-full">
               <div className="flex-1 min-w-0">
@@ -464,6 +462,25 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
                 <DialogDescription className="text-gray-200 mt-1 sm:mt-2 font-medium px-1 sm:px-2 text-sm sm:text-base">
                   Record the details of your forex trade with precision
                 </DialogDescription>
+              </div>
+              <div className="flex items-center space-x-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={onClose}
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-white/10"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                      Close
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </DialogHeader>
@@ -1096,6 +1113,12 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
                     </ul>
                   </CardContent>
                 </Card>
+              )}
+
+              {saveSuccess && (
+                <Alert className="mb-4 bg-green-50 border-green-200 text-green-800">
+                  <AlertDescription>New trade has been successfully recorded into your Trader&apos;s Journal.</AlertDescription>
+                </Alert>
               )}
 
               <DialogFooter className="mt-6 space-x-3">

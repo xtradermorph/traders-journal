@@ -79,6 +79,114 @@ export default function RootLayout({
   const handleOpen = () => setIsChatOpen(true);
   const handleClose = () => setIsChatOpen(false);
   
+  // Global WebSocket error filter to reduce console noise
+  useEffect(() => {
+    const originalError = console.error;
+    const originalWarn = console.warn;
+    const originalLog = console.log;
+    
+    // Global error event listener to catch WebSocket errors
+    const handleError = (event: ErrorEvent) => {
+      const message = event.message || '';
+      if (message.includes('WebSocket') || 
+          message.includes('establish a connection') ||
+          message.includes('was interrupted') ||
+          message.includes("can't establish a connection to the server") ||
+          message.includes('Firefox can\'t establish a connection') ||
+          message.includes('oweimywvzmqoizsyotrt.supabase.co')) {
+        event.preventDefault();
+        return false;
+      }
+    };
+    
+    // Global unhandled rejection handler for WebSocket promises
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const reason = event.reason;
+      if (typeof reason === 'string' && 
+          (reason.includes('WebSocket') || 
+           reason.includes('establish a connection') ||
+           reason.includes('was interrupted') ||
+           reason.includes("can't establish a connection to the server") ||
+           reason.includes('Firefox can\'t establish a connection') ||
+           reason.includes('oweimywvzmqoizsyotrt.supabase.co'))) {
+        event.preventDefault();
+        return false;
+      }
+    };
+    
+    // Add global error listeners
+    window.addEventListener('error', handleError, true);
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    
+    // Filter out common WebSocket disconnection messages and timeout errors
+    console.error = (...args) => {
+      const message = args[0];
+      if (typeof message === 'string') {
+        // Filter out common WebSocket disconnection messages
+        if (message.includes('WebSocket connection') && 
+            (message.includes('was interrupted') || 
+             message.includes('establish a connection'))) {
+          return; // Don't log these
+        }
+        // Filter out timeout errors from fetch requests
+        if (message.includes('The operation timed out') ||
+            message.includes('Error checking health: DOMException') ||
+            message.includes('Error fetching project update stats: DOMException') ||
+            message.includes('Error fetching users: DOMException')) {
+          return; // Don't log these
+        }
+        // Filter out WebSocket establishment errors
+        if (message.includes("can't establish a connection to the server") ||
+            message.includes('Firefox can\'t establish a connection')) {
+          return; // Don't log these
+        }
+      }
+      originalError.apply(console, args);
+    };
+    
+    console.warn = (...args) => {
+      const message = args[0];
+      if (typeof message === 'string') {
+        // Filter out common WebSocket disconnection messages
+        if (message.includes('WebSocket connection') && 
+            (message.includes('was interrupted') || 
+             message.includes('establish a connection'))) {
+          return; // Don't log these
+        }
+        // Filter out WebSocket establishment errors
+        if (message.includes("can't establish a connection to the server") ||
+            message.includes('Firefox can\'t establish a connection')) {
+          return; // Don't log these
+        }
+      }
+      originalWarn.apply(console, args);
+    };
+    
+    // Also filter console.log for WebSocket related messages
+    console.log = (...args) => {
+      const message = args[0];
+      if (typeof message === 'string') {
+        // Filter out WebSocket establishment errors that might be logged
+        if (message.includes("can't establish a connection to the server") ||
+            message.includes('Firefox can\'t establish a connection') ||
+            message.includes('WebSocket connection') && 
+            (message.includes('was interrupted') || 
+             message.includes('establish a connection'))) {
+          return; // Don't log these
+        }
+      }
+      originalLog.apply(console, args);
+    };
+    
+    return () => {
+      console.error = originalError;
+      console.warn = originalWarn;
+      console.log = originalLog;
+      window.removeEventListener('error', handleError, true);
+      window.removeEventListener('unhandledrejection', handleUnhandledRejection);
+    };
+  }, []);
+  
   return (
     <html 
       lang="en" 

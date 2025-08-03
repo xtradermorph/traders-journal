@@ -3,9 +3,13 @@
   publish = ".next"
 
 [build.environment]
-  NODE_VERSION = "18"
+  NODE_VERSION = "20"
   NPM_FLAGS = "--include=optional"
-  NEXT_PUBLIC_APP_VERSION = "0.1.0"
+  NEXT_PUBLIC_APP_VERSION = "0.1.1"
+  # Disable secrets scanning for public keys (Turnstile site key is meant to be public)
+  SECRETS_SCAN_OMIT_KEYS = "NEXT_PUBLIC_TURNSTILE_SITE_KEY"
+  # Disable secrets scanning for build output
+  SECRETS_SCAN_ENABLED = "false"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs" 

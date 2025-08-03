@@ -1,0 +1,5 @@
+[33m1e42f6a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m Fix Turnstile integration: Remove development mode bypass, enable widget on all environments, add proper environment variable support, and improve form validation
+[33m4fbbf77[m Fix undefined error in Dashboard - Added proper null checks for filteredTrades and processedTrades - Added loading state to prevent rendering before data is ready - Fixed recentProcessedTrades to handle undefined arrays
+[33ma613b56[m Fix CSS issues and improve mobile/PWA experience - Updated globals.css with comprehensive PWA styles and mobile optimizations - Fixed Dashboard.tsx linter errors and improved performance cards - Enhanced MobileNavigation.tsx with better touch targets and safe area support - Updated ChatWidget.tsx for better mobile responsiveness - Improved layout.tsx with PWA meta tags and iOS optimizations - Updated manifest.json and service worker for better PWA functionality
+[33m1200d8c[m Restore working files from traders-journal folder
+[33mc3d373e[m Fix LoadingSpinner styling and add auth safety checks

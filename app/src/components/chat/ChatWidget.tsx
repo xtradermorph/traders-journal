@@ -773,7 +773,19 @@ const ChatWidget = () => {
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' as any) {
+          // Only log if it's not a normal disconnection
+          console.warn('Chat conversations channel error - will retry automatically');
+        } else if (status === 'TIMED_OUT') {
+          console.warn('Chat conversations channel timeout - will retry automatically');
+        } else if (status === 'CLOSED') {
+          // Don't log normal closures
+        } else if (status === 'CHANNEL_ERROR' as any) {
+          // Suppress browser-level WebSocket errors
+          return;
+        }
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -861,7 +873,15 @@ const ChatWidget = () => {
           );
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' as any) {
+          console.warn(`Chat channel error for ${activeConversation.group_id} - will retry automatically`);
+        } else if (status === 'TIMED_OUT') {
+          console.warn(`Chat channel timeout for ${activeConversation.group_id} - will retry automatically`);
+        } else if (status === 'CLOSED') {
+          // Don't log normal closures
+        }
+      });
     return () => {
       supabase.removeChannel(channel);
     };

@@ -17,7 +17,7 @@ export async function GET(req: NextRequest) {
     .eq("id", user.id)
     .maybeSingle();
     
-  if (!profile || profile.role?.toUpperCase() !== "ADMIN") {
+  if (!profile || profile.role?.toLowerCase() !== "admin") {
     return NextResponse.json({ message: "Forbidden" }, { status: 403 });
   }
 

@@ -21,7 +21,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info } from "lucide-react";
+import { Info, X } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Same schema as AddTradeDialog
 const tradeFormSchema = z.object({
@@ -408,7 +409,7 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
 
   return (
     <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50/95 to-slate-100/95 backdrop-blur-md border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] [&>button]:text-slate-700 [&>button]:hover:text-slate-900 [&>button]:hover:bg-slate-100/80">
+      <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto bg-gradient-to-br from-slate-50/95 to-slate-100/95 backdrop-blur-md border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] [&>button]:text-slate-700 [&>button]:hover:text-slate-900 [&>button]:hover:bg-slate-100/80 [&>button]:hidden">
         <DialogHeader className="bg-black/80 backdrop-blur-md rounded-t-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-3 sm:p-4 md:p-6">
           <div className="flex items-start justify-between w-full">
             <div className="flex-1 min-w-0">
@@ -417,7 +418,26 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
               </DialogTitle>
               <DialogDescription className="text-gray-200 mt-1 sm:mt-2 font-medium px-1 sm:px-2 text-sm sm:text-base">
                 Update the details of your forex trade with precision
-          </DialogDescription>
+              </DialogDescription>
+            </div>
+            <div className="flex items-center space-x-2">
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      onClick={onClose}
+                      variant="ghost"
+                      size="sm"
+                      className="text-white hover:bg-white/10"
+                    >
+                      <X className="h-5 w-5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                    Close
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </div>
         </DialogHeader>

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, X } from "lucide-react";
 import { Session, User } from '@supabase/supabase-js';
 import Image from 'next/image';
 import { Turnstile } from '../../components/ui/turnstile';
@@ -53,11 +53,25 @@ const Register = () => {
 
   useEffect(() => {
     // Check if we're in development mode (client-side only)
-    // Check both NODE_ENV and domain to ensure proper detection
     const isDev = process.env.NODE_ENV === 'development' || 
                   window.location.hostname === 'localhost' || 
                   window.location.hostname === '127.0.0.1';
     setIsDevelopment(isDev);
+    
+    // Debug logging
+    console.log('Environment check:', {
+      NODE_ENV: process.env.NODE_ENV,
+      hostname: window.location.hostname,
+      isDevelopment: isDev,
+      turnstileSiteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
+      // For testing purposes, you can temporarily enable Turnstile in development
+      // by setting this to false
+      forceProductionMode: false
+    });
+    
+    // For testing purposes, you can temporarily enable Turnstile in development
+    // by uncommenting the line below
+    // setIsDevelopment(false);
   }, []);
 
   const registerForm = useForm({
@@ -172,28 +186,30 @@ const Register = () => {
       setError(null);
       setTurnstileError(null);
       
-      // Check if Turnstile token is present
-      if (!turnstileToken) {
+      // Check if Turnstile token is present (only in production)
+      if (!isDevelopment && !turnstileToken) {
         setTurnstileError('Please complete the security check');
         setIsLoading(false);
         return;
       }
 
-      // Verify Turnstile token
-      const verificationResponse = await fetch('/api/turnstile/verify', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          token: turnstileToken,
-          action: 'register',
-        }),
-      });
+      // Verify Turnstile token (only in production)
+      if (!isDevelopment) {
+        const verificationResponse = await fetch('/api/turnstile/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            token: turnstileToken,
+            action: 'register',
+          }),
+        });
 
-      const verificationResult = await verificationResponse.json();
-      if (!verificationResult.success) {
-        setTurnstileError('Security check failed. Please try again.');
-        setIsLoading(false);
-        return;
+        const verificationResult = await verificationResponse.json();
+        if (!verificationResult.success) {
+          setTurnstileError('Security check failed. Please try again.');
+          setIsLoading(false);
+          return;
+        }
       }
       
       await registerMutation.mutateAsync(data);
@@ -212,28 +228,32 @@ const Register = () => {
   const hasSpecialChar = /[^a-zA-Z0-9]/.test(password || '');
 
   return (
-    <ClientOnly>
-      <div 
-        className="min-h-screen bg-cover bg-center flex flex-col items-center justify-center p-4 relative"
-        style={{ backgroundImage: "url('/images/auth-fullpage-background.jpg')" }}
+    <div className="min-h-screen bg-cover bg-center flex flex-col items-center justify-center p-4 relative"
+      style={{ backgroundImage: "url('/images/auth-fullpage-background.jpg')" }}
+    >
+      <Link href="/" passHref legacyBehavior>
+        <a className="absolute top-6 right-6 text-primary p-1.5 rounded-full hover:bg-black transition-colors z-10">
+          <X size={28} aria-label="Close" />
+        </a>
+      </Link>
+      <div className="w-full max-w-md space-y-8 bg-cover bg-center p-8 sm:p-12 rounded-xl shadow-2xl"
+        style={{ backgroundImage: "url('/images/auth-card-background.jpg')" }}
       >
-        <div className="absolute inset-0 bg-black/50"></div>
-        
-        <div className="relative z-10 w-full max-w-md">
-          <div className="w-full max-w-md space-y-8 bg-cover bg-center p-8 sm:p-12 rounded-xl shadow-2xl"
-            style={{ backgroundImage: "url('/images/auth-card-background.jpg')" }}
-          >
-            <div className="text-center mb-6">
-              <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">
-                Create Account
-              </h1>
-              <p className="text-muted-foreground">
-                Join Trader's Journal and start tracking your trades
-              </p>
-            </div>
-
+        <div className="flex flex-col items-center">
+          <Link href="/" className="hover:opacity-80 transition-opacity">
+            <img src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images//proper%20logo.png" alt="Logo" className="h-20 w-20 mb-4" />
+          </Link>
+          <h2 className="text-3xl font-bold text-foreground">
+            Join
+          </h2>
+          <h2 className="text-3xl font-bold gradient-heading">
+            Trader&apos;s Journal
+          </h2>
+        </div>
+        <div className="space-y-6">
+          <ClientOnly>
             <Form {...registerForm}>
-              <form onSubmit={registerForm.handleSubmit(onSubmit)} className="space-y-4">
+              <form onSubmit={registerForm.handleSubmit(onSubmit)} className="space-y-6">
                 <FormField
                   control={registerForm.control}
                   name="username"
@@ -244,7 +264,8 @@ const Register = () => {
                         <Input
                           {...field}
                           placeholder="Choose a username"
-                          className="h-12"
+                          disabled={isLoading}
+                          className="bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-primary/50"
                         />
                       </FormControl>
                       <FormMessage />
@@ -263,7 +284,8 @@ const Register = () => {
                           {...field}
                           type="email"
                           placeholder="Enter your email"
-                          className={`h-12 ${
+                          disabled={isLoading}
+                          className={`bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-primary/50 ${
                             field.value && !field.value.includes('@') ? 'border-red-500 focus-visible:ring-red-500' : ''
                           }`}
                           onBlur={(e) => {
@@ -304,21 +326,21 @@ const Register = () => {
                             {...field}
                             type={showPassword ? "text" : "password"}
                             placeholder="Create a password"
-                            className="h-12 pr-10"
+                            disabled={isLoading}
+                            className="bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-primary/50 pr-10"
                           />
-                          <Button
+                          <button
                             type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                             onClick={() => setShowPassword(!showPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            tabIndex={-1}
                           >
                             {showPassword ? (
-                              <EyeOff className="h-4 w-4" />
+                              <EyeOff className="h-5 w-5" />
                             ) : (
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-5 w-5" />
                             )}
-                          </Button>
+                          </button>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -362,21 +384,21 @@ const Register = () => {
                             {...field}
                             type={showConfirmPassword ? "text" : "password"}
                             placeholder="Confirm your password"
-                            className="h-12 pr-10"
+                            disabled={isLoading}
+                            className="bg-background/50 backdrop-blur-sm border-border/50 focus-visible:ring-primary/50 pr-10"
                           />
-                          <Button
+                          <button
                             type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                             onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                            tabIndex={-1}
                           >
                             {showConfirmPassword ? (
-                              <EyeOff className="h-4 w-4" />
+                              <EyeOff className="h-5 w-5" />
                             ) : (
-                              <Eye className="h-4 w-4" />
+                              <Eye className="h-5 w-5" />
                             )}
-                          </Button>
+                          </button>
                         </div>
                       </FormControl>
                       <FormMessage />
@@ -414,41 +436,54 @@ const Register = () => {
 
                 {/* Turnstile Security Check */}
                 <div className="space-y-2">
-                  <Turnstile
-                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
-                    onVerify={(token) => {
-                      setTurnstileToken(token);
-                      setTurnstileError(null);
-                    }}
-                    onError={(error) => {
-                      setTurnstileError('Security check failed. Please try again.');
-                      setTurnstileToken(null);
-                    }}
-                    onExpire={() => {
-                      setTurnstileToken(null);
-                      setTurnstileError('Security check expired. Please try again.');
-                    }}
-                    action="register"
-                    appearance="interaction-only"
-                    theme="auto"
-                    size="normal"
-                    className="flex justify-center"
-                  />
+                  <p className="text-center text-sm text-muted-foreground">
+                    Let us know you're human
+                  </p>
+                  <div className="flex justify-center">
+                    {!isDevelopment && (
+                      <Turnstile
+                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
+                        onVerify={(token) => {
+                          console.log('Turnstile verified with token:', token);
+                          setTurnstileToken(token);
+                          setTurnstileError(null);
+                        }}
+                        onError={(error) => {
+                          console.error('Turnstile error:', error);
+                          setTurnstileError('Security check failed. Please try again.');
+                          setTurnstileToken(null);
+                        }}
+                        onExpire={() => {
+                          console.log('Turnstile token expired');
+                          setTurnstileToken(null);
+                          setTurnstileError('Security check expired. Please try again.');
+                        }}
+                        action="register"
+                        appearance="interaction-only"
+                        theme="auto"
+                        size="normal"
+                      />
+                    )}
+                    {isDevelopment && (
+                      <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                        <p>Turnstile disabled in development mode</p>
+                        <p className="text-xs mt-1">Security check will be enabled in production</p>
+                      </div>
+                    )}
+                  </div>
                   {turnstileError && (
-                    <div className="text-sm text-destructive text-center">
+                    <div className="text-red-500 text-sm text-center">
                       {turnstileError}
                     </div>
                   )}
                 </div>
 
-                
-
                 <Button 
                   type="submit" 
-                  className="w-full text-lg py-6"
+                  className="w-full"
                   disabled={
-                    registerMutation.isPending || 
-                    !turnstileToken ||
+                    isLoading || 
+                    (!isDevelopment && !turnstileToken) ||
                     !registerForm.formState.isValid ||
                     !registerForm.watch('agreeToTerms') ||
                     !registerForm.watch('username') ||
@@ -458,7 +493,14 @@ const Register = () => {
                     registerForm.watch('password') !== registerForm.watch('confirmPassword')
                   }
                 >
-                  {registerMutation.isPending ? "Creating account..." : "Create Account"}
+                  {isLoading ? (
+                    <>
+                      <span className="mr-2">Creating account...</span>
+                      <div className="h-4 w-4 animate-spin border-2 border-primary border-t-transparent rounded-full"></div>
+                    </>
+                  ) : (
+                    "Create Account"
+                  )}
                 </Button>
                 
                 <div className="relative my-4">
@@ -472,45 +514,64 @@ const Register = () => {
                 
                 <Button 
                   type="button" 
-                  variant="outline"
-                  className="w-full h-12"
+                  variant="outline" 
+                  className="w-full flex items-center justify-center gap-2"
                   onClick={async () => {
                     try {
-                      const { error } = await supabase.auth.signInWithOAuth({
+                      setIsLoading(true);
+                      setError(null);
+                      const { data, error } = await supabase.auth.signInWithOAuth({
                         provider: 'google',
                         options: {
-                          redirectTo: `${window.location.origin}/auth/callback`
+                          redirectTo: `${window.location.origin}/auth/callback`,
+                          queryParams: {
+                            access_type: 'offline',
+                            prompt: 'select_account'
+                          }
                         }
                       });
-                      if (error) throw error;
-                    } catch (error) {
-                      console.error('Google sign-in error:', error);
-                      toast.error('Google sign-in failed');
+                      
+                      if (error) {
+                        setError(error.message);
+                        console.error('Google sign-in error:', error);
+                      } else if (!data.url) {
+                        setError('Failed to get authentication URL');
+                      } else {
+                        // Redirect to Google's OAuth page
+                        window.location.href = data.url;
+                      }
+                    } catch (err) {
+                      console.error('Exception during Google sign-in:', err);
+                      setError('Failed to sign in with Google');
+                    } finally {
+                      setIsLoading(false);
                     }
                   }}
+                  disabled={isLoading}
                 >
-                  <Image
-                    src="/google-logo.svg"
-                    alt="Google"
-                    width={20}
-                    height={20}
-                    className="mr-2"
+                  <Image 
+                    src="/google-logo.svg" 
+                    alt="Google" 
+                    width={18} 
+                    height={18} 
                   />
                   Continue with Google
                 </Button>
-                
-                <div className="text-center text-sm text-muted-foreground">
-                  Already have an account?{" "}
-                  <Link href="/login" className="text-primary hover:underline">
-                    Sign in
-                  </Link>
-                </div>
               </form>
             </Form>
-          </div>
+          </ClientOnly>
         </div>
       </div>
-    </ClientOnly>
+      
+      <div className="space-y-6">
+        <p className="text-center text-muted-foreground">
+          Already have an account?{" "}
+          <Link href="/login" className="text-foreground hover:text-primary transition-colors">
+            Sign in to Trader&apos;s Journal
+          </Link>
+        </p>
+      </div>
+    </div>
   );
 };
 

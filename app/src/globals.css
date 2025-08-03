@@ -738,3 +738,47 @@ input, select, textarea {
   background: hsl(var(--primary));
   opacity: 0.9;
 }
+
+/* Turnstile widget styles */
+.turnstile-container {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  min-height: 65px !important;
+  width: 100% !important;
+}
+
+.turnstile-container iframe {
+  border: none !important;
+  border-radius: 8px !important;
+}
+
+/* Ensure Turnstile widget is visible */
+.cf-turnstile {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Turnstile widget responsive design */
+@media (max-width: 768px) {
+  .turnstile-container {
+    min-height: 60px !important;
+  }
+}
+
+/* Turnstile widget in dark mode */
+.dark .turnstile-container iframe {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+/* Turnstile widget loading state */
+.turnstile-container:empty::before {
+  content: "Loading security check...";
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 65px;
+  color: hsl(var(--muted-foreground));
+  font-size: 14px;
+}

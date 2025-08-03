@@ -141,7 +141,7 @@ const PWAInstallPrompt = ({ onClose }: PWAInstallPromptProps) => {
               {isMobile ? (
                 <>
                   <DownloadIcon className="h-5 w-5 text-primary" />
-                  Install Trader's Journal
+                  Install Trader&apos;s Journal
                 </>
               ) : (
                 <>
@@ -164,7 +164,7 @@ const PWAInstallPrompt = ({ onClose }: PWAInstallPromptProps) => {
                 {qrCodeDataUrl ? (
                   <img 
                     src={qrCodeDataUrl} 
-                    alt="QR Code for Trader's Journal" 
+                    alt="QR Code for Trader&apos;s Journal" 
                     className="w-48 h-48"
                   />
                 ) : (

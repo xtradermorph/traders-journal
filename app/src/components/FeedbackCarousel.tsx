@@ -148,7 +148,7 @@ export default function FeedbackCarousel() {
           What Our Traders Say
         </h2>
         <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-          Join thousands of traders who are already improving their performance with Trader's Journal
+          Join thousands of traders who are already improving their performance with Trader&apos;s Journal
         </p>
       </div>
       <div

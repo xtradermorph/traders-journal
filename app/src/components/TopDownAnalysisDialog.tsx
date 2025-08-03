@@ -169,6 +169,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
   const [showValidationDialog, setShowValidationDialog] = useState(false); // Validation dialog state
   const [openTooltipId, setOpenTooltipId] = useState<string | null>(null);
   const [tooltipPosition, setTooltipPosition] = useState<{ x: number; y: number } | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
   const buttonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({});
 
   // Add click outside handler for tooltips
@@ -264,10 +265,15 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     onSuccess: (data) => {
       setAnalysisId(data.analysis.id);
       setCurrentStep(1);
+      setSaveSuccess(true);
       toast({
         title: "Analysis Created",
         description: "Your Top Down Analysis has been created. Let's start with the first timeframe.",
       });
+      // Reset success message after 2 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 2000);
     },
     onError: (error: Error) => {
       toast({
@@ -399,10 +405,15 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     },
     onSuccess: () => {
       setCurrentStep(4); // Show results
+      setSaveSuccess(true);
       toast({
         title: "Analysis Complete",
         description: "Your Top Down Analysis has been completed successfully.",
       });
+      // Reset success message after 3 seconds
+      setTimeout(() => {
+        setSaveSuccess(false);
+      }, 3000);
     },
     onError: (error: Error) => {
       toast({
@@ -2454,24 +2465,54 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
   return (
     <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
-        <DialogContent className={`${expanded ? 'fixed inset-0 z-[9999] max-w-none w-screen h-screen rounded-none' : 'w-[98vw] sm:w-[95vw] md:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-4xl h-[98vh] sm:h-[95vh] md:h-[90vh] lg:h-[85vh] xl:h-[80vh] max-h-[90vh] overflow-y-auto mx-auto'} bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-sm`}>
+        <DialogContent className={`${expanded ? 'fixed inset-0 z-[9999] max-w-none w-screen h-screen rounded-none' : 'w-[98vw] sm:w-[95vw] md:w-[90vw] lg:w-[85vw] xl:w-[80vw] max-w-4xl h-[98vh] sm:h-[95vh] md:h-[90vh] lg:h-[85vh] xl:h-[80vh] max-h-[90vh] overflow-y-auto mx-auto'} bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-sm [&>button]:hidden`}>
           <DialogHeader className="bg-black/80 backdrop-blur-md rounded-t-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-3 sm:p-4 md:p-6">
-          <div className="flex items-start justify-between w-full">
-            <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between w-full">
+              <div className="flex-1 min-w-0">
                 <DialogTitle className="text-white font-bold text-lg sm:text-xl md:text-2xl px-1 sm:px-2">
-                {currentStep === 0 && "Top Down Analysis Setup"}
-                {currentStep >= 1 && currentStep <= 3 && "Top Down Analysis"}
-                {currentStep === 4 && "Analysis Results"}
-              </DialogTitle>
+                  {currentStep === 0 && "Top Down Analysis Setup"}
+                  {currentStep >= 1 && currentStep <= 3 && "Top Down Analysis"}
+                  {currentStep === 4 && "Analysis Results"}
+                </DialogTitle>
                 <DialogDescription className="text-gray-200 mt-1 sm:mt-2 font-medium px-1 sm:px-2 text-sm sm:text-base">
-                {currentStep === 0 && "Configure your analysis parameters and select timeframes"}
-                {currentStep >= 1 && currentStep <= 3 && "Complete each timeframe analysis"}
-                {currentStep === 4 && enableAIAnalysis && "Review your analysis results and AI recommendations"}
-                {currentStep === 4 && !enableAIAnalysis && "Your analysis has been completed successfully"}
-              </DialogDescription>
+                  {currentStep === 0 && "Configure your analysis parameters and select timeframes"}
+                  {currentStep >= 1 && currentStep <= 3 && "Complete each timeframe analysis"}
+                  {currentStep === 4 && enableAIAnalysis && "Review your analysis results and AI recommendations"}
+                  {currentStep === 4 && !enableAIAnalysis && "Your analysis has been completed successfully"}
+                </DialogDescription>
+              </div>
+              <div className="flex items-center space-x-2">
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={handleClose}
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-white/10"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                      Close
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
-          </div>
-        </DialogHeader>
+          </DialogHeader>
+
+          {/* Success Message */}
+          {saveSuccess && (
+            <div className="mx-3 sm:mx-4 md:mx-6 mt-4">
+              <Alert className="bg-green-50 border-green-200 text-green-800">
+                <AlertDescription>
+                  Your Top Down Analysis has been successfully saved to your Trader&apos;s Journal.
+                </AlertDescription>
+              </Alert>
+            </div>
+          )}
 
           <div className={`${expanded ? 'flex-1 overflow-y-auto p-6' : 'p-3 sm:p-4 md:p-6'} bg-transparent`}>
           {renderContent(expanded, validationState.hasTriedNext)}
@@ -2588,7 +2629,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
                 transform: 'translateY(-100%)'
               }}
             >
-              <div className="text-xs font-medium mb-1">Why it's important:</div>
+              <div className="text-xs font-medium mb-1">Why it&apos;s important:</div>
               <div className="text-xs leading-relaxed">{question.info}</div>
               <div className="absolute top-full left-2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-800"></div>
             </div>
