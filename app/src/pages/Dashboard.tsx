@@ -2,7 +2,7 @@
 
 import { supabase } from "@/lib/supabase";
 import { useQuery } from "@tanstack/react-query";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import PerfSummaryCard from "@/components/PerfSummaryCard";
 import PerformanceAnalysis from "@/components/PerformanceAnalysis";
 import ProfitLossChart from "@/components/ProfitLossChart";
@@ -15,7 +15,7 @@ import AITradingInsights from "@/components/AITradingInsights";
 
 import type { Trade } from '@/types/trade';
 import { useAuth } from '@/hooks/useAuth';
-import { processTrades, calculateDashboardStats, ProcessedTrade } from '@/lib/utils';
+import { processTrades, ProcessedTrade } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import DashboardFooter from '@/components/DashboardFooter';
@@ -292,7 +292,7 @@ const Dashboard = () => {
       if (!groupedByMonth[monthYear]) groupedByMonth[monthYear] = [];
       groupedByMonth[monthYear].push(trade);
     });
-    let processed: Trade[] = [];
+    const processed: Trade[] = [];
     Object.values(groupedByMonth).forEach(monthTrades => {
       // Sort by date ascending, then by entry_time, then by created_at
       const sorted = [...monthTrades].sort((a, b) => {

@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { ProfileContent } from '@/components/ProfileContent';
 import { UserProfile } from '@/types/user';
-import type { Session } from '@supabase/supabase-js';
+
 import DashboardFooter from '@/components/DashboardFooter';
 import { LoadingPage } from '../components/ui/loading-spinner';
 
@@ -16,7 +16,7 @@ export default function ProfilePage() {
   const [initialProfile, setInitialProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+
 
   useEffect(() => {
     const fetchSession = async () => {

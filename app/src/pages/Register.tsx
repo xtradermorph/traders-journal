@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, X } from "lucide-react";
 import Image from 'next/image';
 import { Turnstile } from '../../components/ui/turnstile';
+import { LOGO_CONFIG } from '../../lib/logo-config';
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(20, "Username must be less than 20 characters"),
@@ -151,7 +152,7 @@ const Register = () => {
         throw error;
       }
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       toast.success("Account created successfully!", {
         description: "Please check your email to verify your account before logging in."
       });
@@ -229,7 +230,7 @@ const Register = () => {
       >
         <div className="flex flex-col items-center">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <img src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images//proper%20logo.png" alt="Logo" className="h-20 w-20 mb-4" />
+            <Image src={LOGO_CONFIG.MAIN_LOGO_URL} alt={LOGO_CONFIG.ALT_TEXT} width={80} height={80} className="h-20 w-20 mb-4" />
           </Link>
           <h2 className="text-3xl font-bold text-foreground">
             Join

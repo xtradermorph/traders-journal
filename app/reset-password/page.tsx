@@ -7,8 +7,10 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 import { Check, X } from 'lucide-react';
+import { LOGO_CONFIG } from '@/lib/logo-config';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');
@@ -71,9 +73,11 @@ export default function ResetPassword() {
       <div className="w-full max-w-md p-8 space-y-6">
         <div className="flex flex-col items-center">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <img 
-              src="/logo.png" 
-              alt="Trader's Journal Logo" 
+            <Image 
+              src={LOGO_CONFIG.MAIN_LOGO_URL} 
+              alt={LOGO_CONFIG.ALT_TEXT} 
+              width={64}
+              height={64}
               className="h-16 w-16 mb-4" 
             />
           </Link>

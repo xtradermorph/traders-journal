@@ -8,7 +8,7 @@ export async function POST() {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -24,7 +24,7 @@ export async function POST() {
     // Step 1: Check current enum values
     results.steps.push('Step 1: Checking current enum values...');
     
-    const { data: currentValues, error: enumError } = await supabase
+    const { error: enumError } = await supabase
       .from('information_schema.columns')
       .select('column_default')
       .eq('table_name', 'tda_questions')
@@ -51,7 +51,7 @@ export async function POST() {
     results.steps.push('Step 3: Testing enum update...');
     
     // Simulate testing with a sample question
-    const { data: sampleQuestion, error: sampleError } = await supabase
+    const { error: sampleError } = await supabase
       .from('tda_questions')
       .select('timeframe')
       .limit(1);

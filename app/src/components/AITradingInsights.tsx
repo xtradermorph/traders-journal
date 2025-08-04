@@ -5,25 +5,25 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Sparkles, AlertTriangle, Brain, TrendingUp, BarChart, TrendingDown, Minus, Shield, AlertCircle, AlertOctagon, Check, X } from "lucide-react";
+import { Sparkles, AlertTriangle, Brain, TrendingUp, TrendingDown, Minus, Shield, AlertCircle, AlertOctagon, Check, X } from "lucide-react";
 import { 
   analyzeTradingPattern, 
   analyzeMarketSentiment, 
-  generateTradingStrategySuggestions, 
-  analyzeRiskProfile, 
+  getStrategySuggestions, 
+  assessRisk, 
   analyzeTradingBehavior 
 } from "@/lib/grok";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { askSecretsFunction, checkApiKeys } from "@/lib/checkKeys";
-import { Badge } from "@/components/ui/badge";
+
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 
 interface AITradingInsightsProps {
-  trades: any[];
+  trades: Array<Record<string, unknown>>;
   stats: Record<string, unknown>;
   isLoading: boolean;
 }
@@ -35,26 +35,23 @@ const AITradingInsights = ({ trades, stats, isLoading }: AITradingInsightsProps)
   const [patternAnalysis, setPatternAnalysis] = useState<string>("");
   const [sentimentAnalysis, setSentimentAnalysis] = useState<{
     sentiment: string;
-    confidence: number;
+    score: number;
     analysis: string;
+    factors: string[];
   } | null>(null);
   const [strategyInsights, setStrategyInsights] = useState<string>("");
   
   // New state for risk assessment
   const [riskProfile, setRiskProfile] = useState<{
     riskScore: number;
-    riskLevel: 'low' | 'moderate' | 'high' | 'extreme';
+    riskLevel: string;
     analysis: string;
     recommendations: string[];
   } | null>(null);
   
   // New state for trading behavior analysis
   const [behaviorAnalysis, setBehaviorAnalysis] = useState<{
-    behavioralPatterns: {
-      pattern: string;
-      impact: 'positive' | 'negative' | 'neutral';
-      description: string;
-    }[];
+    behavioralPatterns: string[];
     psychologicalInsights: string;
     actionableSteps: string[];
   } | null>(null);
@@ -116,7 +113,7 @@ const AITradingInsights = ({ trades, stats, isLoading }: AITradingInsightsProps)
     
     setIsAnalyzing(true);
     try {
-      const suggestions = await generateTradingStrategySuggestions(stats);
+      const suggestions = await getStrategySuggestions(stats);
       setStrategyInsights(suggestions);
     } catch (error) {
       console.error("Error generating strategy suggestions:", error);
@@ -137,7 +134,7 @@ const AITradingInsights = ({ trades, stats, isLoading }: AITradingInsightsProps)
     
     setIsAnalyzing(true);
     try {
-      const riskAnalysis = await analyzeRiskProfile(trades);
+      const riskAnalysis = await assessRisk(trades);
       setRiskProfile(riskAnalysis);
     } catch (error) {
       console.error("Error analyzing risk profile:", error);
@@ -222,7 +219,7 @@ const AITradingInsights = ({ trades, stats, isLoading }: AITradingInsightsProps)
   const renderSentimentBadge = () => {
     if (!sentimentAnalysis) return null;
 
-    const { sentiment, confidence } = sentimentAnalysis;
+    const { sentiment, score } = sentimentAnalysis;
     
     let badgeClass = "";
     let icon = null;
@@ -242,7 +239,7 @@ const AITradingInsights = ({ trades, stats, isLoading }: AITradingInsightsProps)
       <div className="mb-4">
         <div className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${badgeClass}`}>
           {icon}
-          {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)} ({Math.round(confidence * 100)}% confidence)
+          {sentiment.charAt(0).toUpperCase() + sentiment.slice(1)} (Score: {score})
         </div>
       </div>
     );

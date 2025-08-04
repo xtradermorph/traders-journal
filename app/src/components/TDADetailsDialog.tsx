@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,7 +38,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const { toast } = useToast();
 
-  const fetchAnalysisData = async () => {
+  const fetchAnalysisData = useCallback(async () => {
     setLoading(true);
     try {
       const response = await fetch(`/api/tda?id=${analysisId}`);
@@ -57,7 +57,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
     } finally {
       setLoading(false);
     }
-  };
+  }, [analysisId, toast]);
 
   const handleDownload = async () => {
     if (!data) return;
@@ -452,7 +452,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                                 <h4 className="font-medium text-slate-800 mb-2">{question.question_text}</h4>
                                 <div className="text-sm text-slate-600">
                                   {(() => {
-                                    const answerText = answer ? (answer.answer_text || answer.answer_value || 'No answer provided') : 'No answer provided';
+                                    const answerText = answer ? (answer.answer_text || String(answer.answer_value || 'No answer provided')) : 'No answer provided';
                                     if (answerText === 'RED' || answerText === 'Red') {
                                       return <span className="text-red-600 font-medium">{answerText}</span>;
                                     } else if (answerText === 'GREEN' || answerText === 'Green') {

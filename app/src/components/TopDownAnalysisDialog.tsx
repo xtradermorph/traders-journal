@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -569,13 +569,15 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     setValidationState(prev => ({ ...prev, validationErrors: prev.validationErrors.filter(error => error.question_id !== questionId) }));
   };
 
+
+
   // Real-time validation effect
   useEffect(() => {
     if (currentStep >= 1 && currentStep <= 3 && questions) {
       const errors = validateCurrentTimeframe();
       setValidationState(prev => ({ ...prev, validationErrors: errors }));
     }
-  }, [questionAnswers, currentTimeframe, currentStep, questions]);
+  }, [questionAnswers, currentTimeframe, currentStep, questions, validateCurrentTimeframe]);
 
 
   const handleTimeframeComplete = async () => {
@@ -931,7 +933,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
   const progress = getProgress();
 
   // Validation functions
-  const validateCurrentTimeframe = (): TDAValidationError[] => {
+  const validateCurrentTimeframe = useCallback((): TDAValidationError[] => {
     const errors: TDAValidationError[] = [];
     const timeframeQuestions = getCurrentTimeframeQuestions();
     
@@ -992,7 +994,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     
     
     return errors;
-  };
+  }, [questionAnswers, currentTimeframe, getCurrentTimeframeQuestions]);
 
   const validateAllTimeframes = (): TDAValidationError[] => {
     if (!questions) return [];

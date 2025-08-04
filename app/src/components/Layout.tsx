@@ -24,6 +24,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/lib/supabase/index";
 import { UserProfileProvider } from "./UserProfileContext";
 import { Input } from "@/components/ui/input";
+import { LOGO_CONFIG } from '../../lib/logo-config';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -174,7 +175,7 @@ const Layout = ({ children, pathname }: LayoutProps) => {
         <header className="bg-bg-surface shadow-sm p-4 flex items-center justify-between">
           <div className="flex items-center">
             <Link href="/" className="hover:opacity-80 transition-opacity">
-              <img src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images//proper%20logo.png" alt="Logo" className="h-20 w-20" />
+              <img src={LOGO_CONFIG.MAIN_LOGO_URL} alt={LOGO_CONFIG.ALT_TEXT} className="h-20 w-20" />
             </Link>
             <h1 className="ml-2 text-lg font-semibold text-neutral">Trader&apos;s Journal</h1>
           </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { supabase, useAuth } from '@/lib/supabase';
 import { Trade } from '@/types/trade';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -154,7 +154,7 @@ function TradeRecordsPage() {
   };
 
   // Function to refresh trades data
-  const refreshTrades = async () => {
+  const refreshTrades = useCallback(async () => {
     if (!session || !session.user) return;
     
     try {
@@ -182,7 +182,7 @@ function TradeRecordsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [session]);
 
   useEffect(() => {
     // Check if we're in a server environment

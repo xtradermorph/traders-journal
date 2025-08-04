@@ -16,7 +16,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import { useEffect, useState } from "react";
 import { checkAuth } from "@/lib/supabase";
 
-function AuthenticatedRoute({ component: Component, ...rest }: { component: React.ComponentType<any>, [key: string]: any }) {
+function AuthenticatedRoute({ component: Component, ...rest }: { component: React.ComponentType<Record<string, unknown>>, [key: string]: unknown }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const [isClient, setIsClient] = useState(false);
   const router = useRouter();
@@ -32,7 +32,7 @@ function AuthenticatedRoute({ component: Component, ...rest }: { component: Reac
       try {
         await checkAuth();
         setIsAuthenticated(true);
-      } catch (error) {
+      } catch {
         setIsAuthenticated(false);
         router.push("/login");
       }

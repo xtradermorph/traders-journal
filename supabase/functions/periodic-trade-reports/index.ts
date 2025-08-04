@@ -567,7 +567,7 @@ async function generateReport(userId: string, reportType: 'weekly' | 'monthly' |
           `}
 
           <div style="text-align: center; margin: 30px 0;">
-            <a href="http://localhost:3000/trade-records" 
+            <a href="https://tradersjournal.pro/trade-records" 
                style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
               View Your Trades
             </a>
@@ -577,7 +577,7 @@ async function generateReport(userId: string, reportType: 'weekly' | 'monthly' |
           <p style="color: #666; font-size: 14px;">
             You're receiving this email because you have ${reportType} trade reports enabled.
             <br>
-            <a href="http://localhost:3000/settings" style="color: #007bff;">Manage your notification preferences</a>
+            <a href="https://tradersjournal.pro/settings" style="color: #007bff;">Manage your notification preferences</a>
           </p>
         </div>
         <div style="background-color: #f5f5f5; padding: 15px; text-align: center; font-size: 12px; color: #666;">

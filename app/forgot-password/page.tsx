@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
+import Image from 'next/image';
+import { LOGO_CONFIG } from '@/lib/logo-config';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -55,9 +57,11 @@ export default function ForgotPassword() {
       <div className="w-full max-w-md p-8 space-y-6">
         <div className="flex flex-col items-center">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <img 
-              src="/logo.png" 
-              alt="Trader's Journal Logo" 
+            <Image 
+              src={LOGO_CONFIG.MAIN_LOGO_URL} 
+              alt={LOGO_CONFIG.ALT_TEXT} 
+              width={64}
+              height={64}
               className="h-16 w-16 mb-4" 
             />
           </Link>

@@ -180,7 +180,7 @@ export async function cleanupSetupImageStorage(imageUrl: string) {
             console.log(`Successfully deleted setup image from ${bucket}`);
             break; // Found and deleted, no need to check other buckets
           }
-        } catch (error) {
+        } catch {
           console.log(`Image not found in ${bucket} bucket`);
         }
       }

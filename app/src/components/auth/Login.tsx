@@ -20,6 +20,7 @@ import { Eye, EyeOff, X } from "lucide-react";
 import { User } from '@supabase/supabase-js';
 import Image from 'next/image';
 import { Turnstile } from '../../../components/ui/turnstile';
+import { LOGO_CONFIG } from '../../../lib/logo-config';
 
 const loginFormSchema = z.object({
   email: z.string().email("Invalid email address").min(1, "Email is required"),
@@ -298,7 +299,7 @@ const Login = () => {
       >
         <div className="flex flex-col items-center">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <img src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images//proper%20logo.png" alt="Logo" className="h-20 w-20 mb-4" />
+            <img src={LOGO_CONFIG.MAIN_LOGO_URL} alt={LOGO_CONFIG.ALT_TEXT} className="h-20 w-20 mb-4" />
           </Link>
           <h2 className="text-3xl font-bold text-foreground">
             Log in to

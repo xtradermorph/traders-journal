@@ -344,7 +344,6 @@ const TradeCalendar = ({ trades, isLoading, userRegistrationDate }: TradeCalenda
             {(() => {
               // Create proper calendar grid with leading empty cells
               const monthStart = startOfMonth(currentMonth);
-              const monthEnd = endOfMonth(currentMonth);
               const startDayOfWeek = monthStart.getDay(); // 0 = Sunday, 1 = Monday, etc.
               
               // Create array with leading empty cells

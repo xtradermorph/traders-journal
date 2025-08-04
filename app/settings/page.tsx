@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
@@ -15,7 +15,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useToast } from '@/hooks/use-toast';
 import { Save, Monitor, AlertCircle, Check, Sparkles } from 'lucide-react';
 import timezoneData from './timezones-full';
-import DashboardFooter from '@/components/DashboardFooter';
 import { LoadingPage } from '../components/ui/loading-spinner';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -54,7 +53,7 @@ interface UserSettings {
 
 export default function SettingsPage() {
   const supabase = createClientComponentClient();
-  const { theme: currentTheme, setTheme } = useTheme();
+  const { setTheme } = useTheme();
   const { toast } = useToast();
   const router = useRouter();
   const { user, loading: authLoading } = useAuth();
@@ -126,7 +125,7 @@ export default function SettingsPage() {
   }, [settings.timezone, systemTimezone, timezoneOptions]);
 
   // Load settings from database
-  const loadSettings = async () => {
+  const loadSettings = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -189,7 +188,7 @@ export default function SettingsPage() {
       setInitialLoad(false);
       setLoading(false);
     }
-  };
+  }, [supabase, toast, setTheme, settings]);
 
   // Check authentication
   useEffect(() => {
@@ -380,12 +379,46 @@ export default function SettingsPage() {
     };
   }, [selectOpen, searchBuffer, searchTimeout, timezoneOptions]);
 
+  // Update a setting
+  const updateSetting = useCallback(<K extends keyof UserSettings>(key: K, value: UserSettings[K]) => {
+    const newSettings = { ...settings, [key]: value };
+    setSettings(newSettings);
+    
+    // Check if there are changes compared to original settings
+    if (originalSettings) {
+      const hasAnyChanges = Object.keys(newSettings).some(key => {
+        return newSettings[key as keyof UserSettings] !== originalSettings[key as keyof UserSettings];
+      });
+      setHasChanges(hasAnyChanges);
+      // Reset save success when changes are detected
+      if (hasAnyChanges && saveSuccess) {
+        setSaveSuccess(false);
+      }
+    }
+  }, [settings, originalSettings, saveSuccess]);
+
+  // Handle timezone toggle
+  const handleTimezoneToggle = (autoDetect: boolean) => {
+    setAutoDetectEnabled(autoDetect);
+    if (autoDetect) {
+      updateSetting('timezone', null);
+    } else {
+      updateSetting('timezone', systemTimezone);
+    }
+  };
+
   // Load settings on mount
   useEffect(() => {
     if (user && !loading) {
       loadSettings();
     }
   }, [user, loading, loadSettings]);
+
+  useEffect(() => {
+    if (user && !loading) {
+      updateSetting('timezone', systemTimezone);
+    }
+  }, [user, loading, systemTimezone, updateSetting]);
 
   // Show loading while checking authentication
   if (authLoading) {
@@ -497,39 +530,7 @@ export default function SettingsPage() {
     }
   };
 
-  // Update a setting
-  const updateSetting = (key: keyof UserSettings, value: UserSettings[keyof UserSettings]) => {
-    const newSettings = { ...settings, [key]: value };
-    setSettings(newSettings);
-    
-    // Check if there are changes compared to original settings
-    if (originalSettings) {
-      const hasAnyChanges = Object.keys(newSettings).some(key => {
-        return newSettings[key as keyof UserSettings] !== originalSettings[key as keyof UserSettings];
-      });
-      setHasChanges(hasAnyChanges);
-      // Reset save success when changes are detected
-      if (hasAnyChanges && saveSuccess) {
-        setSaveSuccess(false);
-      }
-    }
-  };
 
-  // Handle timezone toggle
-  const handleTimezoneToggle = (autoDetect: boolean) => {
-    setAutoDetectEnabled(autoDetect);
-    if (autoDetect) {
-      updateSetting('timezone', null);
-    } else {
-      updateSetting('timezone', systemTimezone);
-    }
-  };
-
-  useEffect(() => {
-    if (user && !loading) {
-      updateSetting('timezone', systemTimezone);
-    }
-  }, [user, loading, systemTimezone, updateSetting]);
 
   if (initialLoad) {
     return (
@@ -666,7 +667,7 @@ export default function SettingsPage() {
                           <Label>Default Performance View</Label>
                           <Select
                             value={settings.performance_view || 'total'}
-                            onValueChange={(value) => updateSetting('performance_view', value)}
+                            onValueChange={(value) => updateSetting('performance_view', value as 'total' | 'currentWeek')}
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="Select view" />
@@ -887,7 +888,6 @@ export default function SettingsPage() {
               </div>
             </div>
           </div>
-          <DashboardFooter />
         </div>
       </div>
     </>

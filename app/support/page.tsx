@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { supabase } from '@/lib/supabase';
 import { toast } from 'sonner';
-import { AlertCircle, CheckCircle } from 'lucide-react';
+import { CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,7 +15,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Mail, MessageSquare, FileText, ExternalLink, Send } from 'lucide-react';
 import DashboardFooter from '@/components/DashboardFooter';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
@@ -177,7 +177,7 @@ export default function SupportPage() {
                     <AccordionItem value="item-2">
                       <AccordionTrigger>How can I view my trading statistics?</AccordionTrigger>
                       <AccordionContent>
-                        Your trading statistics are displayed directly on the Dashboard. You can toggle between "Total" and "Current Week" 
+                        Your trading statistics are displayed directly on the Dashboard.                         You can toggle between &quot;Total&quot; and &quot;Current Week&quot; 
                         performance views using the switch in the Performance Summary section. The dashboard shows:
                         <ul className="list-disc pl-6 mt-2 space-y-1">
                           <li>Average trades per day</li>
@@ -193,7 +193,7 @@ export default function SupportPage() {
                     <AccordionItem value="item-3">
                       <AccordionTrigger>Can I export my trading data?</AccordionTrigger>
                       <AccordionContent>
-                        Yes, you can export your trading data from the Trade Records page. Click on the "Export" button 
+                        Yes, you can export your trading data from the Trade Records page. Click on the &quot;Export&quot; button 
                         and select your preferred format (Excel or Word). The export includes all your trade data with 
                         detailed information for further analysis or record keeping.
                       </AccordionContent>
@@ -203,7 +203,7 @@ export default function SupportPage() {
                       <AccordionTrigger>What is the Current Week Performance feature?</AccordionTrigger>
                       <AccordionContent>
                         The Current Week Performance feature shows your trading statistics for the current week (Monday 00:00 to Sunday 23:59). 
-                        You can toggle between "Total" (all-time data) and "Current Week" using the switch on your dashboard. 
+                        You can toggle between &quot;Total&quot; (all-time data) and &quot;Current Week&quot; using the switch on your dashboard. 
                         This feature updates dynamically based on the current date and shows your weekly performance metrics 
                         including average trades per day, win rate, and profit/loss for the current week only.
                       </AccordionContent>
@@ -213,7 +213,7 @@ export default function SupportPage() {
                       <AccordionTrigger>How do I use Top Down Analysis?</AccordionTrigger>
                       <AccordionContent>
                         Top Down Analysis (TDA) is a comprehensive market analysis tool available from your dashboard. 
-                        Click the "Top Down Analysis" button to:
+                        Click the &quot;Top Down Analysis&quot; button to:
                         <ul className="list-disc pl-6 mt-2 space-y-1">
                           <li>Select currency pairs and timeframes</li>
                           <li>Answer structured questions about market conditions</li>

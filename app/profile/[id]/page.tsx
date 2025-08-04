@@ -6,13 +6,13 @@ import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { PublicProfileView } from '@/components/PublicProfileView';
 import { UserProfile } from '@/types';
-import { useToast } from '@/hooks/use-toast';
+
 import { LoadingPage } from '../../components/ui/loading-spinner';
 
 export default function TraderProfilePage() {
   const router = useRouter();
   const params = useParams();
-  const { toast } = useToast();
+
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

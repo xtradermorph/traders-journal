@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -82,7 +82,7 @@ const SharedTradesContent = () => {
   const [editInput, setEditInput] = useState<Record<string, string>>({});
 
   // Fetch shared trades
-  const fetchSharedTrades = async () => {
+  const fetchSharedTrades = useCallback(async () => {
     if (!currentUser?.id) return;
     
     setIsLoading(true);
@@ -104,11 +104,11 @@ const SharedTradesContent = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentUser?.id, toast]);
 
   useEffect(() => {
     fetchSharedTrades();
-  }, [currentUser?.id]);
+  }, [currentUser?.id, fetchSharedTrades]);
 
   // Filter trades based on active tab and search
   const filteredTrades = sharedTrades.filter(trade => {

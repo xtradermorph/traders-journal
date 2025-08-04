@@ -218,15 +218,15 @@ export async function generateTDAWordDocument(data: TDADocumentData): Promise<Ui
 
         // Group questions by timeframe and create detailed sections
         ...(() => {
-          const questionsByTimeframe = questions.reduce((acc: any, question: any) => {
+          const questionsByTimeframe = questions.reduce((acc: Record<string, TDAQuestion[]>, question: TDAQuestion) => {
             if (!acc[question.timeframe]) acc[question.timeframe] = [];
             acc[question.timeframe].push(question);
             return acc;
           }, {});
 
-          return Object.entries(questionsByTimeframe).flatMap(([timeframe, timeframeQuestions]: [string, any]) => {
-            const timeframeAnswers = answers.filter((a: any) => 
-              timeframeQuestions.some((q: any) => q.id === a.question_id)
+          return Object.entries(questionsByTimeframe).flatMap(([timeframe, timeframeQuestions]: [string, TDAQuestion[]]) => {
+            const timeframeAnswers = answers.filter((a: TDAAnswer) => 
+              timeframeQuestions.some((q: TDAQuestion) => q.id === a.question_id)
             );
 
             if (timeframeAnswers.length === 0) return [];
@@ -298,8 +298,8 @@ export async function generateTDAWordDocument(data: TDADocumentData): Promise<Ui
                       }),
                     ],
                   }),
-                  ...timeframeQuestions.map((question: any) => {
-                    const answer = timeframeAnswers.find((a: any) => a.question_id === question.id);
+                  ...timeframeQuestions.map((question: TDAQuestion) => {
+                    const answer = timeframeAnswers.find((a: TDAAnswer) => a.question_id === question.id);
                     return new TableRow({
                       children: [
                       new TableCell({
@@ -322,7 +322,7 @@ export async function generateTDAWordDocument(data: TDADocumentData): Promise<Ui
               spacing: { after: 200 },
                 children: [
                   new TextRun({
-                                   text: answer ? (answer.answer_text || answer.answer_value || 'No answer provided') : 'No answer provided',
+                                   text: answer ? (String(answer.answer_text || answer.answer_value || 'No answer provided')) : 'No answer provided',
                                    size: 22,
                   }),
                                ],

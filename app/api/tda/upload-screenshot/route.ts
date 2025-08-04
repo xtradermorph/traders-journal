@@ -59,7 +59,7 @@ export async function POST(request: Request) {
     const fileName = `${analysisId}-${timeframe}-${timestamp}.${fileExtension}`;
 
     // Upload file to Supabase storage
-    const { data: uploadResult, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('tda-screenshots')
       .upload(fileName, file, {
         contentType: file.type,

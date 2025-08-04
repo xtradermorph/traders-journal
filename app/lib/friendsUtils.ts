@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { User } from '@supabase/supabase-js';
+
 // Friend request email notification will be handled by API route
 
 // Define the structure of a friendship record based on your table
@@ -41,7 +41,7 @@ const normalizeUserIds = (userIdA: string, userIdB: string): { user1_id: string,
 /**
  * Sends a friend request from the current user to the recipient.
  */
-export const sendFriendRequest = async (recipientId: string): Promise<{ data?: any; error?: string }> => {
+export const sendFriendRequest = async (recipientId: string): Promise<{ data?: Record<string, unknown>; error?: string }> => {
   const currentUserId = await getCurrentUserId();
   if (!currentUserId) return { error: 'User not authenticated.' };
   if (currentUserId === recipientId) return { error: 'Cannot send a friend request to yourself.' };
@@ -102,16 +102,17 @@ export const sendFriendRequest = async (recipientId: string): Promise<{ data?: a
     }
 
     return { data };
-  } catch (error: any) {
-    console.error('Error sending friend request:', error.message);
-    return { error: error.message || 'Failed to send friend request.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error sending friend request:', errorMessage);
+    return { error: errorMessage || 'Failed to send friend request.' };
   }
 };
 
 /**
  * Accepts a friend request.
  */
-export const acceptFriendRequest = async (senderId: string): Promise<{ data?: any; error?: string }> => {
+export const acceptFriendRequest = async (senderId: string): Promise<{ data?: Record<string, unknown>; error?: string }> => {
   const currentUserId = await getCurrentUserId(); // This is the user accepting the request
   if (!currentUserId) return { error: 'User not authenticated.' };
 
@@ -131,16 +132,17 @@ export const acceptFriendRequest = async (senderId: string): Promise<{ data?: an
     if (error) throw error;
     if (!data) return { error: 'Friend request not found or already actioned.'}
     return { data };
-  } catch (error: any) {
-    console.error('Error accepting friend request:', error.message);
-    return { error: error.message || 'Failed to accept friend request.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error accepting friend request:', errorMessage);
+    return { error: errorMessage || 'Failed to accept friend request.' };
   }
 };
 
 /**
  * Declines a friend request.
  */
-export const declineFriendRequest = async (senderId: string): Promise<{ data?: any; error?: string }> => {
+export const declineFriendRequest = async (senderId: string): Promise<{ data?: Record<string, unknown>; error?: string }> => {
   const currentUserId = await getCurrentUserId(); // This is the user declining
   if (!currentUserId) return { error: 'User not authenticated.' };
 
@@ -161,9 +163,10 @@ export const declineFriendRequest = async (senderId: string): Promise<{ data?: a
     if (error) throw error;
     if (!data) return { error: 'Friend request not found or already actioned.'}
     return { data };
-  } catch (error: any) {
-    console.error('Error declining friend request:', error.message);
-    return { error: error.message || 'Failed to decline friend request.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error declining friend request:', errorMessage);
+    return { error: errorMessage || 'Failed to decline friend request.' };
   }
 };
 
@@ -184,9 +187,10 @@ export const cancelFriendRequest = async (recipientId: string): Promise<{ succes
 
     if (error) throw error;
     return { success: true };
-  } catch (error: any) {
-    console.error('Error canceling friend request:', error.message);
-    return { error: error.message || 'Failed to cancel friend request.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error canceling friend request:', errorMessage);
+    return { error: errorMessage || 'Failed to cancel friend request.' };
   }
 };
 
@@ -206,9 +210,10 @@ export const removeFriend = async (friendId: string): Promise<{ success?: boolea
 
     if (error) throw error;
     return { success: true };
-  } catch (error: any) {
-    console.error('Error removing friend:', error.message);
-    return { error: error.message || 'Failed to remove friend.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error removing friend:', errorMessage);
+    return { error: errorMessage || 'Failed to remove friend.' };
   }
 };
 
@@ -216,7 +221,7 @@ export const removeFriend = async (friendId: string): Promise<{ success?: boolea
  * Fetches the list of accepted friends for a given user.
  * Returns an array of profile objects for the friends.
  */
-export const getFriends = async (userId: string): Promise<{ data?: any[]; error?: string }> => {
+export const getFriends = async (userId: string): Promise<{ data?: Array<Record<string, unknown>>; error?: string }> => {
   if (!userId) return { error: 'User ID is required.' };
   try {
     // Fetch friend request records where the user is involved and status is accepted
@@ -242,9 +247,10 @@ export const getFriends = async (userId: string): Promise<{ data?: any[]; error?
     if (profilesError) throw profilesError;
     return { data: friendsProfiles || [] };
 
-  } catch (error: any) {
-    console.error('Error fetching friends:', error.message);
-    return { error: error.message || 'Failed to fetch friends.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error fetching friends:', errorMessage);
+    return { error: errorMessage || 'Failed to fetch friends.' };
   }
 };
 
@@ -268,9 +274,10 @@ export const getFriendshipStatus = async (otherUserId: string): Promise<{ data?:
 
     if (error) throw error;
     return { data };
-  } catch (error: any) {
-    console.error('Error fetching friendship status:', error.message);
-    return { error: error.message || 'Failed to fetch friendship status.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error fetching friendship status:', errorMessage);
+    return { error: errorMessage || 'Failed to fetch friendship status.' };
   }
 };
 
@@ -336,7 +343,7 @@ export const getFriendshipStatusString = async (otherUserId: string): Promise<'N
 /**
  * Fetches pending incoming friend requests for the current user.
  */
-export const getPendingIncomingRequests = async (): Promise<{ data?: any[]; error?: string }> => {
+export const getPendingIncomingRequests = async (): Promise<{ data?: Array<Record<string, unknown>>; error?: string }> => {
   const currentUserId = await getCurrentUserId();
   if (!currentUserId) return { error: 'User not authenticated.' };
 
@@ -369,9 +376,10 @@ export const getPendingIncomingRequests = async (): Promise<{ data?: any[]; erro
 
     return { data: enrichedRequests };
 
-  } catch (error: any) {
-    console.error('Error fetching pending incoming requests:', error.message);
-    return { error: error.message || 'Failed to fetch pending requests.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error fetching pending incoming requests:', errorMessage);
+    return { error: errorMessage || 'Failed to fetch pending requests.' };
   }
 };
 
@@ -407,9 +415,10 @@ export const blockUser = async (blockedUserId: string): Promise<{ data?: Friends
       throw error;
     }
     return { data };
-  } catch (error: any) {
-    console.error('Error blocking user:', error.message);
-    return { error: error.message || 'Failed to block user.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error blocking user:', errorMessage);
+    return { error: errorMessage || 'Failed to block user.' };
   }
 };
 
@@ -424,7 +433,7 @@ export const unblockUser = async (unblockedUserId: string): Promise<{ success?: 
   const { user1_id, user2_id } = normalizeUserIds(currentUserId, unblockedUserId);
 
   try {
-    const { error, count } = await supabase
+    const { error } = await supabase
       .from('trader_friends')
       .delete()
       .eq('user1_id', user1_id)
@@ -435,8 +444,9 @@ export const unblockUser = async (unblockedUserId: string): Promise<{ success?: 
     if (error) throw error;
     
     return { success: true };
-  } catch (error: any) {
-    console.error('Error unblocking user:', error.message);
-    return { error: error.message || 'Failed to unblock user.' };
+  } catch (error: unknown) {
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    console.error('Error unblocking user:', errorMessage);
+    return { error: errorMessage || 'Failed to unblock user.' };
   }
 };

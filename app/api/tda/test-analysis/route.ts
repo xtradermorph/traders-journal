@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -187,7 +187,7 @@ export async function POST(request: Request) {
     // Step 7: Test the main API endpoint
     results.test_results.steps.push('Step 7: Testing main API endpoint...');
     
-    const apiResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/tda?id=${analysis.id}`, {
+    const apiResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://tradersjournal.pro'}/api/tda?id=${analysis.id}`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',

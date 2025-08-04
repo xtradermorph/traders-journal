@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { DownloadIcon, Smartphone, CheckCircle, XCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,9 +63,9 @@ export default function InstallPage() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [isMobile, deferredPrompt, isInstalled]);
+  }, [isMobile, deferredPrompt, isInstalled, handleInstall]);
 
-  const handleInstall = async () => {
+  const handleInstall = useCallback(async () => {
     if (!deferredPrompt) {
       setInstallError('Installation prompt not available. Please try refreshing the page.');
       return;
@@ -94,7 +94,7 @@ export default function InstallPage() {
       setIsInstalling(false);
       setDeferredPrompt(null);
     }
-  };
+  }, [deferredPrompt]);
 
   const handleManualInstall = () => {
     // For browsers that don't support beforeinstallprompt

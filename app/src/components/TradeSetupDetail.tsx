@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -526,9 +527,11 @@ const TradeSetupDetail: React.FC<TradeSetupDetailProps> = ({ id }) => {
           
           {tradeSetup.image_url && (
             <div className="my-4 border rounded-lg overflow-hidden">
-              <img 
+              <Image 
                 src={tradeSetup.image_url} 
                 alt="Chart" 
+                width={800}
+                height={400}
                 className="w-full object-contain max-h-96"
                 onError={(e) => {
                   // Fallback for demo purposes

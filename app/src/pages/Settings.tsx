@@ -1,34 +1,13 @@
 "use client"
 
-import React, { useState } from 'react';
+import React from 'react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from '@/hooks/use-toast';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Settings() {
-  const { toast } = useToast();
-  const [loading, setLoading] = useState(false);
 
-  const handleSave = async () => {
-    setLoading(true);
-    try {
-      // Save settings logic here
-      toast({
-        title: "Settings saved",
-        description: "Your preferences have been updated successfully.",
-        variant: "default"
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to save settings. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="container mx-auto px-4 py-8">

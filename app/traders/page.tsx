@@ -416,7 +416,7 @@ const TradersPage = () => {
     }
   }, [debouncedSearchQuery, sortBy, currentPage, toast]);
 
-  const fetchFriendshipStatuses = async (traderIds: string[]) => {
+  const fetchFriendshipStatuses = useCallback(async (traderIds: string[]) => {
     try {
       console.log('fetchFriendshipStatuses called with:', traderIds.length, 'traders');
       const { data: { user } } = await supabase.auth.getUser();
@@ -461,7 +461,7 @@ const TradersPage = () => {
       traderIds.forEach(id => fallbackStatuses.set(id, 'NONE'));
       setFriendshipStatuses(fallbackStatuses);
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchTraders();

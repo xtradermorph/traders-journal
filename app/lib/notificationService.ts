@@ -8,13 +8,7 @@ const supabase = createClient(
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-interface NotificationData {
-  recipientId: string;
-  senderId?: string;
-  tradeId?: string;
-  medalType?: string;
-  friendRequestId?: string;
-}
+
 
 /**
  * Send friend request notification email

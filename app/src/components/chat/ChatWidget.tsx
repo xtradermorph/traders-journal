@@ -505,8 +505,8 @@ const ChatWidget = () => {
     return () => clearTimeout(timeout);
   }, [currentUser, loading]);
 
-  const handleOpen = () => openChat(true);
-  const handleClose = () => openChat(false);
+  const handleOpen = useCallback(() => openChat(true), [openChat]);
+  const handleClose = useCallback(() => openChat(false), [openChat]);
 
   // Click-away to close logic
   useEffect(() => {

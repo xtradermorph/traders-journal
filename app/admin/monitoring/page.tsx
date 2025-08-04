@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -127,7 +127,7 @@ export default function MonitoringPage() {
     }
   };
 
-  const fetchUsers = async () => {
+  const fetchUsers = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/users-list', {
         signal: AbortSignal.timeout(30000) // 30 second timeout
@@ -160,7 +160,7 @@ export default function MonitoringPage() {
         });
       }
     }
-  };
+  }, [projectStats?.lastSent, toast]);
 
   const validateForm = () => {
     if (!announcementForm.subject.trim()) {

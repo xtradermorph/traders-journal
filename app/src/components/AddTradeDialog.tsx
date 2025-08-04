@@ -100,7 +100,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [saveSuccess, setSaveSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [isCustomLotSize, setIsCustomLotSize] = useState(false);
   const [customLotSizeValue, setCustomLotSizeValue] = useState('');
   const [customLotSizeError, setCustomLotSizeError] = useState('');
@@ -309,7 +309,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
         
         return insertData;
       },
-      onSuccess: (data) => {
+      onSuccess: () => {
         
         queryClient.invalidateQueries({
           queryKey: ['trades', '/api/trades', '/api/stats']
@@ -377,7 +377,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
         // const newTrade = processedData[0]; // This line was removed as per the edit hint
 
         // Insert into database
-        const { data: insertData, error } = await supabase
+        const { error } = await supabase
           .from('trades')
           .insert(rawData as any) // This line was changed as per the edit hint
           .select()

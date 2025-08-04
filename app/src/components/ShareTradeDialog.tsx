@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +44,7 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
   const [isSearching, setIsSearching] = useState(false);
 
   // Fetch user's friends
-  const fetchFriends = async () => {
+  const fetchFriends = useCallback(async () => {
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('User not authenticated');
@@ -80,10 +80,10 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
         variant: 'destructive',
       });
     }
-  };
+  }, [toast]);
 
   // Search for users by username, first_name, or last_name
-  const searchUsers = async (query: string) => {
+  const searchUsers = useCallback(async (query: string) => {
     if (!query.trim()) {
       setSearchResults([]);
       return;
@@ -150,14 +150,14 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
     } finally {
       setIsSearching(false);
     }
-  };
+  }, [shareType, friends, toast]);
 
   // Load data when dialog opens
   useEffect(() => {
     if (isOpen) {
       fetchFriends();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchFriends]);
 
   // Search users when search query changes
   useEffect(() => {
@@ -168,7 +168,7 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
     }, 300);
 
     return () => clearTimeout(timeoutId);
-  }, [searchQuery, shareType]);
+  }, [searchQuery, shareType, searchUsers]);
 
   // Clear search results when query is emptied
   useEffect(() => {

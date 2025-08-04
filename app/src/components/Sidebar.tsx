@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase/index";
 import { useToast } from "@/hooks/use-toast";
+import { LOGO_CONFIG } from '../../lib/logo-config';
 
 // Define interface for navigation items
 interface NavItem {
@@ -114,7 +115,7 @@ const Sidebar = () => {
     if (process.env.NODE_ENV === 'development') {
       // console.log('Pathname changed, refetching user data:', pathname);
     }
-  }, [pathname]);
+  }, [pathname, refetchUserData]);
   
   // Force refetch on component mount
   useEffect(() => {
@@ -135,7 +136,7 @@ const Sidebar = () => {
     }, 10000); // Check every 10 seconds
     
     return () => clearInterval(intervalId);
-  }, []);
+  }, [refetchUserData]);
   
   // Use localStorage as fallback for admin status to prevent menu items from disappearing
   const storedAdminStatus = typeof window !== 'undefined' ? localStorage.getItem('isAdmin') === 'true' : false;
@@ -179,8 +180,8 @@ const Sidebar = () => {
         <div className="px-4 mb-6">
           <Link href="/dashboard" className="flex items-center">
             <img 
-              src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images//proper%20logo.png" 
-              alt="Logo" 
+              src={LOGO_CONFIG.MAIN_LOGO_URL} 
+              alt={LOGO_CONFIG.ALT_TEXT} 
               className="h-10 w-10" 
             />
             <span className="ml-2 text-lg font-semibold text-foreground">Trader&apos;s Journal</span>

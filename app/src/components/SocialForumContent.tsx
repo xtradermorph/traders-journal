@@ -556,7 +556,7 @@ const SocialForumContent = () => {
   };
 
   // Fetch likes for a trade setup (on mount or after like/unlike)
-  const fetchLikes = async (setupId: string) => {
+  const fetchLikes = useCallback(async (setupId: string) => {
     const { data: userData } = await supabase.auth.getUser();
     const user_id = userData?.user?.id;
     const { data: likes, error } = await supabase
@@ -567,7 +567,7 @@ const SocialForumContent = () => {
       setLikeCounts((prev) => ({ ...prev, [setupId]: likes.length }));
       setLikedSetups((prev) => ({ ...prev, [setupId]: !!likes.find((l: any) => l.user_id === user_id) }));
     }
-  };
+  }, []);
 
   // Like/unlike handler
   const handleLikeTradeSetup = async (setupId: string) => {
@@ -603,7 +603,7 @@ const SocialForumContent = () => {
       }
     });
     // eslint-disable-next-line
-  }, [filteredData.length]);
+  }, [filteredData.length, fetchLikes, fetchComments, comments, loadingComments]);
 
   // Safe delete trade handler
   const handleDeleteTrade = (setupId: string) => {
@@ -673,10 +673,10 @@ const SocialForumContent = () => {
       console.log('Clearing search results');
       setSearchResults([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, searchUsers]);
 
   // Search for users by username, first_name, or last_name
-  const searchUsers = async (query: string, exactMatch: boolean = false) => {
+  const searchUsers = useCallback(async (query: string, exactMatch: boolean = false) => {
     if (!query.trim()) {
       if (exactMatch) {
         setPrivateSearchResults([]);
@@ -738,7 +738,7 @@ const SocialForumContent = () => {
         variant: 'destructive',
       });
     }
-  };
+  }, []);
 
   // Handle search queries for public tab
   useEffect(() => {
@@ -916,7 +916,7 @@ const SocialForumContent = () => {
   };
 
   // Fetch comments for a trade setup (with parent_id)
-  const fetchComments = async (setupId: string) => {
+  const fetchComments = useCallback(async (setupId: string) => {
     setLoadingComments((prev) => ({ ...prev, [setupId]: true }));
     try {
       const { data, error } = await supabase
@@ -939,7 +939,7 @@ const SocialForumContent = () => {
     } finally {
       setLoadingComments((prev) => ({ ...prev, [setupId]: false }));
     }
-  };
+  }, []);
 
   // Handle toggling comments
   const handleToggleComments = (setupId: string) => {

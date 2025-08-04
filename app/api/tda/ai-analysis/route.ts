@@ -124,8 +124,114 @@ async function generateAIAnalysis(
   questions: Record<string, unknown>[],
   currencyPair: string
 ): Promise<AIAnalysisResponse> {
-  // This is a sophisticated AI analysis algorithm
-  // In production, you might want to use a real AI service like OpenAI, Claude, or Grok
+  // Use OpenAI for real AI analysis
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    // Fallback to algorithm if no API key
+    console.warn("No OpenAI API key found, using algorithm fallback");
+    return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair);
+  }
+
+  try {
+    // Prepare data for OpenAI
+    const analysisData = {
+      currencyPair,
+      answers: answers.map(a => ({
+        question: questions.find(q => q.id === a.question_id)?.question_text || 'Unknown',
+        answer: a.answer_text || a.answer_value,
+        timeframe: questions.find(q => q.id === a.question_id)?.timeframe || 'Unknown'
+      })),
+      timeframeAnalyses: timeframeAnalyses.map(t => ({
+        timeframe: t.timeframe,
+        analysis: t.analysis_data
+      }))
+    };
+
+    const prompt = `You are a professional forex trading analyst performing a top-down analysis for ${currencyPair}.
+
+Analysis Data:
+${JSON.stringify(analysisData, null, 2)}
+
+Please provide a JSON response with the following structure:
+{
+  "overall_probability": number (0-100),
+  "trade_recommendation": "LONG" | "SHORT" | "NEUTRAL" | "AVOID",
+  "confidence_level": number (0-100),
+  "risk_level": "LOW" | "MEDIUM" | "HIGH",
+  "ai_summary": "concise summary of the analysis",
+  "ai_reasoning": "detailed reasoning for the recommendation",
+  "timeframe_breakdown": {
+    "M10": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
+    "M15": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
+    "M30": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
+    "H1": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
+    "H2": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
+    "H4": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
+    "H8": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
+    "W1": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
+    "MN1": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
+    "DAILY": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"}
+  }
+}
+
+Analyze the data considering:
+- Technical analysis across timeframes
+- Market sentiment and momentum
+- Risk-reward ratios
+- Market conditions and volatility
+- Support and resistance levels
+
+Respond only with valid JSON.`;
+
+    const openaiRes = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${apiKey}`,
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You are a helpful forex trading analyst. Respond only with valid JSON." },
+          { role: "user", content: prompt },
+        ],
+        max_tokens: 1500,
+        temperature: 0.3,
+      }),
+    });
+
+    if (!openaiRes.ok) {
+      const err = await openaiRes.json();
+      console.error("OpenAI API error:", err);
+      // Fallback to algorithm
+      return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair);
+    }
+
+    const openaiData = await openaiRes.json();
+    const responseText = openaiData.choices?.[0]?.message?.content || "{}";
+    
+    try {
+      const analysis = JSON.parse(responseText);
+      return analysis as AIAnalysisResponse;
+    } catch (parseError) {
+      console.error("Failed to parse OpenAI response:", parseError);
+      // Fallback to algorithm
+      return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair);
+    }
+  } catch (error) {
+    console.error("OpenAI analysis error:", error);
+    // Fallback to algorithm
+    return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair);
+  }
+}
+
+// Fallback algorithm analysis (original implementation)
+function generateAlgorithmAnalysis(
+  answers: Record<string, unknown>[],
+  timeframeAnalyses: Record<string, unknown>[],
+  questions: Record<string, unknown>[],
+  currencyPair: string
+): AIAnalysisResponse {
   
   // Initialize all timeframes with default values
   const timeframeScores: Record<TimeframeType, number> = {

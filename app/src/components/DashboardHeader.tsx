@@ -1,6 +1,6 @@
 "use client"
 
-import React, { useState, useEffect, useRef } from 'react'; // Import useEffect and useRef
+import React, { useState, useEffect, useRef, useCallback } from 'react'; // Import useEffect and useRef
 import Link from 'next/link';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -13,13 +13,10 @@ import {
   LogOut,
   PlusIcon, // Added PlusIcon
   Users, // For Traders
-  Globe, // For Social Forum discussions - modern community icon
   Search, // For search input
   UserPlus, // For follow button
   UserMinus, // For unfollow button
   UserCheck, // For (already) friends or accepted requests
-  Zap, // For online status
-  ZapOff, // For offline status
   UserX, // For remove friend, decline request
   Mail, // For incoming friend requests icon
   MonitorCheck,
@@ -166,7 +163,7 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
 
-  const fetchUserTrades = async () => {
+  const fetchUserTrades = useCallback(async () => {
     if (!currentUser?.id) return;
     
     try {
@@ -185,7 +182,7 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
     } catch (error) {
       console.error('Error in fetchUserTrades:', error);
     }
-  };
+  }, [currentUser?.id]);
 
   // Calculate medal type when userTrades changes
   useEffect(() => {
@@ -225,7 +222,7 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
     if (currentUser?.id) {
       fetchUserTrades();
     }
-  }, [currentUser?.id]);
+  }, [currentUser?.id, fetchUserTrades]);
 
   // Handler functions for friend actions
   const handleSendFriendRequest = async (recipientId: string) => {
@@ -677,7 +674,7 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
     const fetchAndSetTrades = async () => {
       if (!currentUser?.id) return;
       try {
-        const trades = await getTrades({ user_id: currentUser.id });
+        const trades = await getTrades();
         setUserTrades(trades || []);
         const medal = calculateMedal(trades || []);
         setMedalType(medal);

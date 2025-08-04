@@ -8,18 +8,12 @@ export async function POST(request: Request) {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
     // Get current user
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const results = {
-      timestamp: new Date().toISOString(),
-      user_id: user.id,
-      fixes_applied: [] as string[],
-      steps: [] as string[],
-      errors: [] as string[]
-    };
+
 
     const body = await request.json();
     const { analysis_id } = body;
@@ -51,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     // Group answers by timeframe based on question_id patterns
-    const timeframeGroups: Record<string, any[]> = {};
+    const timeframeGroups: Record<string, Array<{ question_id: string; answer_text?: string; answer_value?: string }>> = {};
     
     answers?.forEach(answer => {
       const questionId = answer.question_id;

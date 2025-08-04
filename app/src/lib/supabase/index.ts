@@ -25,7 +25,7 @@ export const supabase = (() => {
         delete: () => ({ eq: () => Promise.resolve({ data: null, error: null }) }),
       }),
       rpc: () => Promise.resolve({ data: null, error: null }),
-    } as any;
+    } as unknown as ReturnType<typeof createClientComponentClient<Database>>;
   }
 
   if (!supabaseClient) {
@@ -50,7 +50,7 @@ export const supabase = (() => {
           upsert: async () => ({ error: new Error('Supabase client not available') })
         }),
         rpc: async () => ({ data: null, error: new Error('Supabase client not available') })
-      } as any
+      } as unknown as ReturnType<typeof createClientComponentClient<Database>>
     }
   }
 
