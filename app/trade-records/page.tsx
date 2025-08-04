@@ -349,10 +349,7 @@ const getMonthGroups = (trades: Trade[]) => {
       }));
   };
 
-  const processedTrades = processTrades(trades || []);
   const yearGroups = trades ? getYearGroups(trades) : [];
-  const monthGroups = trades ? getMonthGroups(trades) : [];
-  const todayTrades = trades ? getTodayTrades(trades) : [];
 
   // Calculate performance statistics
   const calculateStats = () => {
@@ -498,7 +495,7 @@ const getMonthGroups = (trades: Trade[]) => {
         }
       }
     }
-  }, [yearGroups, openMonth]);
+  }, [trades, openMonth]);
 
   let pageContent: React.ReactNode = null;
 

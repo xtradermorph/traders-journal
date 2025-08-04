@@ -106,7 +106,7 @@ export default function SettingsPage() {
       offset: tz.offset,
       abbr: tz.abbr
     })).sort((a, b) => a.label.localeCompare(b.label));
-  }, [timezoneData]);
+  }, []);
 
   // Auto-detect timezone
   const systemTimezone = useMemo(() => {
@@ -418,7 +418,7 @@ export default function SettingsPage() {
     if (user && !loading) {
       updateSetting('timezone', systemTimezone);
     }
-  }, [user, loading, systemTimezone, updateSetting]);
+  }, [user, loading, systemTimezone]);
 
   // Show loading while checking authentication
   if (authLoading) {

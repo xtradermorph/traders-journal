@@ -107,6 +107,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
   const [notesCharCount, setNotesCharCount] = useState(0);
   const [entryPriceRaw, setEntryPriceRaw] = useState('');
   const [exitPriceRaw, setExitPriceRaw] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
@@ -263,7 +264,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
 
 
     const addTradeMutation = useMutation({
-      mutationFn: async (rawData: TradeFormValues) => {
+    mutationFn: async (rawData: TradeFormValues) => {
         
         // Ensure pips and duration are calculated before sending if not manually entered
         const data = {
@@ -277,7 +278,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
         };
 
         // Remove undefined calculated values before insertion if needed
-        if (data.pips === undefined) delete (data as any).pips;
+        if (data.pips === undefined) delete (data as Record<string, unknown>).pips;
         
         // Map form field names to database column names
         const newTrade = {
@@ -379,7 +380,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
         // Insert into database
         const { error } = await supabase
           .from('trades')
-          .insert(rawData as any) // This line was changed as per the edit hint
+          .insert(rawData as Record<string, unknown>)
           .select()
           .single();
 
@@ -418,7 +419,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
 
     // Effect to calculate Pips and Duration automatically when inputs change
     React.useEffect(() => {
-      const subscription = form.watch((values, { name, type }) => {
+      const subscription = form.watch((values, { name }) => {
         const { entryPrice, exitPrice, tradeType, currencyPair, entryTime, exitTime } = values;
 
         // Calculate Pips if relevant fields change
@@ -441,9 +442,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
       return () => subscription.unsubscribe();
     }, [form]); // form is stable, form.watch handles changes internally
 
-    const onSubmitOriginal = (data: TradeFormValues) => { // Keep original submit function name different
-      addTradeMutation.mutate(data);
-    };
+
 
     // Add a derived state for tag validity
     const tagValue = form.watch('tags');
@@ -651,7 +650,6 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
                   control={form.control}
                   name="entryPrice"
                   render={({ field }) => {
-                    const value = field.value?.toString() || '';
                     const isInvalid = entryPriceRaw !== '' && (entryPriceRaw.length >= 10 || !/^\d*\.?\d*$/.test(entryPriceRaw));
                     return (
                     <FormItem>
@@ -687,7 +685,6 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
                   control={form.control}
                   name="exitPrice"
                   render={({ field }) => {
-                    const value = field.value?.toString() || '';
                     const isInvalid = exitPriceRaw !== '' && (exitPriceRaw.length >= 10 || !/^\d*\.?\d*$/.test(exitPriceRaw));
                     return (
                     <FormItem>
@@ -727,8 +724,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
                   control={form.control}
                   name="entryTime"
                   render={({ field }) => {
-                    const value = field.value || '';
-                    const isInvalid = value !== '' && (/[a-zA-Z]/.test(value) || !/^([01]?\d|2[0-3]):[0-5]\d$/.test(value));
+                    const isInvalid = field.value !== '' && (/[a-zA-Z]/.test(field.value) || !/^([01]?\d|2[0-3]):[0-5]\d$/.test(field.value));
                     return (
                     <FormItem>
                       <FormLabel className="text-slate-700 font-medium">

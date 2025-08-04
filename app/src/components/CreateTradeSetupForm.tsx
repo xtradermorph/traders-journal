@@ -14,7 +14,8 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { X, Plus, Upload, Image, Loader2, Check } from "lucide-react";
+import { X, Plus, Upload, Loader2, Check } from "lucide-react";
+import Image from "next/image";
 import { supabase } from "@/lib/supabase";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -107,13 +108,12 @@ const CreateTradeSetupForm = () => {
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
-  const [forums, setForums] = useState<{ id: string; name: string }[]>([]);
-  const [loadingForums, setLoadingForums] = useState(true);
+
   const { toast } = useToast();
   const router = useRouter();
 
   const form = useForm<TradeSetupFormValues>({
-    resolver: zodResolver(tradeSetupSchema) as any,
+    resolver: zodResolver(tradeSetupSchema),
     defaultValues: {
       title: "",
       description: "",
@@ -270,7 +270,7 @@ const CreateTradeSetupForm = () => {
       }
 
       // Upload the images to Supabase Storage
-      let imageUrls = [];
+      const imageUrls = [];
       try {
         const { data: userData } = await supabase.auth.getUser();
         if (!userData || !userData.user) {
@@ -432,7 +432,7 @@ const CreateTradeSetupForm = () => {
       </CardHeader>
       <CardContent>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit as any)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             <FormField
               control={form.control}
               name="title"
@@ -786,9 +786,11 @@ const CreateTradeSetupForm = () => {
                   <div className="grid grid-cols-5 gap-4">
                     {imagePreviews.map((preview, index) => (
                       <div key={index} className="relative">
-                        <img 
+                        <Image 
                           src={preview} 
                           alt={`Chart preview ${index + 1}`} 
+                          width={200}
+                          height={320}
                           className="max-h-80 rounded-lg mx-auto object-contain"
                         />
                         <Button

@@ -16,8 +16,8 @@ interface Stats {
 }
 
 interface CurrencyPairPerformanceProps {
-  stats: Stats | null;
-  trades: any[] | null;
+
+  trades: Array<Record<string, unknown>> | null;
   isLoading: boolean;
 }
 

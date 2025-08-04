@@ -37,7 +37,7 @@ import {
   cancelFriendRequest,
   removeFriend,
   getFriends,
-  getFriendshipStatus,
+
   getPendingIncomingRequests,
   blockUser, // Added
   unblockUser // Added
@@ -55,7 +55,7 @@ import TopDownAnalysisDialog from './TopDownAnalysisDialog'; // Import TopDownAn
 import { useUserProfile } from "./UserProfileContext";
 import { getTrades } from '@/lib/api/trades';
 import { MedalType } from '@/types/user';
-import { Drawer, DrawerContent, DrawerHeader, DrawerTitle } from "@/components/ui/drawer";
+
 import { useTheme } from 'next-themes';
 
 import { useAuth } from '@/hooks/useAuth';
@@ -111,28 +111,9 @@ interface DashboardHeaderProps {
   mainScrollRef: React.RefObject<HTMLDivElement>;
 }
 
-// Type guard to check if an element is an HTMLElement
-function isHTMLElement(element: any): element is HTMLElement {
-  return element instanceof HTMLElement;
-}
 
-// Default user data for when user is null
-const defaultUser: UserData = {
-  id: 'guest',
-  username: 'Guest',
-  avatar_url: '',
-  email: '',
-  profession: '',
-  location: '',
-  trader_status: '',
-  trader_type: '',
-  bio: '',
-  years_experience: '',
-  trading_frequency: '',
-  markets: '',
-  trading_goal: '',
-  trading_challenges: ''
-};
+
+
 
 const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: DashboardHeaderProps) => {
   const { profile: currentUser, isOnline } = useUserProfile();

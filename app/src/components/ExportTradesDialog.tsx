@@ -9,10 +9,8 @@ import { Label } from './ui/label';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Alert, AlertDescription } from './ui/alert';
 import { Loader2, Download, Calendar as CalendarIcon, AlertCircle, CheckCircle } from 'lucide-react';
-import { format, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, subMonths, isWithinInterval, isAfter, isBefore, startOfDay } from 'date-fns';
-import { cn } from '@/lib/utils';
+import { format, startOfWeek, endOfWeek, isWithinInterval, startOfDay } from 'date-fns';
 import { Trade } from '@/types/trade';
-import * as XLSX from 'xlsx';
 
 interface ExportTradesDialogProps {
   isOpen: boolean;
@@ -49,7 +47,7 @@ export default function ExportTradesDialog({ isOpen, onClose, trades, onExport }
     if (!trades || !Array.isArray(trades) || trades.length === 0) return today;
     const dates = trades.map(trade => new Date(trade.date));
     return startOfDay(new Date(Math.min(...dates.map(d => d.getTime()))));
-  }, [trades]);
+  }, [trades, today]);
 
   // Get user registration date (use earliest trade date as proxy, or default to 2020)
   const userRegistrationDate = React.useMemo(() => {
@@ -107,46 +105,6 @@ export default function ExportTradesDialog({ isOpen, onClose, trades, onExport }
         return [];
     }
   }, [trades, timeFrame, startDate, endDate, selectedMonth]);
-
-  // Calculate analysis data
-  const analysisData = React.useMemo((): AnalysisData => {
-    if (!filteredTrades || !Array.isArray(filteredTrades) || filteredTrades.length === 0) {
-      return {
-        totalTrades: 0,
-        positiveTrades: 0,
-        negativeTrades: 0,
-        winRate: 0,
-        avgPositivePips: 0,
-        avgNegativePips: 0,
-        avgDuration: 0,
-        netPips: 0,
-      };
-    }
-
-    const positiveTrades = filteredTrades.filter(trade => (trade.pips ?? 0) > 0);
-    const negativeTrades = filteredTrades.filter(trade => (trade.pips ?? 0) < 0);
-    const totalPips = filteredTrades.reduce((sum, trade) => sum + (trade.pips ?? 0), 0);
-    const totalDuration = filteredTrades.reduce((sum, trade) => sum + (trade.duration ?? 0), 0);
-
-    const avgPositivePips = positiveTrades.length > 0 
-      ? positiveTrades.reduce((sum, trade) => sum + (trade.pips ?? 0), 0) / positiveTrades.length 
-      : 0;
-
-    const avgNegativePips = negativeTrades.length > 0 
-      ? negativeTrades.reduce((sum, trade) => sum + (trade.pips ?? 0), 0) / negativeTrades.length 
-      : 0;
-
-    return {
-      totalTrades: filteredTrades.length,
-      positiveTrades: positiveTrades.length,
-      negativeTrades: negativeTrades.length,
-      winRate: (positiveTrades.length / filteredTrades.length) * 100,
-      avgPositivePips,
-      avgNegativePips,
-      avgDuration: totalDuration / filteredTrades.length,
-      netPips: totalPips,
-    };
-  }, [filteredTrades]);
 
   // Generate file name
   const generateFileName = useCallback(() => {

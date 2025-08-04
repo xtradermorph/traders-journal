@@ -138,7 +138,7 @@ export async function analyzeTradingBehavior(trades: Array<Record<string, unknow
 }
 
 // Strategy suggestions
-export async function getStrategySuggestions(performance: Record<string, any>): Promise<string> {
+export async function getStrategySuggestions(performance: Record<string, unknown>): Promise<string> {
   if (!performance) {
     return "Not enough performance data to generate strategy suggestions.";
   }

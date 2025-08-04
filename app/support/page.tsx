@@ -259,7 +259,7 @@ export default function SupportPage() {
                       <AccordionTrigger>How do I change my account settings?</AccordionTrigger>
                       <AccordionContent>
                         You can change your account settings by clicking on your profile picture in the top-right corner 
-                        and selecting "Settings" from the dropdown menu. From there, you can update:
+                        and selecting &quot;Settings&quot; from the dropdown menu. From there, you can update:
                         <ul className="list-disc pl-6 mt-2 space-y-1">
                           <li>Profile information and avatar</li>
                           <li>Notification preferences (email and push)</li>

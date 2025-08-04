@@ -426,7 +426,7 @@ const Register = () => {
                 {/* Turnstile Security Check */}
                 <div className="space-y-2">
                   <p className="text-center text-sm text-muted-foreground">
-                    Let us know you're human
+                    Let us know you&apos;re human
                   </p>
                   <div className="flex justify-center">
                     {!isDevelopment && (

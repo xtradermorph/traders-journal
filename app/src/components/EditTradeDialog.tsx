@@ -16,12 +16,9 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase/index";
 import { useToast } from "@/hooks/use-toast";
 import type { Trade } from '@/types/trade';
-import { Loader2, Check, TrendingUp, Calendar, Clock, DollarSign, Tag, FileText } from "lucide-react";
+import { Loader2, DollarSign, X } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Info, X } from "lucide-react";
+
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 // Same schema as AddTradeDialog
@@ -106,8 +103,7 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
   const [customLotSizeValue, setCustomLotSizeValue] = useState('');
   const [customLotSizeError, setCustomLotSizeError] = useState('');
   const [notesCharCount, setNotesCharCount] = useState(0);
-  const [saveSuccess, setSaveSuccess] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const form = useForm<TradeFormValues>({
     resolver: zodResolver(tradeFormSchema),
@@ -247,7 +243,7 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
       return 0;
     }
 
-    let entryTotalMinutes = entryHours * 60 + entryMinutes;
+    const entryTotalMinutes = entryHours * 60 + entryMinutes;
     let exitTotalMinutes = exitHours * 60 + exitMinutes;
 
     if (exitTotalMinutes < entryTotalMinutes) {
@@ -342,7 +338,7 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
 
       return updateData;
     },
-    onSuccess: (data) => {
+    onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['trades', '/api/trades', '/api/stats']
       });
@@ -387,9 +383,7 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
     setSaveSuccess(false);
 
     try {
-      // Calculate final values
-      const finalDuration = calculateDuration(data.entryTime, data.exitTime);
-      const finalPips = data.pips ?? calculatePips(data.entryPrice, data.exitPrice, data.tradeType, data.currencyPair);
+
 
       // Submit the form
       updateTradeMutation.mutate(data);
