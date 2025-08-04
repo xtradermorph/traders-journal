@@ -15,12 +15,11 @@ import AITradingInsights from "@/components/AITradingInsights";
 
 import type { Trade } from '@/types/trade';
 import { useAuth } from '@/hooks/useAuth';
-import { processTrades, calculateDashboardStats } from '@/lib/utils';
+import { processTrades, calculateDashboardStats, ProcessedTrade } from '@/lib/utils';
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import DashboardFooter from '@/components/DashboardFooter';
 
-import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 
 interface Stats {
@@ -304,7 +303,7 @@ const Dashboard = () => {
         return 0;
       });
       sorted.forEach((trade, idx) => {
-        processed.push({ ...trade, month_trade_number: idx + 1 } as any);
+        processed.push({ ...trade, month_trade_number: idx + 1 } as Trade & { month_trade_number: number });
       });
     });
     return processed;
@@ -376,7 +375,7 @@ const Dashboard = () => {
                   toggleLoading && "animate-pulse"
                 )} />
               </div>
-              <Label 
+              <span 
                 className={cn(
                   "text-sm font-medium cursor-pointer select-none",
                   toggleLoading && "opacity-50 cursor-not-allowed"
@@ -388,7 +387,7 @@ const Dashboard = () => {
                 }}
               >
                 {performanceView === 'currentWeek' ? 'Current Week' : 'Total'}
-              </Label>
+              </span>
             </div>
           </div>
         </div>
@@ -545,7 +544,7 @@ const Dashboard = () => {
       </div>
 
       {/* Recent Trades */}
-      <RecentTrades trades={recentProcessedTrades as any} onTradeUpdated={refreshTrades} />
+      <RecentTrades trades={recentProcessedTrades as ProcessedTrade[]} onTradeUpdated={refreshTrades} />
 
       <DashboardFooter />
     </div>

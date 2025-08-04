@@ -7,7 +7,6 @@ export async function PATCH(req: NextRequest) {
   const { oldTag, newTag } = await req.json();
   const {
     data: { user },
-    error: userError,
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!oldTag || !newTag) return NextResponse.json({ error: "Missing tag data" }, { status: 400 });
@@ -28,7 +27,6 @@ export async function DELETE(req: NextRequest) {
   const { tag } = await req.json();
   const {
     data: { user },
-    error: userError,
   } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   if (!tag) return NextResponse.json({ error: "Missing tag data" }, { status: 400 });

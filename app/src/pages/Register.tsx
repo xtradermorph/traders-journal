@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, X } from "lucide-react";
-import { Session, User } from '@supabase/supabase-js';
 import Image from 'next/image';
 import { Turnstile } from '../../components/ui/turnstile';
 

@@ -124,7 +124,7 @@ export default function FAQPage() {
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-4">Frequently Asked Questions</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Find answers to common questions about Trader's Journal and its features.
+            Find answers to common questions about Trader&apos;s Journal and its features.
           </p>
         </div>
 
@@ -168,7 +168,7 @@ export default function FAQPage() {
         <div className="text-center mt-12 bg-card rounded-2xl p-8 border border-border">
           <h2 className="text-2xl font-bold text-foreground mb-4">Still Have Questions?</h2>
           <p className="text-muted-foreground mb-6">
-            Can't find what you're looking for? Our support team is here to help.
+            Can&apos;t find what you&apos;re looking for? Our support team is here to help.
           </p>
           <Link 
             href="/contact" 

@@ -54,10 +54,10 @@ export async function GET() {
         recordCount = count || 0;
       }
       dbConnected = true;
-    } catch (dbError) {
-      console.error('Database connection failed:', dbError);
+    } catch (error) {
+      console.error('Database connection failed:', error);
       dbConnected = false;
-      dbError = dbError instanceof Error ? dbError.message : 'Unknown database error';
+      dbError = error instanceof Error ? error.message : 'Unknown database error';
     }
     
     // Check Edge Function (optional)

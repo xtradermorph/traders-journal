@@ -38,7 +38,7 @@ export default function PricingPage() {
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-3">What's Included:</h3>
+                <h3 className="text-lg font-semibold text-foreground mb-3">What&apos;s Included:</h3>
                 <ul className="space-y-2">
                   <li className="flex items-center gap-2">
                     <Star className="h-4 w-4 text-green-500" />
@@ -71,7 +71,7 @@ export default function PricingPage() {
                 <h3 className="text-lg font-semibold text-foreground mb-3">Future Plans:</h3>
                 <p className="text-muted-foreground mb-4">
                   In the future, some premium features will be available only to subscribed users. 
-                  We're committed to keeping the core functionality free while offering advanced 
+                  We&apos;re committed to keeping the core functionality free while offering advanced 
                   analytics and exclusive features for power users.
                 </p>
                 <div className="bg-muted/50 rounded-lg p-4">
@@ -91,7 +91,7 @@ export default function PricingPage() {
             </div>
             <h2 className="text-2xl font-bold text-foreground mb-4">Help Us Improve</h2>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              We value your feedback! Share your experience with Trader's Journal and help us 
+              We value your feedback! Share your experience with Trader&apos;s Journal and help us 
               understand how we can make it even better for traders like you.
             </p>
             <Link 

@@ -140,7 +140,6 @@ interface TDAAnswerInput {
 
 const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) => {
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const { profile } = useUserProfile();
   const [currentStep, setCurrentStep] = useState(0);
   const [analysisId, setAnalysisId] = useState<string | null>(null);
@@ -578,7 +577,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     }
   }, [questionAnswers, currentTimeframe, currentStep, questions]);
 
-  const [, forceRerender] = useState(0);
+
   const handleTimeframeComplete = async () => {
     if (!analysisId || !questions) return;
 
@@ -722,10 +721,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     }
   };
 
-  const getGenericTimeframeQuestions = (timeframe: TimeframeType) => {
-    // This function is not used
-    return [];
-  };
+
 
   const getCurrentTimeframeQuestions = () => {
     if (!questions) return [];

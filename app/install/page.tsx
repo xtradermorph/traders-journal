@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function InstallPage() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<unknown>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isInstalling, setIsInstalling] = useState(false);
   const [installError, setInstallError] = useState<string | null>(null);
@@ -23,13 +23,13 @@ export default function InstallPage() {
     // Check if already installed
     const checkIfInstalled = () => {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      const isInApp = (window.navigator as any).standalone === true;
+      const isInApp = (window.navigator as Record<string, unknown>).standalone === true;
       setIsInstalled(isStandalone || isInApp);
     };
     checkIfInstalled();
 
     // Listen for beforeinstallprompt event
-    const handleBeforeInstallPrompt = (e: any) => {
+    const handleBeforeInstallPrompt = (e: unknown) => {
       e.preventDefault();
       setDeferredPrompt(e);
     };
@@ -76,10 +76,10 @@ export default function InstallPage() {
 
     try {
       // Show the browser's install prompt
-      deferredPrompt.prompt();
+      (deferredPrompt as Record<string, unknown>).prompt();
       
       // Wait for the user to respond to the prompt
-      const { outcome } = await deferredPrompt.userChoice;
+      const { outcome } = await (deferredPrompt as Record<string, unknown>).userChoice;
       
       if (outcome === 'accepted') {
         console.log('User accepted the install prompt');
@@ -117,7 +117,7 @@ export default function InstallPage() {
             </div>
             <CardTitle className="text-2xl">App Installed!</CardTitle>
             <CardDescription>
-              Trader's Journal is now installed on your device.
+              Trader&apos;s Journal is now installed on your device.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -140,7 +140,7 @@ export default function InstallPage() {
           <div className="mx-auto mb-4">
             <DownloadIcon className="h-16 w-16 text-blue-500" />
           </div>
-          <CardTitle className="text-2xl">Install Trader's Journal</CardTitle>
+          <CardTitle className="text-2xl">Install Trader&apos;s Journal</CardTitle>
           <CardDescription>
             Get the app for a better experience with offline access and push notifications.
           </CardDescription>

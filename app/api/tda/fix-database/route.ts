@@ -3,7 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const results: any = {
+    const results: Record<string, unknown> = {
       timestamp: new Date().toISOString(),
       user_id: user.id,
       steps: [],
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Group existing questions by timeframe
-    const questionsByTimeframe: { [key: string]: any[] } = {};
+    const questionsByTimeframe: { [key: string]: unknown[] } = {};
     existingQuestions?.forEach(q => {
       if (!questionsByTimeframe[q.timeframe]) {
         questionsByTimeframe[q.timeframe] = [];
@@ -1120,7 +1120,7 @@ export async function POST(request: NextRequest) {
           }
 
           // Update analysis with completion data and analysis_time if missing
-          const updateData: any = {
+          const updateData: Record<string, unknown> = {
             status: 'COMPLETED',
             overall_probability: 75.0,
             trade_recommendation: 'LONG',

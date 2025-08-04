@@ -99,7 +99,7 @@ const TradeCalendar = ({ trades, isLoading, userRegistrationDate }: TradeCalenda
     }
     
     return years;
-  }, [earliestAllowedDate, userRegistrationDate]);
+  }, [earliestAllowedDate]);
 
   const availableMonths = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -211,11 +211,7 @@ const TradeCalendar = ({ trades, isLoading, userRegistrationDate }: TradeCalenda
     setCurrentMonth(newDate);
   };
 
-  // Check if we're on the current month
-  const isCurrentMonth = useMemo(() => {
-    const now = new Date();
-    return currentMonth.getFullYear() === now.getFullYear() && currentMonth.getMonth() === now.getMonth();
-  }, [currentMonth]);
+
 
   // Navigation state - allow navigation to any month that contains or is after registration date
   const canGoBack = (() => {
@@ -377,7 +373,6 @@ const TradeCalendar = ({ trades, isLoading, userRegistrationDate }: TradeCalenda
                 const dayPerformance = getDayPerformance(day, trades);
                 const dayOfMonth = format(day, 'd');
                 const isPositive = dayPerformance && dayPerformance.profit > 0;
-                const isNegative = dayPerformance && dayPerformance.profit < 0;
                 const hasTrades = dayPerformance !== null;
                 
                 // Check if this is today using isSameDay for accurate comparison

@@ -37,7 +37,7 @@ export default function FeedbackPage() {
       setTimeout(() => {
         window.location.href = '/';
       }, 3000);
-    } catch (error) {
+    } catch (_error) {
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);
@@ -95,7 +95,7 @@ export default function FeedbackPage() {
           </div>
           <h1 className="text-4xl font-bold text-foreground mb-4">Share Your Feedback</h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            We value your opinion! Help us improve Trader's Journal by sharing your experience and suggestions.
+            We value your opinion! Help us improve Trader&apos;s Journal by sharing your experience and suggestions.
           </p>
         </div>
 
@@ -199,7 +199,7 @@ export default function FeedbackPage() {
                 required
                 rows={6}
                 className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground focus:ring-2 focus:ring-primary focus:border-transparent resize-none"
-                placeholder="Tell us about your experience with Trader's Journal, what you like, what could be improved, or any suggestions you have..."
+                placeholder="Tell us about your experience with Trader&apos;s Journal, what you like, what could be improved, or any suggestions you have..."
               />
             </div>
 

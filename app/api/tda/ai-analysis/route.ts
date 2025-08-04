@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
     
     for (const timeframe of allTimeframes) {
       const breakdown = aiResponse.timeframe_breakdown[timeframe];
-      const existingTimeframe = timeframe_analyses.find((t: any) => t.timeframe === timeframe);
+      const existingTimeframe = timeframe_analyses.find((t: Record<string, unknown>) => t.timeframe === timeframe);
       
       if (existingTimeframe) {
         await supabase
@@ -119,9 +119,9 @@ export async function POST(request: NextRequest) {
 }
 
 async function generateAIAnalysis(
-  answers: any[],
-  timeframeAnalyses: any[],
-  questions: any[],
+  answers: Record<string, unknown>[],
+  timeframeAnalyses: Record<string, unknown>[],
+  questions: Record<string, unknown>[],
   currencyPair: string
 ): Promise<AIAnalysisResponse> {
   // This is a sophisticated AI analysis algorithm
@@ -277,7 +277,7 @@ async function generateAIAnalysis(
   };
 }
 
-function analyzeTimeframe(timeframe: TimeframeType, answers: any[], questions: any[]): {
+function analyzeTimeframe(timeframe: TimeframeType, answers: Record<string, unknown>[], questions: Record<string, unknown>[]): {
   score: number;
   sentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
   strength: number;

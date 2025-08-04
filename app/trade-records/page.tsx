@@ -14,10 +14,7 @@ import { Plus, Edit, Share, Trash2, ChevronDown, ChevronRight, Star, Search, Fil
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
-import { format } from 'date-fns';
 import { PageHeader } from '@/components/PageHeader';
 import { cn } from '@/lib/utils';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
@@ -29,7 +26,6 @@ import { Badge } from '@/components/ui/badge';
 import ExportTradesDialog from '@/components/ExportTradesDialog';
 import { exportTradesToExcel, validateTradesData } from '@/lib/excelExport';
 import DashboardFooter from '@/components/DashboardFooter';
-import { LoadingPage } from '../components/ui/loading-spinner';
 
 interface MonthGroup {
   month_year: string;
@@ -235,7 +231,7 @@ function TradeRecordsPage() {
     if (!authLoading && session?.user?.id) {
       fetchTrades();
     }
-  }, [router, session, authLoading]);
+  }, [router, session, authLoading, refreshTrades]);
 
   // Auto-refresh at midnight to clear Today's Trades
   useEffect(() => {
@@ -266,7 +262,7 @@ function TradeRecordsPage() {
       clearInterval(interval);
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [currentDate]);
+  }, [currentDate, refreshTrades]);
 
 // Get year groups with month-based organization
 const getYearGroups = (trades: Trade[]): YearGroup[] => {
@@ -888,7 +884,7 @@ const getMonthGroups = (trades: Trade[]) => {
             {trades && trades.length > 0 && (
               <div className="mb-8">
                 <h2 className="text-xl font-semibold text-foreground mb-4 pt-2 border-t border-border">
-                  Today's Trades
+                  Today&apos;s Trades
                 </h2>
                 {filteredTodayTrades.length > 0 ? (
                   <div className="rounded-md border overflow-x-auto shadow-sm">

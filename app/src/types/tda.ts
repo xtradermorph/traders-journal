@@ -23,7 +23,7 @@ export interface TDAAnswer {
   analysis_id: string;
   question_id: string;
   answer_text?: string;
-  answer_value?: any;
+  answer_value?: unknown;
   created_at: string;
 }
 
@@ -53,7 +53,7 @@ export interface TDATimeframeAnalysis {
   timeframe: TimeframeType;
   created_at: string;
   updated_at: string;
-  analysis_data: Record<string, any>;
+  analysis_data: Record<string, unknown>;
   timeframe_probability?: number;
   timeframe_sentiment?: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
   timeframe_strength?: number;
@@ -88,7 +88,7 @@ export interface TDAFormData {
   notes?: string;
   timeframes: {
     [key in TimeframeType]: {
-      answers: Record<string, any>;
+      answers: Record<string, unknown>;
       probability?: number;
       sentiment?: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
       strength?: number;

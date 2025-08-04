@@ -50,7 +50,7 @@ export const supabase = (() => {
           upsert: async () => ({ error: new Error('Supabase client not available') })
         }),
         rpc: async () => ({ data: null, error: new Error('Supabase client not available') })
-      } as ReturnType<typeof createClientComponentClient<Database>>
+      } as any
     }
   }
 

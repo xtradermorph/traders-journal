@@ -414,7 +414,7 @@ const TradersPage = () => {
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearchQuery, sortBy, currentPage]);
+  }, [debouncedSearchQuery, sortBy, currentPage, toast]);
 
   const fetchFriendshipStatuses = async (traderIds: string[]) => {
     try {
@@ -465,7 +465,7 @@ const TradersPage = () => {
 
   useEffect(() => {
     fetchTraders();
-  }, [debouncedSearchQuery, sortBy, currentPage]);
+  }, [debouncedSearchQuery, sortBy, currentPage, fetchTraders]);
 
   // Fetch friendship statuses when traders change
   useEffect(() => {
@@ -473,7 +473,7 @@ const TradersPage = () => {
       console.log('Fetching friendship statuses for', traders.length, 'traders');
       fetchFriendshipStatuses(traders.map(t => t.id));
     }
-  }, [traders]);
+  }, [traders, fetchFriendshipStatuses]);
 
   const handleSendFriendRequest = async (traderId: string) => {
     try {
@@ -657,10 +657,11 @@ const TradersPage = () => {
           variant: 'destructive',
         });
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Could not start a conversation.';
       toast({
         title: 'Error',
-        description: error.message || 'Could not start a conversation.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }

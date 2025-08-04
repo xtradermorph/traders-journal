@@ -70,7 +70,7 @@ export default function FeaturesPage() {
             </div>
             <h1 className="text-4xl font-bold text-foreground mb-4">Features</h1>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Discover all the powerful tools and features that make Trader's Journal your ultimate trading companion.
+              Discover all the powerful tools and features that make Trader&apos;s Journal your ultimate trading companion.
             </p>
           </div>
 
@@ -96,7 +96,7 @@ export default function FeaturesPage() {
           <div className="text-center bg-card rounded-2xl p-8 border border-border">
             <h2 className="text-2xl font-bold text-foreground mb-4">Ready to Start Your Trading Journey?</h2>
             <p className="text-muted-foreground mb-6 max-w-2xl mx-auto">
-              Join thousands of traders who are already improving their performance with Trader's Journal. 
+              Join thousands of traders who are already improving their performance with Trader&apos;s Journal. 
               Start recording your trades, analyzing your performance, and connecting with the trading community today.
             </p>
             <Link 

@@ -155,7 +155,7 @@ export function Turnstile({
     }
   }
 
-  const remove = () => {
+  const _remove = () => {
     if (widgetId && window.turnstile) {
       window.turnstile.remove(widgetId)
       setWidgetId(null)

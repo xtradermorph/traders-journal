@@ -6,13 +6,66 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Loader2 } from 'lucide-react';
 
+// Define proper interfaces for audit data types
+interface AuditData {
+  timestamp: string;
+  user_id: string;
+  tables: Record<string, unknown>;
+  data_counts: Record<string, number>;
+  issues: string[];
+  sample_data?: Record<string, unknown>;
+}
+
+interface TestData {
+  timestamp: string;
+  user_id: string;
+  test_results: unknown;
+  errors?: string[];
+  steps?: string[];
+  final_data?: unknown;
+}
+
+interface PopulateData {
+  timestamp: string;
+  user_id: string;
+  questions_created: number;
+  steps: string[];
+  errors?: string[];
+  final_data?: unknown;
+}
+
+interface FixData {
+  timestamp: string;
+  user_id: string;
+  fixes_applied: string[];
+  steps: string[];
+  errors?: string[];
+}
+
+interface SimpleFixData {
+  timestamp: string;
+  user_id: string;
+  fixes_applied: string[];
+  steps: string[];
+  errors?: string[];
+}
+
+interface EnumUpdateData {
+  timestamp: string;
+  user_id: string;
+  errors?: string[];
+  steps: string[];
+  final_data?: unknown;
+  fixes_applied?: string[];
+}
+
 export default function TDAAuditPage() {
-  const [auditData, setAuditData] = useState<any>(null);
-  const [testData, setTestData] = useState<any>(null);
-  const [populateData, setPopulateData] = useState<any>(null);
-  const [fixData, setFixData] = useState<any>(null);
-  const [simpleFixData, setSimpleFixData] = useState<any>(null);
-  const [enumUpdateData, setEnumUpdateData] = useState<any>(null);
+  const [auditData, setAuditData] = useState<AuditData | null>(null);
+  const [testData, setTestData] = useState<TestData | null>(null);
+  const [populateData, setPopulateData] = useState<PopulateData | null>(null);
+  const [fixData, setFixData] = useState<FixData | null>(null);
+  const [simpleFixData, setSimpleFixData] = useState<SimpleFixData | null>(null);
+  const [enumUpdateData, setEnumUpdateData] = useState<EnumUpdateData | null>(null);
   const [loading, setLoading] = useState(false);
   const [testLoading, setTestLoading] = useState(false);
   const [populateLoading, setPopulateLoading] = useState(false);

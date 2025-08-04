@@ -10,9 +10,7 @@ import { usePathname } from 'next/navigation'
 import ThemeSyncProvider from './src/components/auth/ThemeSyncProvider'
 import { UserProfileProvider } from './src/components/UserProfileContext'
 import { useState } from "react";
-import { MessageSquare } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
+
 import ChatWidget from "@/components/chat/ChatWidget";
 
 import { CloudflareAnalytics } from "./components/ui/cloudflare-analytics";
@@ -76,8 +74,7 @@ export default function RootLayout({
     return () => document.removeEventListener('mousedown', handleClick);
   }, [isChatOpen]);
 
-  const handleOpen = () => setIsChatOpen(true);
-  const handleClose = () => setIsChatOpen(false);
+
   
   // Global WebSocket error filter to reduce console noise
   useEffect(() => {

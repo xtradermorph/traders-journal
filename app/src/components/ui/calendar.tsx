@@ -96,7 +96,6 @@ function Calendar({
 
   const handleYearChange = (year: number) => {
     const newDate = new Date(year, currentViewMonth.getMonth(), 1)
-    const currentDate = new Date(currentYear, currentMonth, 1)
     
     // Allow navigation to any year within the valid range
     if (year >= earliestYear && year <= currentYear) {

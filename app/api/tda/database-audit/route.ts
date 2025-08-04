@@ -3,7 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const auditResults: any = {
+    const auditResults: Record<string, unknown> = {
       timestamp: new Date().toISOString(),
       user_id: user.id,
       tables: {},
@@ -36,8 +36,8 @@ export async function GET(request: NextRequest) {
     for (const tableName of tablesToCheck) {
       try {
         // Check if table exists by trying to select from it
-        const { data, error } = await supabase
-          .from(tableName as any)
+        const { error } = await supabase
+          .from(tableName as keyof Database['public']['Tables'])
           .select('*')
           .limit(1);
 
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
           
           // Get count of records
           const { count, error: countError } = await supabase
-            .from(tableName as any)
+            .from(tableName as keyof Database['public']['Tables'])
             .select('*', { count: 'exact', head: true });
 
           if (countError) {

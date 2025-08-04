@@ -30,7 +30,7 @@ export async function GET(request) {
     
     // Exchange the code for a session - this is the critical part
     console.log('Exchanging code for session...');
-    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
     
     if (error) {
       console.error('Error exchanging code for session:', error);

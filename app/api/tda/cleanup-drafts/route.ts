@@ -3,7 +3,7 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 
-export async function DELETE(request: NextRequest) {
+export async function DELETE() {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     

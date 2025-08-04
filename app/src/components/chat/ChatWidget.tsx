@@ -3,11 +3,11 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useUserProfile } from "../UserProfileContext";
 import { supabase } from "@/lib/supabase";
-import { MessageSquare, ChevronDown, ChevronRight, Search as SearchIcon, PinIcon, VolumeXIcon, Volume2Icon, Trash2Icon, LogOutIcon, Edit2Icon, UsersIcon, SendHorizontal, ArrowUpRight } from "lucide-react";
+import { MessageSquare, ChevronDown, ChevronRight, Search as SearchIcon, PinIcon, VolumeXIcon, Volume2Icon, Trash2Icon, LogOutIcon, Edit2Icon, UsersIcon, ArrowUpRight } from "lucide-react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import { Skeleton } from "../ui/skeleton";
+
 import {
   Tooltip,
   TooltipContent,
@@ -17,7 +17,7 @@ import {
 import { useChatStore } from "@/lib/store/chatStore";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";
 import { useToast } from '@/hooks/use-toast';
-import { format, isSameDay, parseISO } from 'date-fns';
+import { format } from 'date-fns';
 import { getFriends } from '../../../lib/friendsUtils';
 
 // Define types for conversations
@@ -42,34 +42,9 @@ type Conversation = {
   avatar_url?: string;
 };
 
-// Helper to group messages by sender and date
-function groupMessages(messages: Array<Record<string, unknown>>) {
-  const groups: Array<Record<string, unknown>> = [];
-  let lastSender: string | null = null;
-  let lastDate: string | null = null;
-  let currentGroup: Record<string, unknown> | null = null;
-  messages.forEach((msg) => {
-    const msgDate = format(new Date(msg.created_at as string), 'yyyy-MM-dd');
-    if (msg.sender_id !== lastSender || msgDate !== lastDate) {
-      if (currentGroup) groups.push(currentGroup);
-      currentGroup = { sender_id: msg.sender_id, date: msgDate, messages: [msg], profiles: msg.profiles };
-      lastSender = msg.sender_id as string;
-      lastDate = msgDate;
-    } else {
-      (currentGroup!.messages as Array<Record<string, unknown>>).push(msg);
-    }
-  });
-  if (currentGroup) groups.push(currentGroup);
-  return groups;
-}
 
-// Helper to robustly extract username and avatar
-function getUsername(msg: any) {
-  return msg.profiles?.username || (Array.isArray(msg.profiles) && msg.profiles[0]?.username) || msg.username || 'Unknown';
-}
-function getAvatar(msg: any) {
-  return msg.profiles?.avatar_url || (Array.isArray(msg.profiles) && msg.profiles[0]?.avatar_url) || msg.avatar_url || '';
-}
+
+
 
 // ChatListItem component for both direct and group chats
 function ChatListItem({ conversation, onClick, onPin, onUnpin, onMute, onUnmute, onDelete, onLeave, isMobile, openMenuId, setOpenMenuId, currentUserId, publicUsers, creatorId, onEditName, onDeleteGroup, editingGroupId, editingGroupName, setEditingGroupId, setEditingGroupName, editingGroupLoading, onSaveEditName, setShowDeleteConfirm, setShowLeaveConfirm, setShowDeleteGroupConfirm, setPendingAction, setEditingGroupAvatar, setShowGroupEditModal }: {
@@ -417,12 +392,11 @@ const ChatWidget = () => {
   const chatWidgetRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<any[]>([]);
   const [messageInput, setMessageInput] = useState("");
-  const [recentOpen, setRecentOpen] = useState(true);
-  const [groupsOpen, setGroupsOpen] = useState(false);
+
   const [publicOpen, setPublicOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [publicUsers, setPublicUsers] = useState<Profile[]>([]);
-  const [groupChats, setGroupChats] = useState<Conversation[]>([]);
+
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
@@ -992,15 +966,7 @@ const ChatWidget = () => {
     setIsSendingMessage(false);
   };
 
-  const handleHeaderClose = () => {
-    // Clear temporary conversation if it exists
-    if (tempConversation) {
-      setTempConversation(null);
-    }
-    setActiveConversation(null); // Clear active conversation first
-    // If you want the main panel to close too, call handleClose()
-    // handleClose(); 
-  };
+
 
   // Update last_read_at when opening a conversation
   useEffect(() => {
@@ -2678,7 +2644,7 @@ const ChatWidget = () => {
                 });
                 if (currentGroup) groups.push(currentGroup);
 
-                return groups.map((group, groupIdx) => (
+                return groups.map((group) => (
                   <React.Fragment key={group.groupKey}>
                     {group.showDate && (
                       <div className="w-full flex justify-center my-3">
@@ -2925,7 +2891,7 @@ const ChatWidget = () => {
                       <div>
                         <p className="font-medium text-sm text-white">{invitation.profiles?.username}</p>
                         <p className="text-xs text-gray-400">
-                          invited you to "{invitation.chat_groups?.name}"
+                          invited you to &quot;{invitation.chat_groups?.name}&quot;
                         </p>
                       </div>
                     </div>
@@ -2962,8 +2928,8 @@ const ChatWidget = () => {
             <DialogTitle className="text-white">Delete Chat</DialogTitle>
             <DialogDescription className="text-gray-300">
               {pendingAction?.isDirect 
-                ? `Are you sure you want to delete your conversation with "${pendingAction?.conversationName}"? This action cannot be undone.`
-                : `Are you sure you want to delete "${pendingAction?.conversationName}"? This action cannot be undone.`
+                ? `Are you sure you want to delete your conversation with &quot;${pendingAction?.conversationName}&quot;? This action cannot be undone.`
+                : `Are you sure you want to delete &quot;${pendingAction?.conversationName}&quot;? This action cannot be undone.`
               }
             </DialogDescription>
           </DialogHeader>
@@ -2992,7 +2958,7 @@ const ChatWidget = () => {
           <DialogHeader>
             <DialogTitle className="text-white">Leave Group</DialogTitle>
             <DialogDescription className="text-gray-300">
-              Are you sure you want to leave "{pendingAction?.conversationName}"? You will no longer be able to see messages from this group.
+              Are you sure you want to leave &quot;{pendingAction?.conversationName}&quot;? You will no longer be able to see messages from this group.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">
@@ -3020,7 +2986,7 @@ const ChatWidget = () => {
           <DialogHeader>
             <DialogTitle className="text-white">Delete Group</DialogTitle>
             <DialogDescription className="text-gray-300">
-              Are you sure you want to delete "{pendingAction?.conversationName}"? This will permanently delete the group and all its messages. This action cannot be undone.
+              Are you sure you want to delete &quot;{pendingAction?.conversationName}&quot;? This will permanently delete the group and all its messages. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="flex justify-end gap-2">

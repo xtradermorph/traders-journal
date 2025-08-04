@@ -95,9 +95,10 @@ export default function DirectRegisterPage() {
       addLog("✅ User signed out successfully");
       
       setSuccess("Registration successful! You can now log in with your credentials.");
-    } catch (err: any) {
-      addLog(`❌ Unexpected error: ${err.message}`);
-      setError(`Unexpected error: ${err.message}`);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+      addLog(`❌ Unexpected error: ${errorMessage}`);
+      setError(`Unexpected error: ${errorMessage}`);
     } finally {
       setLoading(false);
     }

@@ -23,6 +23,7 @@ function genId() {
   return count.toString()
 }
 
+
 type ActionType = {
   ADD_TOAST: "ADD_TOAST"
   UPDATE_TOAST: "UPDATE_TOAST"
@@ -48,7 +49,7 @@ type Action =
       toastId?: string
     }
 
-interface ToastActionComponentProps<T = any> {
+interface ToastActionComponentProps {
   altText?: string
   action?: () => void
 }
