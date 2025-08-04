@@ -12,7 +12,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 import { Loader2, DollarSign, X } from "lucide-react";
@@ -96,7 +96,7 @@ interface AddTradeDialogProps {
   redirectTo?: string; // Optional prop to specify where to redirect after adding trade
 }
 
-const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) => {
+const AddTradeDialog = ({ isOpen, onClose }: AddTradeDialogProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [saveSuccess, setSaveSuccess] = useState(false);
@@ -107,7 +107,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
   const [notesCharCount, setNotesCharCount] = useState(0);
   const [entryPriceRaw, setEntryPriceRaw] = useState('');
   const [exitPriceRaw, setExitPriceRaw] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
 
   const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
@@ -263,102 +263,9 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
     }, [watchedEntryTime, watchedExitTime, form]);
 
 
-    const addTradeMutation = useMutation({
-    mutationFn: async (rawData: TradeFormValues) => {
-        
-        // Ensure pips and duration are calculated before sending if not manually entered
-        const data = {
-          ...rawData,
-          pips: rawData.pips ?? calculatePips(rawData.entryPrice, rawData.exitPrice, rawData.tradeType, rawData.currencyPair),
-          duration: calculateDuration(rawData.entryTime, rawData.exitTime),
-          // Ensure profitLoss is a number, default to 0 if undefined
-          profitLoss: rawData.profitLoss && rawData.profitLoss.trim() !== '' 
-            ? parseFloat(rawData.profitLoss.replace(/[$]/g, '')) 
-            : 0,
-        };
 
-        // Remove undefined calculated values before insertion if needed
-        if (data.pips === undefined) delete (data as Record<string, unknown>).pips;
-        
-        // Map form field names to database column names
-        const newTrade = {
-          user_id: (await supabase.auth.getUser()).data.user?.id,
-          currency_pair: data.currencyPair,
-          trade_type: data.tradeType,
-          entry_price: data.entryPrice,
-          exit_price: data.exitPrice,
-          entry_time: new Date(`2000-01-01T${data.entryTime}:00`),
-          exit_time: new Date(`2000-01-01T${data.exitTime}:00`),
-          duration: data.duration,
-          pips: data.pips,
-          lot_size: data.lotSize,
-          profit_loss: data.profitLoss,
-          currency: data.currency,
-          date: new Date(data.date),
-          notes: data.notes || null,
-          tags: data.tags ? [data.tags] : null,
-        };
-
-        const { data: insertData, error } = await supabase
-          .from('trades')
-          .insert(newTrade)
-          .select();
-        
-        if (error) {
-          throw new Error(`Database error: ${error.message}`);
-        }
-        
-        return insertData;
-      },
-      onSuccess: () => {
-        
-        queryClient.invalidateQueries({
-          queryKey: ['trades', '/api/trades', '/api/stats']
-        });
-        
-        // Force the toast to show
-        toast({
-          id: 'trade-add-success',
-          title: 'Trade Added Successfully',
-          description: 'New trade has been successfully recorded into your Trader&apos;s Journal.',
-          variant: 'default',
-        });
-        
-        setSaveSuccess(true);
-        
-        // Reset save success after 2 seconds
-        setTimeout(() => {
-          setSaveSuccess(false);
-        }, 2000);
-        
-        onClose();
-        form.reset();
-        setIsCustomLotSize(false);
-        setCustomLotSizeValue('');
-        setCustomLotSizeError('');
-        setNotesCharCount(0);
-        
-        // Redirect to dashboard after a short delay
-        setTimeout(() => {
-          if (redirectTo) {
-            window.location.href = redirectTo;
-          } else {
-            window.location.href = '/dashboard';
-          }
-        }, 1500);
-      },
-      onError: (error: Error) => {
-        toast({
-          id: 'trade-add-error',
-          title: 'Error Saving Trade',
-          description: error.message || 'Failed to save trade. Please check your data and try again.',
-          variant: 'destructive',
-        });
-      }
-    });
 
     const onSubmit = async (data: TradeFormValues) => {
-      setIsSubmitting(true);
       setSaveSuccess(false);
 
       try {
@@ -403,7 +310,6 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
         setTimeout(() => {
           onClose();
           setSaveSuccess(false);
-          setIsSubmitting(false);
         }, 1500);
 
       } catch (error) {
@@ -413,7 +319,7 @@ const AddTradeDialog = ({ isOpen, onClose, redirectTo }: AddTradeDialogProps) =>
           description: "Failed to add trade. Please try again.",
           variant: "destructive",
         });
-        setIsSubmitting(false);
+
       }
     };
 

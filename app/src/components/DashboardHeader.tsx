@@ -115,7 +115,7 @@ interface DashboardHeaderProps {
 
 
 
-const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: DashboardHeaderProps) => {
+const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHeaderProps) => {
   const { profile: currentUser, isOnline } = useUserProfile();
   const { user: authUser } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
@@ -126,7 +126,7 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
   const [isHeaderVisible, setIsHeaderVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const [tradersDropdownOpen, setTradersDropdownOpen] = useState(false);
-  const [traders, setTraders] = useState<UserData[]>([]);
+
   const [filteredTraders, setFilteredTraders] = useState<UserData[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTraderTab, setActiveTraderTab] = useState('online');
@@ -392,7 +392,6 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
         console.error('Error fetching traders:', error);
         // This is a fallback approach that would be complex to implement
         // For now, we'll just show an empty list if the direct query fails
-        setTraders([]);
         setFilteredTraders([]);
         return;
       }
@@ -418,7 +417,6 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
           return (a.username || '').localeCompare(b.username || '');
         });
         
-        setTraders(sortedTraders);
         setFilteredTraders(sortedTraders);
       }
     } catch (error) {
@@ -659,7 +657,7 @@ const DashboardHeader = ({ user, pageTitle = "Dashboard", mainScrollRef }: Dashb
         setUserTrades(trades || []);
         const medal = calculateMedal(trades || []);
         setMedalType(medal);
-      } catch (e) {
+      } catch {
         setUserTrades([]);
         setMedalType(null);
       }

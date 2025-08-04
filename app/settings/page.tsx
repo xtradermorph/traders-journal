@@ -418,7 +418,7 @@ export default function SettingsPage() {
     if (user && !loading) {
       updateSetting('timezone', systemTimezone);
     }
-  }, [user, loading, systemTimezone]);
+  }, [user, loading, systemTimezone, updateSetting]);
 
   // Show loading while checking authentication
   if (authLoading) {

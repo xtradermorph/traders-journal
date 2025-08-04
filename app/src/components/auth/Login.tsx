@@ -36,7 +36,7 @@ interface LoginFormValues {
 
 interface LoginResponse {
   user: User;
-  session: any; // Changed from Session to any as Session is removed
+  session: unknown; // Changed from Session to unknown
   error?: Error;
 }
 
@@ -412,7 +412,7 @@ const Login = () => {
                 {/* Turnstile Security Check */}
                 <div className="space-y-2">
                   <p className="text-center text-sm text-muted-foreground">
-                    Let us know you're human
+                    Let us know you&apos;re human
                   </p>
                   <div className="flex justify-center">
                     {!isDevelopment && (

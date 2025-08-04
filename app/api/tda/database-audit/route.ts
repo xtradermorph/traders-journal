@@ -71,12 +71,12 @@ export async function GET() {
           if (countError) {
             auditResults.data_counts[tableName] = { error: countError.message };
           } else {
-            auditResults.data_counts[tableName] = count;
+            auditResults.data_counts[tableName] = count || 0;
           }
         }
       } catch (err) {
         auditResults.issues.push(`Error checking table ${tableName}: ${err}`);
-        auditResults.tables[tableName] = { exists: false, error: err };
+        auditResults.tables[tableName] = { exists: false, error: String(err) };
       }
     }
 
@@ -178,8 +178,8 @@ export async function GET() {
       for (const analysis of userAnalyses) {
         if (analysis.status === 'COMPLETED') {
           // Check if completed analyses have all required data
-          const hasTimeframeAnalyses = auditResults.sample_data.timeframe_analyses?.[analysis.id]?.length > 0;
-          const hasAnswers = auditResults.sample_data.answers?.[analysis.id]?.length > 0;
+          const hasTimeframeAnalyses = (auditResults.sample_data.timeframe_analyses?.[analysis.id]?.length || 0) > 0;
+          const hasAnswers = (auditResults.sample_data.answers?.[analysis.id]?.length || 0) > 0;
           
           if (!hasTimeframeAnalyses) {
             auditResults.issues.push(`Completed analysis ${analysis.id} has no timeframe analyses`);

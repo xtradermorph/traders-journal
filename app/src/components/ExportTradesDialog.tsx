@@ -21,16 +21,7 @@ interface ExportTradesDialogProps {
 
 type ExportTimeFrame = 'week' | 'month' | 'custom' | 'all';
 
-interface AnalysisData {
-  totalTrades: number;
-  positiveTrades: number;
-  negativeTrades: number;
-  winRate: number;
-  avgPositivePips: number;
-  avgNegativePips: number;
-  avgDuration: number;
-  netPips: number;
-}
+
 
 export default function ExportTradesDialog({ isOpen, onClose, trades, onExport }: ExportTradesDialogProps) {
   const [timeFrame, setTimeFrame] = useState<ExportTimeFrame>('month');

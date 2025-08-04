@@ -320,15 +320,7 @@ const getYearGroups = (trades: Trade[]): YearGroup[] => {
   });
 };
 
-// Legacy function for backward compatibility
-const getMonthGroups = (trades: Trade[]) => {
-  const yearGroups = getYearGroups(trades);
-  if (yearGroups.length === 0) return [];
-  
-  // Return only current year's month groups for backward compatibility
-  const currentYearGroup = yearGroups.find(group => group.isCurrentYear);
-  return currentYearGroup ? currentYearGroup.monthGroups : [];
-};
+
 
   // Get today's trades
   const getTodayTrades = (trades: Trade[]): ProcessedTrade[] => {
@@ -495,7 +487,7 @@ const getMonthGroups = (trades: Trade[]) => {
         }
       }
     }
-  }, [trades, openMonth]);
+  }, [trades, openMonth, yearGroups]);
 
   let pageContent: React.ReactNode = null;
 

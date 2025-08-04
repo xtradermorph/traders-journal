@@ -6,22 +6,18 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-interface PairPerformance {
-  totalTrades: number;
-  profitLoss: number;
-}
 
-interface Stats {
-  pairPerformance?: Record<string, PairPerformance>;
-}
 
 interface CurrencyPairPerformanceProps {
-
-  trades: Array<Record<string, unknown>> | null;
+  trades: Array<{
+    date?: string;
+    currency_pair?: string;
+    profit_loss?: number;
+  }> | null;
   isLoading: boolean;
 }
 
-const CurrencyPairPerformance = ({ stats, trades, isLoading }: CurrencyPairPerformanceProps) => {
+const CurrencyPairPerformance = ({ trades, isLoading }: CurrencyPairPerformanceProps) => {
   const [timeframe, setTimeframe] = useState("all");
   
   // Get date range based on selected timeframe

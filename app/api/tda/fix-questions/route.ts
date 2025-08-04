@@ -13,11 +13,11 @@ export async function POST() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const results: Record<string, unknown> = {
+    const results = {
       timestamp: new Date().toISOString(),
       user_id: user.id,
-      steps: [],
-      errors: [],
+      steps: [] as string[],
+      errors: [] as string[],
       questions_updated: 0
     };
 

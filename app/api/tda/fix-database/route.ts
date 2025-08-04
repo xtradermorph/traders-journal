@@ -8,7 +8,7 @@ interface FixResults {
   user_id: string;
   fixes_applied: string[];
   steps: string[];
-  errors?: string[];
+  errors: string[];
 }
 
 export async function POST() {
@@ -25,7 +25,8 @@ export async function POST() {
       timestamp: new Date().toISOString(),
       user_id: user.id,
       fixes_applied: [],
-      steps: []
+      steps: [],
+      errors: []
     };
 
     // Step 1: Check existing questions by timeframe
@@ -38,6 +39,7 @@ export async function POST() {
       .order('order_index', { ascending: true });
 
     if (checkError) {
+      if (!results.errors) results.errors = [];
       results.errors.push(`Failed to check questions: ${checkError.message}`);
       return NextResponse.json(results, { status: 500 });
     }
@@ -1030,6 +1032,7 @@ export async function POST() {
           .eq('id', existingQuestion.id);
 
         if (updateError) {
+          if (!results.errors) results.errors = [];
           results.errors.push(`Failed to update question ${existingQuestion.id}: ${updateError.message}`);
         } else {
           questionsUpdated++;

@@ -419,7 +419,7 @@ function analyzeTimeframe(timeframe: TimeframeType, answers: Record<string, unkn
         break;
 
       case 'RATING':
-        const rating = parseInt(answerValue);
+        const rating = parseInt(String(answerValue));
         if (rating >= 4) {
           bullishSignals++;
           score += 10;
@@ -445,7 +445,7 @@ function analyzeTimeframe(timeframe: TimeframeType, answers: Record<string, unkn
 
       case 'TEXT':
         // Simple sentiment analysis for text answers
-        const text = answerValue?.toLowerCase() || '';
+        const text = String(answerValue).toLowerCase() || '';
         if (text.includes('bullish') || text.includes('strong') || text.includes('support')) {
           bullishSignals++;
           score += 5;

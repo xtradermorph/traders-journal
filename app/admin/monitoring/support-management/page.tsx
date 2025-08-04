@@ -131,7 +131,7 @@ const SupportManagementPage = () => {
         
         // For requests with user_id, fetch their usernames
         const requestsWithUsernames = await Promise.all(
-          data.map(async (request) => {
+          (data || []).map(async (request) => {
             if (request.user_id) {
               try {
                 const { data: profileData } = await supabase

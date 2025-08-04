@@ -37,19 +37,25 @@ function generateAlgorithmAnalysis(trades: Array<Record<string, unknown>>): stri
   });
 
   // Calculate metrics
-  const winningTrades = trades.filter(trade => (trade.profit_loss || trade.pnl) > 0);
+  const winningTrades = trades.filter(trade => {
+    const tradeData = trade as Record<string, unknown>;
+    const profitLoss = tradeData.profit_loss as number || tradeData.pnl as number || 0;
+    return profitLoss > 0;
+  });
   const winRate = (winningTrades.length / trades.length) * 100;
   
   // Group by currency pair
   const pairCounts: Record<string, {count: number, wins: number, totalPnl: number}> = {};
   trades.forEach(trade => {
-    const pair = trade.currency_pair || 'Unknown';
+    const tradeData = trade as Record<string, unknown>;
+    const pair = (tradeData.currency_pair as string) || 'Unknown';
     if (!pairCounts[pair]) {
       pairCounts[pair] = {count: 0, wins: 0, totalPnl: 0};
     }
     pairCounts[pair].count++;
-    pairCounts[pair].totalPnl += (trade.profit_loss || trade.pnl || 0);
-    if ((trade.profit_loss || trade.pnl) > 0) {
+    const tradePnl = (tradeData.profit_loss as number) || (tradeData.pnl as number) || 0;
+    pairCounts[pair].totalPnl += tradePnl;
+    if (tradePnl > 0) {
       pairCounts[pair].wins++;
     }
   });
@@ -76,27 +82,79 @@ function generateAlgorithmAnalysis(trades: Array<Record<string, unknown>>): stri
   
   // Time-based analysis
   const morningTrades = trades.filter(trade => {
-    const hour = new Date(trade.entry_time || trade.date).getHours();
+    const tradeData = trade as Record<string, unknown>;
+    const entryTime = (tradeData.entry_time as string) || (tradeData.date as string) || '';
+    const hour = new Date(entryTime).getHours();
     return hour >= 6 && hour < 12;
   });
-  
+
   const afternoonTrades = trades.filter(trade => {
-    const hour = new Date(trade.entry_time || trade.date).getHours();
+    const tradeData = trade as Record<string, unknown>;
+    const entryTime = (tradeData.entry_time as string) || (tradeData.date as string) || '';
+    const hour = new Date(entryTime).getHours();
     return hour >= 12 && hour < 18;
   });
+
+  const eveningTrades = trades.filter(trade => {
+    const tradeData = trade as Record<string, unknown>;
+    const entryTime = (tradeData.entry_time as string) || (tradeData.date as string) || '';
+    const hour = new Date(entryTime).getHours();
+    return hour >= 18 && hour < 24;
+  });
+
+  const nightTrades = trades.filter(trade => {
+    const tradeData = trade as Record<string, unknown>;
+    const entryTime = (tradeData.entry_time as string) || (tradeData.date as string) || '';
+    const hour = new Date(entryTime).getHours();
+    return hour >= 0 && hour < 6;
+  });
   
-  const morningWinRate = morningTrades.length > 0 ? 
-    (morningTrades.filter(t => (t.profit_loss || t.pnl) > 0).length / morningTrades.length) * 100 : 0;
-  
-  const afternoonWinRate = afternoonTrades.length > 0 ? 
-    (afternoonTrades.filter(t => (t.profit_loss || t.pnl) > 0).length / afternoonTrades.length) * 100 : 0;
+  const morningWinRate = morningTrades.length > 0 ?
+    (morningTrades.filter(t => {
+      const tradeData = t as Record<string, unknown>;
+      const pnl = (tradeData.profit_loss as number) || (tradeData.pnl as number) || 0;
+      return pnl > 0;
+    }).length / morningTrades.length) * 100 : 0;
+
+  const afternoonWinRate = afternoonTrades.length > 0 ?
+    (afternoonTrades.filter(t => {
+      const tradeData = t as Record<string, unknown>;
+      const pnl = (tradeData.profit_loss as number) || (tradeData.pnl as number) || 0;
+      return pnl > 0;
+    }).length / afternoonTrades.length) * 100 : 0;
+
+  const eveningWinRate = eveningTrades.length > 0 ?
+    (eveningTrades.filter(t => {
+      const tradeData = t as Record<string, unknown>;
+      const pnl = (tradeData.profit_loss as number) || (tradeData.pnl as number) || 0;
+      return pnl > 0;
+    }).length / eveningTrades.length) * 100 : 0;
+
+  const nightWinRate = nightTrades.length > 0 ?
+    (nightTrades.filter(t => {
+      const tradeData = t as Record<string, unknown>;
+      const pnl = (tradeData.profit_loss as number) || (tradeData.pnl as number) || 0;
+      return pnl > 0;
+    }).length / nightTrades.length) * 100 : 0;
   
   const bestTimeframe = morningWinRate > afternoonWinRate ? 'morning' : 'afternoon';
   
   // Risk analysis
-  const avgLotSize = trades.reduce((sum, t) => sum + (t.lot_size || 0), 0) / trades.length;
-  const maxLoss = Math.min(...trades.map(t => t.profit_loss || t.pnl || 0));
-  const maxWin = Math.max(...trades.map(t => t.profit_loss || t.pnl || 0));
+  const avgLotSize = trades.reduce((sum, t) => {
+    const tradeData = t as Record<string, unknown>;
+    const lotSize = (tradeData.lot_size as number) || 0;
+    return sum + lotSize;
+  }, 0) / trades.length;
+
+  const maxLoss = Math.min(...trades.map(t => {
+    const tradeData = t as Record<string, unknown>;
+    return (tradeData.profit_loss as number) || (tradeData.pnl as number) || 0;
+  }));
+
+  const maxWin = Math.max(...trades.map(t => {
+    const tradeData = t as Record<string, unknown>;
+    return (tradeData.profit_loss as number) || (tradeData.pnl as number) || 0;
+  }));
   
   return `## Trading Pattern Analysis (${formattedDate})
 
