@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
@@ -53,7 +53,7 @@ export async function POST() {
   }
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     console.log('TDA Timeframe Analyses GET request received');
     const supabase = createRouteHandlerClient<Database>({ cookies });

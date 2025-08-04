@@ -6,7 +6,6 @@ import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { PageHeader } from "@/components/PageHeader";
 import FriendsContent from '@/components/FriendsContent';
 import DashboardFooter from '@/components/DashboardFooter';
-import { Loader2 } from 'lucide-react';
 import { LoadingPage } from '../components/ui/loading-spinner';
 
 export default function FriendsPage() {

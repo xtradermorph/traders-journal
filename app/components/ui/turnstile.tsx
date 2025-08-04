@@ -151,15 +151,6 @@ export function Turnstile({
   const reset = () => {
     if (widgetId && window.turnstile) {
       window.turnstile.reset(widgetId)
-      setError(null)
-    }
-  }
-
-  const _remove = () => {
-    if (widgetId && window.turnstile) {
-      window.turnstile.remove(widgetId)
-      setWidgetId(null)
-      setError(null)
     }
   }
 

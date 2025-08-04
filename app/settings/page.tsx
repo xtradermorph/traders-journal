@@ -1,24 +1,23 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from '@/components/ui/switch';
 import { EnhancedSwitch } from '@/components/ui/enhanced-switch';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { PageHeader } from '@/components/PageHeader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Bell, Monitor, Lock, Sparkles, AlertCircle, Loader2, Check } from 'lucide-react';
+import { Save, Monitor, AlertCircle, Check, Sparkles } from 'lucide-react';
 import timezoneData from './timezones-full';
 import DashboardFooter from '@/components/DashboardFooter';
 import { LoadingPage } from '../components/ui/loading-spinner';
+import { useAuth } from '@/hooks/useAuth';
 
 // Types
 interface UserSettings {
@@ -53,19 +52,12 @@ interface UserSettings {
   monthly_trade_checkup?: boolean;
 }
 
-interface TimezoneOption {
-  value: string;
-  label: string;
-  offset: number;
-  abbr: string;
-}
-
 export default function SettingsPage() {
   const supabase = createClientComponentClient();
-  const { theme, setTheme } = useTheme();
+  const { theme: currentTheme, setTheme } = useTheme();
   const { toast } = useToast();
   const router = useRouter();
-  const [authLoading, setAuthLoading] = useState(true);
+  const { user, loading: authLoading } = useAuth();
   
   // Loading states
   const [loading, setLoading] = useState(true);
@@ -77,97 +69,45 @@ export default function SettingsPage() {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [originalSettings, setOriginalSettings] = useState<UserSettings | null>(null);
-  
-  // Settings state
   const [settings, setSettings] = useState<UserSettings>({
     user_id: '',
     theme: 'system',
-    notifications_enabled: false,
-    email_notifications: false,
-    default_currency: 'USD',
+    notifications_enabled: true,
+    email_notifications: true,
+    default_currency: 'AUD',
     timezone: null,
-    pips_or_percentage: 'currency',
-    chart_timeframe: 'daily',
-    share_statistics: false,
+    pips_or_percentage: 'pips',
+    chart_timeframe: '1D',
+    share_statistics: true,
     public_profile: false,
-    weekly_reports: false,
-    monthly_reports: false,
-    quarterly_reports: false,
-    yearly_reports: false,
+    weekly_reports: true,
+    monthly_reports: true,
+    quarterly_reports: true,
+    yearly_reports: true,
     ai_api_key: '',
-    email_project_updates: false,
+    email_project_updates: true,
     recent_trades_count: 5,
     performance_view: 'total',
-    // Individual notification preferences
-    email_friend_requests: false,
-    email_trade_shared: false,
-    email_medal_achievement: false,
-    push_friend_requests: false,
-    push_trade_shared: false,
-    push_medal_achievement: false,
-    monthly_trade_checkup: false,
+    email_friend_requests: true,
+    email_trade_shared: true,
+    email_medal_achievement: true,
+    push_friend_requests: true,
+    push_trade_shared: true,
+    push_medal_achievement: true,
+    monthly_trade_checkup: true
   });
 
   // Individual notification preferences are now stored in the main settings state
 
   // Professional, Windows-style timezone list: major capitals only (expanded)
-  const timezoneOptions = [
-    { value: 'Etc/GMT+12', label: '(UTC-12:00) International Date Line West', offset: -12, abbr: 'GMT-12' },
-    { value: 'Pacific/Pago_Pago', label: '(UTC-11:00) Pago Pago', offset: -11, abbr: 'SST' },
-    { value: 'Pacific/Honolulu', label: '(UTC-10:00) Honolulu', offset: -10, abbr: 'HST' },
-    { value: 'America/Anchorage', label: '(UTC-09:00) Anchorage', offset: -9, abbr: 'AKST' },
-    { value: 'America/Los_Angeles', label: '(UTC-08:00) Los Angeles', offset: -8, abbr: 'PST' },
-    { value: 'America/Tijuana', label: '(UTC-08:00) Tijuana', offset: -8, abbr: 'PST' },
-    { value: 'America/Denver', label: '(UTC-07:00) Denver', offset: -7, abbr: 'MST' },
-    { value: 'America/Phoenix', label: '(UTC-07:00) Phoenix', offset: -7, abbr: 'MST' },
-    { value: 'America/Chicago', label: '(UTC-06:00) Chicago', offset: -6, abbr: 'CST' },
-    { value: 'America/Mexico_City', label: '(UTC-06:00) Mexico City', offset: -6, abbr: 'CST' },
-    { value: 'America/Bogota', label: '(UTC-05:00) Bogota', offset: -5, abbr: 'COT' },
-    { value: 'America/New_York', label: '(UTC-05:00) New York', offset: -5, abbr: 'EST' },
-    { value: 'America/Toronto', label: '(UTC-05:00) Toronto', offset: -5, abbr: 'EST' },
-    { value: 'America/Caracas', label: '(UTC-04:00) Caracas', offset: -4, abbr: 'VET' },
-    { value: 'America/Santiago', label: '(UTC-04:00) Santiago', offset: -4, abbr: 'CLT' },
-    { value: 'America/Halifax', label: '(UTC-04:00) Halifax', offset: -4, abbr: 'AST' },
-    { value: 'America/Sao_Paulo', label: '(UTC-03:00) Sao Paulo', offset: -3, abbr: 'BRT' },
-    { value: 'America/Buenos_Aires', label: '(UTC-03:00) Buenos Aires', offset: -3, abbr: 'ART' },
-    { value: 'America/Godthab', label: '(UTC-03:00) Nuuk', offset: -3, abbr: 'WGT' },
-    { value: 'Atlantic/South_Georgia', label: '(UTC-02:00) South Georgia', offset: -2, abbr: 'GST' },
-    { value: 'Atlantic/Azores', label: '(UTC-01:00) Azores', offset: -1, abbr: 'AZOT' },
-    { value: 'Atlantic/Cape_Verde', label: '(UTC-01:00) Cape Verde', offset: -1, abbr: 'CVT' },
-    { value: 'UTC', label: '(UTC+00:00) Coordinated Universal Time', offset: 0, abbr: 'UTC' },
-    { value: 'Europe/London', label: '(UTC+00:00) London', offset: 0, abbr: 'GMT' },
-    { value: 'Europe/Lisbon', label: '(UTC+00:00) Lisbon', offset: 0, abbr: 'WET' },
-    { value: 'Europe/Dublin', label: '(UTC+00:00) Dublin', offset: 0, abbr: 'GMT' },
-    { value: 'Europe/Paris', label: '(UTC+01:00) Paris', offset: 1, abbr: 'CET' },
-    { value: 'Europe/Berlin', label: '(UTC+01:00) Berlin', offset: 1, abbr: 'CET' },
-    { value: 'Europe/Budapest', label: '(UTC+01:00) Budapest', offset: 1, abbr: 'CET' },
-    { value: 'Europe/Rome', label: '(UTC+01:00) Rome', offset: 1, abbr: 'CET' },
-    { value: 'Europe/Prague', label: '(UTC+01:00) Prague', offset: 1, abbr: 'CET' },
-    { value: 'Europe/Warsaw', label: '(UTC+01:00) Warsaw', offset: 1, abbr: 'CET' },
-    { value: 'Europe/Athens', label: '(UTC+02:00) Athens', offset: 2, abbr: 'EET' },
-    { value: 'Europe/Bucharest', label: '(UTC+02:00) Bucharest', offset: 2, abbr: 'EET' },
-    { value: 'Europe/Helsinki', label: '(UTC+02:00) Helsinki', offset: 2, abbr: 'EET' },
-    { value: 'Africa/Cairo', label: '(UTC+02:00) Cairo', offset: 2, abbr: 'EET' },
-    { value: 'Europe/Moscow', label: '(UTC+03:00) Moscow', offset: 3, abbr: 'MSK' },
-    { value: 'Asia/Jerusalem', label: '(UTC+02:00) Jerusalem', offset: 2, abbr: 'IST' },
-    { value: 'Asia/Istanbul', label: '(UTC+03:00) Istanbul', offset: 3, abbr: 'TRT' },
-    { value: 'Asia/Dubai', label: '(UTC+04:00) Dubai', offset: 4, abbr: 'GST' },
-    { value: 'Asia/Karachi', label: '(UTC+05:00) Karachi', offset: 5, abbr: 'PKT' },
-    { value: 'Asia/Kolkata', label: '(UTC+05:30) New Delhi', offset: 5.5, abbr: 'IST' },
-    { value: 'Asia/Dhaka', label: '(UTC+06:00) Dhaka', offset: 6, abbr: 'BDT' },
-    { value: 'Asia/Bangkok', label: '(UTC+07:00) Bangkok', offset: 7, abbr: 'ICT' },
-    { value: 'Asia/Singapore', label: '(UTC+08:00) Singapore', offset: 8, abbr: 'SGT' },
-    { value: 'Asia/Hong_Kong', label: '(UTC+08:00) Hong Kong', offset: 8, abbr: 'HKT' },
-    { value: 'Asia/Shanghai', label: '(UTC+08:00) Beijing', offset: 8, abbr: 'CST' },
-    { value: 'Asia/Tokyo', label: '(UTC+09:00) Tokyo', offset: 9, abbr: 'JST' },
-    { value: 'Asia/Seoul', label: '(UTC+09:00) Seoul', offset: 9, abbr: 'KST' },
-    { value: 'Australia/Perth', label: '(UTC+08:00) Perth', offset: 8, abbr: 'AWST' },
-    { value: 'Australia/Adelaide', label: '(UTC+09:30) Adelaide', offset: 9.5, abbr: 'ACST' },
-    { value: 'Australia/Sydney', label: '(UTC+10:00) Sydney', offset: 10, abbr: 'AEST' },
-    { value: 'Pacific/Auckland', label: '(UTC+12:00) Auckland', offset: 12, abbr: 'NZST' },
-    { value: 'Pacific/Fiji', label: '(UTC+12:00) Suva', offset: 12, abbr: 'FJT' },
-    { value: 'Pacific/Tongatapu', label: '(UTC+13:00) Nuku\'alofa', offset: 13, abbr: 'TOT' },
-  ];
+  const timezoneOptions = useMemo(() => {
+    return timezoneData.map(tz => ({
+      value: tz.value,
+      label: `${tz.value} (${tz.abbr})`,
+      offset: tz.offset,
+      abbr: tz.abbr
+    })).sort((a, b) => a.label.localeCompare(b.label));
+  }, [timezoneData]);
 
   // Auto-detect timezone
   const systemTimezone = useMemo(() => {
@@ -183,7 +123,7 @@ export default function SettingsPage() {
     const currentTz = settings.timezone || systemTimezone;
     const found = timezoneOptions.find(tz => tz.value === currentTz);
     return found ? found.label : currentTz;
-  }, [settings.timezone, systemTimezone]);
+  }, [settings.timezone, systemTimezone, timezoneOptions]);
 
   // Load settings from database
   const loadSettings = async () => {
@@ -225,7 +165,6 @@ export default function SettingsPage() {
           monthly_trade_checkup: userSettings.monthly_trade_checkup ?? false,
         };
         setSettings(loadedSettings);
-        setOriginalSettings(loadedSettings);
         
         // Set auto-detect state based on whether user has a custom timezone
         setAutoDetectEnabled(!userSettings.timezone);
@@ -238,7 +177,6 @@ export default function SettingsPage() {
         // Set default user_id for new settings
         const defaultSettings = { ...settings, user_id: user.id };
         setSettings(defaultSettings);
-        setOriginalSettings(defaultSettings);
         setAutoDetectEnabled(true);
       }
     } catch (error) {
@@ -256,14 +194,17 @@ export default function SettingsPage() {
   // Check authentication
   useEffect(() => {
     const checkAuth = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) {
-        router.push('/login?redirect=/settings');
-        return;
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        if (error || !session) {
+          router.push('/login');
+          return;
+        }
+        setLoading(false);
+      } catch (error) {
+        console.error('Auth check error:', error);
+        router.push('/login');
       }
-      
-      setAuthLoading(false);
     };
 
     checkAuth();
@@ -316,18 +257,16 @@ export default function SettingsPage() {
         });
         
         if (matchingIndex !== -1) {
-          const matchedTimezone = timezoneOptions[matchingIndex];
-
           // Auto-select the matched timezone
-          updateSetting('timezone', matchedTimezone.value);
+          updateSetting('timezone', timezoneOptions[matchingIndex].value);
           
           // Scroll to the matching timezone
           setTimeout(() => {
             // Try multiple approaches to find the dropdown
-            let timezoneSelect = document.querySelector('.timezone-selector [data-radix-select-content]') ||
-                                document.querySelector('.timezone-selector [role="listbox"]') ||
-                                document.querySelector('[data-radix-select-content]') ||
-                                document.querySelector('[role="listbox"]');
+            const timezoneSelect = document.querySelector('.timezone-selector [data-radix-select-content]') ||
+                                  document.querySelector('.timezone-selector [role="listbox"]') ||
+                                  document.querySelector('[data-radix-select-content]') ||
+                                  document.querySelector('[role="listbox"]');
             
             if (timezoneSelect) {
               // Only get items within this specific timezone dropdown
@@ -402,14 +341,12 @@ export default function SettingsPage() {
           });
           
           if (singleLetterMatch !== -1) {
-            const matchedTimezone = timezoneOptions[singleLetterMatch];
-            
             // Scroll to this match
             setTimeout(() => {
-              let timezoneSelect = document.querySelector('.timezone-selector [data-radix-select-content]') ||
-                                  document.querySelector('.timezone-selector [role="listbox"]') ||
-                                  document.querySelector('[data-radix-select-content]') ||
-                                  document.querySelector('[role="listbox"]');
+              const timezoneSelect = document.querySelector('.timezone-selector [data-radix-select-content]') ||
+                                    document.querySelector('.timezone-selector [role="listbox"]') ||
+                                    document.querySelector('[data-radix-select-content]') ||
+                                    document.querySelector('[role="listbox"]');
               
               if (timezoneSelect) {
                 const timezoneItems = timezoneSelect.querySelectorAll('[data-radix-select-item], [role="option"]');
@@ -445,8 +382,10 @@ export default function SettingsPage() {
 
   // Load settings on mount
   useEffect(() => {
-    loadSettings();
-  }, []);
+    if (user && !loading) {
+      loadSettings();
+    }
+  }, [user, loading, loadSettings]);
 
   // Show loading while checking authentication
   if (authLoading) {
@@ -586,6 +525,12 @@ export default function SettingsPage() {
     }
   };
 
+  useEffect(() => {
+    if (user && !loading) {
+      updateSetting('timezone', systemTimezone);
+    }
+  }, [user, loading, systemTimezone, updateSetting]);
+
   if (initialLoad) {
     return (
       <LoadingPage 
@@ -670,7 +615,7 @@ export default function SettingsPage() {
                               <Label>Select Timezone</Label>
                               {searchBuffer && selectOpen && (
                                 <div className="text-xs text-muted-foreground mb-2">
-                                  Searching: "{searchBuffer}" - Type letters to jump to timezones
+                                  Searching: &quot;{searchBuffer}&quot; - Type letters to jump to timezones
                                 </div>
                               )}
                               <Select 

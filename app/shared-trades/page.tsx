@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { PageHeader } from "@/components/PageHeader";
 import SharedTradesContent from "@/components/SharedTradesContent";
-import { Loader2 } from 'lucide-react';
 import DashboardFooter from "@/components/DashboardFooter";
 import { LoadingPage } from '../components/ui/loading-spinner';
 

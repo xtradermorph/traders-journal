@@ -1,17 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+
+    const results = {
+      timestamp: new Date().toISOString(),
+      user_id: user.id,
+      fixes_applied: [] as string[],
+      steps: [] as string[],
+      errors: [] as string[]
+    };
 
     const body = await request.json();
     const { analysis_id } = body;

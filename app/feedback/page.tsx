@@ -37,7 +37,7 @@ export default function FeedbackPage() {
       setTimeout(() => {
         window.location.href = '/';
       }, 3000);
-    } catch (_error) {
+    } catch {
       setSubmitStatus('error');
     } finally {
       setIsSubmitting(false);

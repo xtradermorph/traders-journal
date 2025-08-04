@@ -1,28 +1,40 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 
-export async function POST() {
+interface TestResults {
+  timestamp: string;
+  user_id: string;
+  test_results: {
+    steps: string[];
+    final_data: Record<string, unknown>;
+    errors?: string[];
+  };
+  errors?: string[];
+}
+
+export async function POST(request: Request) {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const testResults: any = {
+    const results: TestResults = {
       timestamp: new Date().toISOString(),
       user_id: user.id,
-      steps: [],
-      errors: [],
-      final_data: {}
+      test_results: {
+        steps: [],
+        final_data: {}
+      }
     };
 
     // Step 1: Create a test analysis
-    testResults.steps.push('Step 1: Creating test analysis...');
+    results.test_results.steps.push('Step 1: Creating test analysis...');
     
     const { data: analysis, error: analysisError } = await supabase
       .from('top_down_analyses')
@@ -36,15 +48,15 @@ export async function POST() {
       .single();
 
     if (analysisError) {
-      testResults.errors.push(`Failed to create analysis: ${analysisError.message}`);
-      return NextResponse.json(testResults, { status: 500 });
+      results.test_results.errors.push(`Failed to create analysis: ${analysisError.message}`);
+      return NextResponse.json(results, { status: 500 });
     }
 
-    testResults.steps.push(`✅ Analysis created with ID: ${analysis.id}`);
-    testResults.final_data.analysis = analysis;
+    results.test_results.steps.push(`✅ Analysis created with ID: ${analysis.id}`);
+    results.test_results.final_data.analysis = analysis;
 
     // Step 2: Create test questions if they don't exist
-    testResults.steps.push('Step 2: Checking/creating test questions...');
+    results.test_results.steps.push('Step 2: Checking/creating test questions...');
     
     const testQuestions = [
       {
@@ -76,14 +88,14 @@ export async function POST() {
       .select();
 
     if (questionsError) {
-      testResults.errors.push(`Failed to create questions: ${questionsError.message}`);
+      results.test_results.errors.push(`Failed to create questions: ${questionsError.message}`);
     } else {
-      testResults.steps.push(`✅ Questions created/updated: ${questions?.length || 0} questions`);
-      testResults.final_data.questions = questions;
+      results.test_results.steps.push(`✅ Questions created/updated: ${questions?.length || 0} questions`);
+      results.test_results.final_data.questions = questions;
     }
 
     // Step 3: Save test answers
-    testResults.steps.push('Step 3: Saving test answers...');
+    results.test_results.steps.push('Step 3: Saving test answers...');
     
     const testAnswers = questions?.map(q => ({
       analysis_id: analysis.id,
@@ -98,15 +110,15 @@ export async function POST() {
         .upsert(testAnswers, { onConflict: 'analysis_id,question_id' });
 
       if (answersError) {
-        testResults.errors.push(`Failed to save answers: ${answersError.message}`);
+        results.test_results.errors.push(`Failed to save answers: ${answersError.message}`);
       } else {
-        testResults.steps.push(`✅ Answers saved: ${testAnswers.length} answers`);
-        testResults.final_data.answers = testAnswers;
+        results.test_results.steps.push(`✅ Answers saved: ${testAnswers.length} answers`);
+        results.test_results.final_data.answers = testAnswers;
       }
     }
 
     // Step 4: Save timeframe analyses
-    testResults.steps.push('Step 4: Saving timeframe analyses...');
+    results.test_results.steps.push('Step 4: Saving timeframe analyses...');
     
     const timeframeAnalyses = questions?.map(q => ({
       analysis_id: analysis.id,
@@ -126,15 +138,15 @@ export async function POST() {
         .upsert(timeframeAnalyses, { onConflict: 'analysis_id,timeframe' });
 
       if (tfError) {
-        testResults.errors.push(`Failed to save timeframe analyses: ${tfError.message}`);
+        results.test_results.errors.push(`Failed to save timeframe analyses: ${tfError.message}`);
       } else {
-        testResults.steps.push(`✅ Timeframe analyses saved: ${timeframeAnalyses.length} timeframes`);
-        testResults.final_data.timeframe_analyses = timeframeAnalyses;
+        results.test_results.steps.push(`✅ Timeframe analyses saved: ${timeframeAnalyses.length} timeframes`);
+        results.test_results.final_data.timeframe_analyses = timeframeAnalyses;
       }
     }
 
     // Step 5: Complete the analysis
-    testResults.steps.push('Step 5: Completing analysis...');
+    results.test_results.steps.push('Step 5: Completing analysis...');
     
     const { error: completeError } = await supabase
       .from('top_down_analyses')
@@ -151,13 +163,13 @@ export async function POST() {
       .eq('id', analysis.id);
 
     if (completeError) {
-      testResults.errors.push(`Failed to complete analysis: ${completeError.message}`);
+      results.test_results.errors.push(`Failed to complete analysis: ${completeError.message}`);
     } else {
-      testResults.steps.push('✅ Analysis completed successfully');
+      results.test_results.steps.push('✅ Analysis completed successfully');
     }
 
     // Step 6: Verify data retrieval
-    testResults.steps.push('Step 6: Verifying data retrieval...');
+    results.test_results.steps.push('Step 6: Verifying data retrieval...');
     
     const { data: finalAnalysis, error: finalError } = await supabase
       .from('top_down_analyses')
@@ -166,14 +178,14 @@ export async function POST() {
       .single();
 
     if (finalError) {
-      testResults.errors.push(`Failed to retrieve final analysis: ${finalError.message}`);
+      results.test_results.errors.push(`Failed to retrieve final analysis: ${finalError.message}`);
     } else {
-      testResults.steps.push('✅ Final analysis retrieved successfully');
-      testResults.final_data.final_analysis = finalAnalysis;
+      results.test_results.steps.push('✅ Final analysis retrieved successfully');
+      results.test_results.final_data.final_analysis = finalAnalysis;
     }
 
     // Step 7: Test the main API endpoint
-    testResults.steps.push('Step 7: Testing main API endpoint...');
+    results.test_results.steps.push('Step 7: Testing main API endpoint...');
     
     const apiResponse = await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/tda?id=${analysis.id}`, {
       method: 'GET',
@@ -185,15 +197,15 @@ export async function POST() {
 
     if (apiResponse.ok) {
       const apiData = await apiResponse.json();
-      testResults.steps.push('✅ Main API endpoint working correctly');
-      testResults.final_data.api_response = apiData;
+      results.test_results.steps.push('✅ Main API endpoint working correctly');
+      results.test_results.final_data.api_response = apiData;
     } else {
-      testResults.errors.push(`Main API endpoint failed: ${apiResponse.status} ${apiResponse.statusText}`);
+      results.test_results.errors.push(`Main API endpoint failed: ${apiResponse.status} ${apiResponse.statusText}`);
     }
 
-    testResults.steps.push('🎉 Test analysis completed!');
+    results.test_results.steps.push('🎉 Test analysis completed!');
 
-    return NextResponse.json(testResults);
+    return NextResponse.json(results);
 
   } catch (error) {
     console.error('TDA Test Analysis error:', error);

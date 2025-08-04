@@ -1,25 +1,41 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from "next/server";
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
+
+interface AuditResults {
+  timestamp: string;
+  user_id: string;
+  tables: Record<string, { exists: boolean; error?: string }>;
+  data_counts: Record<string, number | { error: string }>;
+  issues: string[];
+  sample_data: {
+    user_analyses?: unknown[];
+    timeframe_analyses?: Record<string, unknown[]>;
+    answers?: Record<string, unknown[]>;
+    screenshots?: Record<string, unknown[]>;
+    announcements?: Record<string, unknown[]>;
+    questions?: unknown[];
+  };
+}
 
 export async function GET() {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    // Get current user
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const auditResults: Record<string, unknown> = {
+    const auditResults: AuditResults = {
       timestamp: new Date().toISOString(),
       user_id: user.id,
       tables: {},
       data_counts: {},
-      sample_data: {},
-      issues: []
+      issues: [],
+      sample_data: {}
     };
 
     // 1. Check if all TDA tables exist and get their structure
