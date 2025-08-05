@@ -388,6 +388,7 @@ const ChatWidget = () => {
   } = useChatStore();
   
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [groupChats, setGroupChats] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const chatWidgetRef = useRef<HTMLDivElement>(null);
   const [messages, setMessages] = useState<any[]>([]);
@@ -773,7 +774,7 @@ const ChatWidget = () => {
     }
     
     // Don't fetch messages for temporary conversations
-    const isTempConversation = activeConversation.group_id.startsWith('temp_');
+    const isTempConversation = (activeConversation.group_id as string).startsWith('temp_');
     if (isTempConversation) {
       setMessages([]);
       setIsLoading(false);
@@ -813,7 +814,7 @@ const ChatWidget = () => {
     if (!activeConversation) return;
     
     // Don't set up real-time listener for temporary conversations
-    const isTempConversation = activeConversation.group_id.startsWith('temp_');
+    const isTempConversation = (activeConversation.group_id as string).startsWith('temp_');
     if (isTempConversation) return;
     
     // Set up real-time listener for this specific conversation
@@ -902,13 +903,13 @@ const ChatWidget = () => {
     setMessageInput("");
     
     // Check if this is a temporary conversation (new chat)
-    const isTempConversation = activeConversation.group_id.startsWith('temp_');
+    const isTempConversation = (activeConversation.group_id as string).startsWith('temp_');
     
-    let actualGroupId = activeConversation.group_id;
+    let actualGroupId = activeConversation.group_id as string;
     
     // If it's a temporary conversation, create the actual chat first
     if (isTempConversation) {
-      const recipientId = activeConversation.group_id.replace('temp_', '');
+      const recipientId = (activeConversation.group_id as string).replace('temp_', '');
       const { data, error } = await supabase.rpc('create_or_get_direct_chat', {
         recipient_id_param: recipientId
       });
@@ -981,7 +982,7 @@ const ChatWidget = () => {
         .from("chat_group_members")
         .update({ last_read_at: new Date().toISOString() })
         .eq("user_id", currentUser.id)
-        .eq("group_id", activeConversation.group_id);
+        .eq("group_id", activeConversation.group_id as string);
       // Optionally, refetch conversations to update unread counts
       fetchConversations();
     };
