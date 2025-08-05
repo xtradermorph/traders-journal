@@ -48,6 +48,7 @@ export async function POST(request: Request) {
       .single();
 
     if (analysisError) {
+      if (!results.test_results.errors) results.test_results.errors = [];
       results.test_results.errors.push(`Failed to create analysis: ${analysisError.message}`);
       return NextResponse.json(results, { status: 500 });
     }
@@ -88,6 +89,7 @@ export async function POST(request: Request) {
       .select();
 
     if (questionsError) {
+      if (!results.test_results.errors) results.test_results.errors = [];
       results.test_results.errors.push(`Failed to create questions: ${questionsError.message}`);
     } else {
       results.test_results.steps.push(`✅ Questions created/updated: ${questions?.length || 0} questions`);
@@ -110,6 +112,7 @@ export async function POST(request: Request) {
         .upsert(testAnswers, { onConflict: 'analysis_id,question_id' });
 
       if (answersError) {
+        if (!results.test_results.errors) results.test_results.errors = [];
         results.test_results.errors.push(`Failed to save answers: ${answersError.message}`);
       } else {
         results.test_results.steps.push(`✅ Answers saved: ${testAnswers.length} answers`);
@@ -138,6 +141,7 @@ export async function POST(request: Request) {
         .upsert(timeframeAnalyses, { onConflict: 'analysis_id,timeframe' });
 
       if (tfError) {
+        if (!results.test_results.errors) results.test_results.errors = [];
         results.test_results.errors.push(`Failed to save timeframe analyses: ${tfError.message}`);
       } else {
         results.test_results.steps.push(`✅ Timeframe analyses saved: ${timeframeAnalyses.length} timeframes`);
@@ -163,6 +167,7 @@ export async function POST(request: Request) {
       .eq('id', analysis.id);
 
     if (completeError) {
+      if (!results.test_results.errors) results.test_results.errors = [];
       results.test_results.errors.push(`Failed to complete analysis: ${completeError.message}`);
     } else {
       results.test_results.steps.push('✅ Analysis completed successfully');
@@ -178,6 +183,7 @@ export async function POST(request: Request) {
       .single();
 
     if (finalError) {
+      if (!results.test_results.errors) results.test_results.errors = [];
       results.test_results.errors.push(`Failed to retrieve final analysis: ${finalError.message}`);
     } else {
       results.test_results.steps.push('✅ Final analysis retrieved successfully');
@@ -200,6 +206,7 @@ export async function POST(request: Request) {
       results.test_results.steps.push('✅ Main API endpoint working correctly');
       results.test_results.final_data.api_response = apiData;
     } else {
+      if (!results.test_results.errors) results.test_results.errors = [];
       results.test_results.errors.push(`Main API endpoint failed: ${apiResponse.status} ${apiResponse.statusText}`);
     }
 
