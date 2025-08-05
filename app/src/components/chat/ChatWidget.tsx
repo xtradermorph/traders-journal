@@ -974,7 +974,7 @@ const ChatWidget = () => {
     if (!activeConversation || !currentUser) return;
     
     // Don't update last_read_at for temporary conversations
-    const isTempConversation = activeConversation.group_id.startsWith('temp_');
+    const isTempConversation = (activeConversation.group_id as string).startsWith('temp_');
     if (isTempConversation) return;
     
     const updateLastRead = async () => {
@@ -1558,7 +1558,7 @@ const ChatWidget = () => {
     if (!publicUsers) return [];
     
     const query = inviteToChatSearchQuery.toLowerCase();
-    const currentMemberIds = activeConversation?.members.map((m: any) => m.profile.id) || [];
+    const currentMemberIds = (activeConversation?.members as any[])?.map((m: any) => m.profile.id) || [];
     
     return publicUsers.filter(user => 
       !currentMemberIds.includes(user.id) && // Not already in the chat
