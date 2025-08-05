@@ -2115,15 +2115,15 @@ const ChatWidget = () => {
                   &larr; <span className="sr-only">Back</span>
                 </button>
                 {/* Avatar for chats - group avatar for group chats, other user avatar for direct chats */}
-                {!activeConversation.is_direct && activeConversation.avatar_url ? (
+                {!activeConversation.is_direct && (activeConversation.avatar_url as string) ? (
                   <Avatar className="h-8 w-8 border-2 border-background bg-blue-500">
                     <AvatarFallback>
-                      <span className="text-lg">{activeConversation.avatar_url}</span>
+                      <span className="text-lg">{activeConversation.avatar_url as string}</span>
                     </AvatarFallback>
                   </Avatar>
                 ) : activeConversation.is_direct && (
                   (() => {
-                    const other = activeConversation.members.find((m: any) => m.profile && m.profile.id !== currentUser?.id);
+                    const other = (activeConversation.members as any[])?.find((m: any) => m.profile && m.profile.id !== currentUser?.id);
                     return (
                       <Avatar className="h-8 w-8 border-2 border-background">
                         <AvatarImage src={other?.profile?.avatar_url} />
@@ -2135,10 +2135,10 @@ const ChatWidget = () => {
                   })()
                 )}
                 <span className="text-lg font-semibold truncate">
-                  {activeConversation.name}
+                  {activeConversation.name as string}
                 </span>
                 {/* Invite button for direct chats with 2+ users or group chats */}
-                {(activeConversation.is_direct && activeConversation.members.length >= 2) && (
+                {(activeConversation.is_direct && (activeConversation.members as any[]).length >= 2) && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -2205,10 +2205,10 @@ const ChatWidget = () => {
             </Button>
           </div>
           {/* Group members section - only for group chats or direct chats with 3+ users */}
-          {activeConversation && ((!activeConversation.is_direct) || (activeConversation.is_direct && activeConversation.members.length > 2)) && (
+          {activeConversation && ((!activeConversation.is_direct) || (activeConversation.is_direct && (activeConversation.members as any[]).length > 2)) && (
             <div className="px-4 py-2 border-b bg-muted/30">
               <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
-                {activeConversation.members.map((member: any) => (
+                {(activeConversation.members as any[]).map((member: any) => (
                   <TooltipProvider key={member.profile.id}>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -2816,7 +2816,7 @@ const ChatWidget = () => {
         <DialogContent className="sm:max-w-[400px] bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 border-purple-800 text-white">
           <DialogHeader>
             <DialogTitle className="text-white">Invite Users to Group</DialogTitle>
-            <DialogDescription className="text-gray-300">Select users to invite to "{activeConversation?.name}".</DialogDescription>
+            <DialogDescription className="text-gray-300">Select users to invite to "{activeConversation?.name as string}".</DialogDescription>
           </DialogHeader>
           <div className="space-y-3">
             <div>
@@ -2827,7 +2827,7 @@ const ChatWidget = () => {
                 ) : (
                   publicUsers
                     .filter(user => 
-                      !activeConversation?.members.some((member: any) => member.profile.id === user.id) &&
+                      !(activeConversation?.members as any[])?.some((member: any) => member.profile.id === user.id) &&
                       !pendingInvitations.some(inv => inv.invitee_id === user.id && inv.group_id === activeConversation?.group_id)
                     )
                     .map(user => (
