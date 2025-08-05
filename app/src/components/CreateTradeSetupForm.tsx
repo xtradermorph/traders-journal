@@ -55,7 +55,7 @@ const tradeSetupSchema = z.object({
     required_error: "Trade direction is required",
   }),
   timeframe: z.string().min(1, "Timeframe is required"),
-  is_public: z.boolean().default(true),
+  is_public: z.boolean().optional().default(true),
   forum_ids: z.array(z.string()).min(1, "Please select one forum to share your trade setup"),
 }).refine(
   (data) => {
@@ -123,7 +123,7 @@ const CreateTradeSetupForm = () => {
       target_price: "",
       direction: "LONG",
       timeframe: "",
-      is_public: true as boolean,
+      is_public: true,
       forum_ids: [],
     },
   });

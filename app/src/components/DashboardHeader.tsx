@@ -212,7 +212,7 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
     if (result.data) {
       toast({ title: 'Success', description: 'Friend request sent!' });
       // Update friendshipStatuses map optimistically or re-fetch
-      setFriendshipStatuses(prev => new Map(prev).set(recipientId, result.data!));
+      setFriendshipStatuses(prev => new Map(prev).set(recipientId, result.data as unknown as Friendship));
       // Re-fetch to ensure all states (requests, friends list, statuses) are consistent
       fetchFriendshipData(); 
     } else if (result.error) {
@@ -297,7 +297,7 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
       // Fetch friends list
       const friendsResult = await getFriends(currentUser.id);
       if (friendsResult.data) {
-        setFriendsList(friendsResult.data as UserData[]);
+        setFriendsList(friendsResult.data as unknown as UserData[]);
       } else if (friendsResult.error) {
         toast({ title: 'Error fetching friends', description: friendsResult.error, variant: 'destructive' });
       }
@@ -305,7 +305,7 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
       // Fetch incoming friend requests
       const requestsResult = await getPendingIncomingRequests();
       if (requestsResult.data) {
-        setIncomingRequests(requestsResult.data as (Friendship & { sender_profile?: UserData })[]);
+        setIncomingRequests(requestsResult.data as unknown as (Friendship & { sender_profile?: UserData })[]);
       } else if (requestsResult.error) {
         toast({ title: 'Error fetching requests', description: requestsResult.error, variant: 'destructive' });
       }
