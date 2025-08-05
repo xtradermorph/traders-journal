@@ -12,6 +12,37 @@ export default function InstallPage() {
   const [installError, setInstallError] = useState<string | null>(null);
   const [isMobile, setIsMobile] = useState(false);
 
+  const handleInstall = useCallback(async () => {
+    if (!deferredPrompt) {
+      setInstallError('Installation prompt not available. Please try refreshing the page.');
+      return;
+    }
+
+    setIsInstalling(true);
+    setInstallError(null);
+
+    try {
+      // Show the browser's install prompt
+      (deferredPrompt as any).prompt();
+      
+      // Wait for the user to respond to the prompt
+      const { outcome } = await (deferredPrompt as any).userChoice;
+      
+      if (outcome === 'accepted') {
+        console.log('User accepted the install prompt');
+      } else {
+        console.log('User dismissed the install prompt');
+        setInstallError('Installation was cancelled. You can try again later.');
+      }
+    } catch (error) {
+      console.error('Error during installation:', error);
+      setInstallError('Installation failed. Please try again.');
+    } finally {
+      setIsInstalling(false);
+      setDeferredPrompt(null);
+    }
+  }, [deferredPrompt]);
+
   useEffect(() => {
     // Check if mobile device
     const checkMobile = () => {
@@ -23,14 +54,14 @@ export default function InstallPage() {
     // Check if already installed
     const checkIfInstalled = () => {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-      const isInApp = (window.navigator as Record<string, unknown>).standalone === true;
+      const isInApp = (window.navigator as unknown as Record<string, unknown>).standalone === true;
       setIsInstalled(isStandalone || isInApp);
     };
     checkIfInstalled();
 
     // Listen for beforeinstallprompt event
     const handleBeforeInstallPrompt = (e: unknown) => {
-      e.preventDefault();
+      (e as Event).preventDefault();
       setDeferredPrompt(e);
     };
 
@@ -64,37 +95,6 @@ export default function InstallPage() {
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, [isMobile, deferredPrompt, isInstalled, handleInstall]);
-
-  const handleInstall = useCallback(async () => {
-    if (!deferredPrompt) {
-      setInstallError('Installation prompt not available. Please try refreshing the page.');
-      return;
-    }
-
-    setIsInstalling(true);
-    setInstallError(null);
-
-    try {
-      // Show the browser's install prompt
-      (deferredPrompt as Record<string, unknown>).prompt();
-      
-      // Wait for the user to respond to the prompt
-      const { outcome } = await (deferredPrompt as Record<string, unknown>).userChoice;
-      
-      if (outcome === 'accepted') {
-        console.log('User accepted the install prompt');
-      } else {
-        console.log('User dismissed the install prompt');
-        setInstallError('Installation was cancelled. You can try again later.');
-      }
-    } catch (error) {
-      console.error('Error during installation:', error);
-      setInstallError('Installation failed. Please try again.');
-    } finally {
-      setIsInstalling(false);
-      setDeferredPrompt(null);
-    }
-  }, [deferredPrompt]);
 
   const handleManualInstall = () => {
     // For browsers that don't support beforeinstallprompt

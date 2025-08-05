@@ -16,6 +16,7 @@ export default function ProfilePage() {
   const [initialProfile, setInitialProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [session, setSession] = useState<any>(null);
 
 
   useEffect(() => {
