@@ -478,7 +478,7 @@ const ChatWidget = () => {
         console.error('Error fetching friends:', error);
         return;
       }
-      setFriends(data || []);
+      setFriends((data as Profile[]) || []);
     } catch (error) {
       console.error('Error fetching friends:', error);
     } finally {

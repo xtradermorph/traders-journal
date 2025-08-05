@@ -499,8 +499,8 @@ const AITradingInsights = ({ trades, stats, isLoading }: AITradingInsightsProps)
               <div className="space-y-4">
                 <div className="flex flex-wrap">
                   {behaviorAnalysis.behavioralPatterns.map((pattern, idx) => (
-                    <div key={pattern.pattern + '-' + idx}>
-                      {renderBehaviorPatternBadge(pattern.pattern, pattern.impact)}
+                    <div key={pattern + '-' + idx}>
+                      {renderBehaviorPatternBadge(pattern, 'neutral')}
                     </div>
                   ))}
                 </div>
@@ -531,18 +531,12 @@ const AITradingInsights = ({ trades, stats, isLoading }: AITradingInsightsProps)
                   <Separator className="my-4" />
                   <div className="space-y-2">
                     {behaviorAnalysis.behavioralPatterns.map((pattern, idx) => (
-                      <div key={pattern.pattern + '-desc-' + idx} className="space-y-1">
+                      <div key={pattern + '-desc-' + idx} className="space-y-1">
                         <div className="flex items-center">
-                          {pattern.impact === 'positive' ? (
-                            <Check className="h-4 w-4 text-green-500 mr-2" />
-                          ) : pattern.impact === 'negative' ? (
-                            <X className="h-4 w-4 text-red-500 mr-2" />
-                          ) : (
-                            <Minus className="h-4 w-4 text-gray-500 mr-2" />
-                          )}
-                          <h5 className="text-sm font-medium">{pattern.pattern}</h5>
+                          <Minus className="h-4 w-4 text-gray-500 mr-2" />
+                          <h5 className="text-sm font-medium">{pattern}</h5>
                         </div>
-                        <p className="text-xs text-muted-foreground pl-6">{pattern.description}</p>
+                        <p className="text-xs text-muted-foreground pl-6">Behavioral pattern identified in your trading</p>
                       </div>
                     ))}
                   </div>
