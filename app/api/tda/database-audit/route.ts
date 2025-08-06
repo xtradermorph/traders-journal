@@ -3,6 +3,10 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 
+// Force dynamic runtime to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 interface AuditResults {
   timestamp: string;
   user_id: string;
