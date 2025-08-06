@@ -2,7 +2,7 @@
 
 import { useAuth } from '@/src/hooks/useAuth'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import DashboardContent from '@/src/pages/Dashboard'
 import Layout from '@/src/components/Layout'
 import { LoadingPage } from '../components/ui/loading-spinner'
@@ -11,21 +11,40 @@ import { LoadingPage } from '../components/ui/loading-spinner'
 export const dynamic = 'force-dynamic';
 
 export default function DashboardPage() {
+  const [isClient, setIsClient] = useState(false);
   const router = useRouter()
   const { loading, isAuthenticated, user } = useAuth()
 
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
   // Debug authentication state
   useEffect(() => {
-    console.log('Dashboard auth state:', { loading, isAuthenticated, user })
-  }, [loading, isAuthenticated, user])
+    if (isClient) {
+      console.log('Dashboard auth state:', { loading, isAuthenticated, user })
+    }
+  }, [loading, isAuthenticated, user, isClient])
 
   // Use useEffect for navigation to avoid React state updates during render
   useEffect(() => {
-    if (!loading && !isAuthenticated) {
+    if (isClient && !loading && !isAuthenticated) {
       console.log('Not authenticated, redirecting to login')
       router.push('/login')
     }
-  }, [loading, isAuthenticated, router])
+  }, [loading, isAuthenticated, router, isClient])
+
+  // Show loading state during SSR
+  if (!isClient) {
+    return (
+      <Layout pathname="/dashboard">
+        <LoadingPage 
+          title="Loading Dashboard" 
+          description="Preparing your trading dashboard..." 
+        />
+      </Layout>
+    )
+  }
 
   // Handle loading state
   if (loading) {
