@@ -7,6 +7,14 @@ const __dirname = path.dirname(__filename)
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
+  // Completely disable static generation
+  distDir: '.next',
+  // Force all pages to be dynamic
+  generateStaticParams: async () => {
+    return []
+  },
+  // Disable static generation completely
+  staticPageGenerationTimeout: 0,
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
@@ -17,7 +25,7 @@ const nextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
-  // Completely disable static generation
+  // Completely disable static generation and force dynamic rendering
   output: 'standalone',
   trailingSlash: true,
   skipTrailingSlashRedirect: true,
@@ -25,11 +33,10 @@ const nextConfig = {
   generateBuildId: async () => {
     return 'build-' + Date.now()
   },
-  // Disable static generation globally
-  staticPageGenerationTimeout: 0,
-  // Force dynamic rendering for all pages
-  generateStaticParams: async () => {
-    return []
+
+  // Disable static optimization completely
+  images: {
+    unoptimized: true
   },
 
   webpack: (config, { isServer }) => {
@@ -39,6 +46,16 @@ const nextConfig = {
       '@shared': path.resolve(__dirname, './shared')
     }
     config.externals = [...config.externals, { 'supabase/functions': 'commonjs supabase/functions' }]
+    
+    // Disable static generation in webpack
+    if (!isServer) {
+      config.optimization = {
+        ...config.optimization,
+        splitChunks: false,
+        runtimeChunk: false
+      }
+    }
+    
     return config
   },
   experimental: {
@@ -49,7 +66,11 @@ const nextConfig = {
     isrMemoryCacheSize: 0,
     // Disable static generation entirely
     workerThreads: false,
-    cpus: 1
+    cpus: 1,
+    // Disable static generation completely
+    staticGenerationAsyncStorage: false,
+    // Force dynamic rendering
+    dynamicImports: true
   }
 }
 
