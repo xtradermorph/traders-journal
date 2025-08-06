@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
-export const runtime = "edge";
+// Force dynamic runtime to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });

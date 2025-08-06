@@ -17,6 +17,7 @@ const nextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
+
   webpack: (config, { isServer }) => {
     config.resolve.alias = {
       ...config.resolve.alias,

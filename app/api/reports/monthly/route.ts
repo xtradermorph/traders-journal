@@ -4,6 +4,10 @@ import { cookies } from "next/headers";
 import { Resend } from "resend";
 import { generateTradeReportExcel, getDateRangeForReport, getReportPeriodLabel, getReportFileName } from "@/lib/tradeReports";
 
+// Force dynamic runtime to prevent static generation
+export const dynamic = 'force-dynamic';
+export const runtime = 'nodejs';
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST() {
