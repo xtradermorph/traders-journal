@@ -1,6 +1,6 @@
 'use client'
 
-import { supabase } from '@/lib/supabase/index';
+import { supabase } from './supabase/index';
 
 // This function will prompt the user to add API keys
 export const askSecretsFunction = async (): Promise<void> => {

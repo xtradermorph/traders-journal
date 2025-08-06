@@ -3,14 +3,14 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
-import { useToast } from '@/hooks/use-toast';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { useToast } from '../src/hooks/use-toast';
+import { Button } from '../src/components/ui/button';
+import { Input } from '../src/components/ui/input';
 import Link from 'next/link';
 import Image from 'next/image';
-import { cn } from '@/lib/utils';
+import { cn } from '../src/lib/utils';
 import { Check, X } from 'lucide-react';
-import { LOGO_CONFIG } from '@/lib/logo-config';
+import { LOGO_CONFIG } from '../src/lib/logo-config';
 
 export default function ResetPassword() {
   const [password, setPassword] = useState('');

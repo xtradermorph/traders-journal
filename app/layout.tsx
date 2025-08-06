@@ -4,14 +4,14 @@ import React, { useRef, useEffect } from "react";
 import { Inter } from 'next/font/google'
 import { ThemeProvider } from 'next-themes'
 import { QueryClientProvider } from '@tanstack/react-query'
-import { queryClient } from '@/lib/queryClient'
-import '@/src/globals.css'
+import { queryClient } from './src/lib/queryClient'
+import './src/globals.css'
 import { usePathname } from 'next/navigation'
 import ThemeSyncProvider from './src/components/auth/ThemeSyncProvider'
 import { UserProfileProvider } from './src/components/UserProfileContext'
 import { useState } from "react";
 
-import ChatWidget from "@/components/chat/ChatWidget";
+import ChatWidget from "./src/components/chat/ChatWidget";
 
 import { CloudflareAnalytics } from "./components/ui/cloudflare-analytics";
 import VersionDisplay from "./src/components/VersionDisplay";

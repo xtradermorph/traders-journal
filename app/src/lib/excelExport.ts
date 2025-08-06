@@ -1,5 +1,5 @@
 import ExcelJS from 'exceljs';
-import { Trade } from '@/types/trade';
+import { Trade } from '../types/trade';
 import { format } from 'date-fns';
 
 interface AnalysisData {

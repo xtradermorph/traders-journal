@@ -2,8 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import { PageHeader } from "@/src/components/PageHeader";
-import CreateTradeSetupForm from "@/src/components/CreateTradeSetupForm";
+import { PageHeader } from "../../src/components/PageHeader";
+import CreateTradeSetupForm from "../../src/components/CreateTradeSetupForm";
 
 export default function CreateTradeSetupPage() {
   const router = useRouter();

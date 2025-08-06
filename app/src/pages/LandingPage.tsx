@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { FeatureSection } from "@/components/landing/FeatureSection";
-import FeedbackCarousel from "@/components/FeedbackCarousel";
+import { Button } from "../components/ui/button";
+import { useAuth } from "../hooks/useAuth";
+import { FeatureSection } from "../components/landing/FeatureSection";
+import FeedbackCarousel from "../components/FeedbackCarousel";
 
 export default function LandingPage() {
   const router = useRouter();

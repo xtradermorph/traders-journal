@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { PageHeader } from '@/components/PageHeader';
-import { RecentTrades } from '@/components/RecentTrades';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { getTrades } from '@/lib/api/trades';
-import type { Trade } from '@/types/trade';
-import { processTrades } from '@/lib/utils';
+import { PageHeader } from '../components/PageHeader';
+import { RecentTrades } from '../components/RecentTrades';
+import { Input } from '../components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
+import { getTrades } from '../lib/api/trades';
+import type { Trade } from '../types/trade';
+import { processTrades } from '../lib/utils';
 
 export default function TradeRecords() {
   const [filters, setFilters] = useState({

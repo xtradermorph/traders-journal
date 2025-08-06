@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { PageHeader } from "@/src/components/PageHeader";
-import TradeSetupDetail from "@/src/components/TradeSetupDetail";
+import { PageHeader } from "../../src/components/PageHeader";
+import TradeSetupDetail from "../../src/components/TradeSetupDetail";
 
 export default function TradeSetupDetailPage({ params }: { params: { id: string } }) {
   const router = useRouter();

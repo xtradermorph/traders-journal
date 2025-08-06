@@ -1,19 +1,19 @@
 "use client"
 
 import React, { useEffect, useState } from "react";
-import { ClientOnly } from "@/components/ClientOnly";
+import { ClientOnly } from "../components/ClientOnly";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { useMutation } from "@tanstack/react-query";
-import { supabase } from "@/lib/supabase/index";
+import { supabase } from "../lib/supabase/index";
 import { useRouter } from "next/navigation";
 import Link from 'next/link';
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "../components/ui/button";
+import { Input } from "../components/ui/input";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "../components/ui/form";
+import { Checkbox } from "../components/ui/checkbox";
 import { Eye, EyeOff, X } from "lucide-react";
 import Image from 'next/image';
 import { Turnstile } from '../../components/ui/turnstile';

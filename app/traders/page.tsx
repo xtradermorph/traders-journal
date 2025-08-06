@@ -1,23 +1,23 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
-import { Card, CardContent, CardFooter } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { MedalIcon } from '@/components/MedalIcon';
+import { supabase } from '../lib/supabase';
+import { Card, CardContent, CardFooter } from '../src/components/ui/card';
+import { Input } from '../src/components/ui/input';
+import { Button } from '../src/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../src/components/ui/select';
+import { Avatar, AvatarFallback, AvatarImage } from '../src/components/ui/avatar';
+import { MedalIcon } from '../src/components/MedalIcon';
 import { Search, X, Users, TrendingUp, Star, Calendar, Eye, UserPlus, UserCheck, UserX, MessageSquare } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { calculateMedalTypeFromWinRate } from '@/lib/medal-utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { PageHeader } from '@/components/PageHeader';
-import { UserProfile } from '@/types';
-import { PublicProfileView } from '@/components/PublicProfileView';
+import { useToast } from '../src/hooks/use-toast';
+import { calculateMedalTypeFromWinRate } from '../lib/medal-utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../src/components/ui/tooltip';
+import { PageHeader } from '../src/components/PageHeader';
+import { UserProfile } from '../src/types';
+import { PublicProfileView } from '../src/components/PublicProfileView';
 import { sendFriendRequest, getFriendshipStatusString, acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from '../lib/friendsUtils';
-import { useChatStore } from '@/lib/store/chatStore';
-import DashboardFooter from '@/components/DashboardFooter';
+import { useChatStore } from '../src/lib/store/chatStore';
+import DashboardFooter from '../src/components/DashboardFooter';
 
 interface Trader {
   id: string;

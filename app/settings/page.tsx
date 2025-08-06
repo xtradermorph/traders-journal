@@ -4,19 +4,19 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 import { useTheme } from 'next-themes';
 import { useRouter } from 'next/navigation';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { EnhancedSwitch } from '@/components/ui/enhanced-switch';
-import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import { PageHeader } from '@/components/PageHeader';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "../src/components/ui/tabs";
+import { EnhancedSwitch } from '../src/components/ui/enhanced-switch';
+import { Label } from '../src/components/ui/label';
+import { Button } from '../src/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../src/components/ui/select';
+import { Separator } from '../src/components/ui/separator';
+import { PageHeader } from '../src/components/PageHeader';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '../src/components/ui/card';
+import { useToast } from '../src/hooks/use-toast';
 import { Save, Monitor, AlertCircle, Check, Sparkles } from 'lucide-react';
 import timezoneData from './timezones-full';
 import { LoadingPage } from '../components/ui/loading-spinner';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../src/hooks/useAuth';
 
 // Types
 interface UserSettings {

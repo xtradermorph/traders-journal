@@ -1,7 +1,7 @@
 'use client'
 
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
-import type { Database } from '@/types/supabase'
+import type { Database } from '../../types/supabase'
 
 // Check if we're in a browser environment
 const isBrowser = typeof window !== 'undefined'

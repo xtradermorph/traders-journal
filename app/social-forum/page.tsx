@@ -1,8 +1,8 @@
 "use client";
 
-import { PageHeader } from '@/components/PageHeader';
-import SocialForumContent from '@/components/SocialForumContent';
-import DashboardFooter from '@/components/DashboardFooter';
+import { PageHeader } from '../src/components/PageHeader';
+import SocialForumContent from '../src/components/SocialForumContent';
+import DashboardFooter from '../src/components/DashboardFooter';
 
 export default function SocialForumPage() {
   console.log('SocialForumPage component loading...');

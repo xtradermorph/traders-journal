@@ -2,25 +2,25 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/lib/supabase';
-import { TopDownAnalysis } from '@/types/tda';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { supabase } from '../lib/supabase';
+import { TopDownAnalysis } from '../src/types/tda';
+import { Badge } from '../src/components/ui/badge';
+import { Button } from '../src/components/ui/button';
 import { Calendar, Eye, Trash2, Loader2, Download, Plus, Target, ChevronDown, ChevronRight, Star } from 'lucide-react';
 import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
-import { PageHeader } from '@/components/PageHeader';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
-import { downloadTDAAsWord, TDADocumentData } from '@/lib/tdaWordExport';
-import { useUserProfile } from '@/components/UserProfileContext';
-import TopDownAnalysisDialog from '@/components/TopDownAnalysisDialog';
-import DashboardFooter from '@/components/DashboardFooter';
-import TDADetailsDialog from '@/components/TDADetailsDialog';
+import { useToast } from '../src/hooks/use-toast';
+import { PageHeader } from '../src/components/PageHeader';
+import { Input } from '../src/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../src/components/ui/select';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../src/components/ui/alert-dialog";
+import { downloadTDAAsWord, TDADocumentData } from '../src/lib/tdaWordExport';
+import { useUserProfile } from '../src/components/UserProfileContext';
+import TopDownAnalysisDialog from '../src/components/TopDownAnalysisDialog';
+import DashboardFooter from '../src/components/DashboardFooter';
+import TDADetailsDialog from '../src/components/TDADetailsDialog';
 import { LoadingPage } from '../components/ui/loading-spinner';
-import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { cn } from '../src/lib/utils';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../src/components/ui/tooltip';
 
 interface MonthGroup {
   month_year: string;

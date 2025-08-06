@@ -1,26 +1,26 @@
 "use client"
 
-import { supabase } from "@/lib/supabase";
+import { supabase } from "../lib/supabase";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import PerfSummaryCard from "@/components/PerfSummaryCard";
-import PerformanceAnalysis from "@/components/PerformanceAnalysis";
-import ProfitLossChart from "@/components/ProfitLossChart";
-import CurrencyPairPerformance from "@/components/CurrencyPairPerformance";
-import { RecentTrades } from "@/components/RecentTrades";
-import TradingWorkflowGuide from "@/components/TradingWorkflowGuide";
-import TDAHistory from "@/components/TDAHistory";
-import TradeCalendar from "@/components/TradeCalendar";
-import AITradingInsights from "@/components/AITradingInsights";
+import PerfSummaryCard from "../components/PerfSummaryCard";
+import PerformanceAnalysis from "../components/PerformanceAnalysis";
+import ProfitLossChart from "../components/ProfitLossChart";
+import CurrencyPairPerformance from "../components/CurrencyPairPerformance";
+import { RecentTrades } from "../components/RecentTrades";
+import TradingWorkflowGuide from "../components/TradingWorkflowGuide";
+import TDAHistory from "../components/TDAHistory";
+import TradeCalendar from "../components/TradeCalendar";
+import AITradingInsights from "../components/AITradingInsights";
 
-import type { Trade } from '@/types/trade';
-import { useAuth } from '@/hooks/useAuth';
-import { processTrades, ProcessedTrade } from '@/lib/utils';
-import { Button } from "@/components/ui/button";
+import type { Trade } from '../types/trade';
+import { useAuth } from '../hooks/useAuth';
+import { processTrades, ProcessedTrade } from '../lib/utils';
+import { Button } from "../components/ui/button";
 import { useRouter } from "next/navigation";
-import DashboardFooter from '@/components/DashboardFooter';
+import DashboardFooter from '../components/DashboardFooter';
 
-import { cn } from "@/lib/utils";
+import { cn } from "../lib/utils";
 
 interface Stats {
   winRate: number;

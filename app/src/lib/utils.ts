@@ -2,7 +2,7 @@
 
 import { type ClassValue, clsx } from 'clsx'
 import { twMerge } from 'tailwind-merge'
-import type { Trade } from '@/types/trade';
+import type { Trade } from '../types/trade';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))

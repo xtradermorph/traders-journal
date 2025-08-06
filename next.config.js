@@ -15,6 +15,9 @@ const nextConfig = {
     }
     config.externals = [...config.externals, { 'supabase/functions': 'commonjs supabase/functions' }]
     return config
+  },
+  experimental: {
+    esmExternals: 'loose'
   }
 }
 

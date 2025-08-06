@@ -1,20 +1,20 @@
 "use client"
 
 import { useRouter, usePathname } from "next/navigation";
-import { queryClient } from "@/lib/queryClient";
+import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
-import { Toaster } from "@/components/ui/toaster";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import NotFound from "@/pages/not-found";
-import LandingPage from "@/pages/LandingPage";
-import Login from "@/pages/Login";
-import Register from "@/pages/Register";
-import Dashboard from "@/pages/Dashboard";
-import Layout from "@/components/Layout";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { Toaster } from "./components/ui/toaster";
+import { TooltipProvider } from "./components/ui/tooltip";
+import NotFound from "./pages/not-found";
+import LandingPage from "./pages/LandingPage";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import Dashboard from "./pages/Dashboard";
+import Layout from "./components/Layout";
+import LoadingSpinner from "./components/LoadingSpinner";
 import { useEffect, useState } from "react";
-import { checkAuth } from "@/lib/supabase";
+import { checkAuth } from "./lib/supabase";
 
 function AuthenticatedRoute({ component: Component, ...rest }: { component: React.ComponentType<Record<string, unknown>>, [key: string]: unknown }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);

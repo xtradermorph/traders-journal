@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../supabase';
 
 export const getTrades = async () => {
   const { data, error } = await supabase

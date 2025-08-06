@@ -1,4 +1,4 @@
-import { useToast as useToastOriginal } from '@/components/ui/use-toast'
+import { useToast as useToastOriginal } from '../components/ui/use-toast'
 
 export interface Toast {
   id?: string;

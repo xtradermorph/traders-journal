@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 
 // For client-side operations, we'll use the regular supabase client
-import { supabase as regularClient } from '@/lib/supabase';
+import { supabase as regularClient } from './supabase';
 
 // Service role key - this should be properly set in your environment variables
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

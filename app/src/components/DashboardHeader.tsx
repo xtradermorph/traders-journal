@@ -2,10 +2,10 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react'; // Import useEffect and useRef
 import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 import {
   User,
   Settings,
@@ -28,7 +28,7 @@ import {
   ListOrdered, // Added ListOrdered
 
 } from "lucide-react";
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../lib/supabase';
 import {
   Friendship,
   sendFriendRequest,
@@ -42,23 +42,23 @@ import {
   blockUser, // Added
   unblockUser // Added
 } from '../../lib/friendsUtils';
-import { calculateMedal } from '@/lib/medal-utils';
+import { calculateMedal } from '../lib/medal-utils';
 import MedalIcon from './MedalIcon';
 // Medal achievement email notification will be handled by API route
 import { Trade } from '@shared/schema';
 import { useRouter } from 'next/navigation';
-import * as profileAccess from '@/lib/profileAccess';
-import { useToast } from '@/hooks/use-toast';
+import * as profileAccess from '../lib/profileAccess';
+import { useToast } from '../hooks/use-toast';
 import AddTradeDialog from './AddTradeDialog'; // Import AddTradeDialog
 import TopDownAnalysisDialog from './TopDownAnalysisDialog'; // Import TopDownAnalysisDialog
 
 import { useUserProfile } from "./UserProfileContext";
-import { getTrades } from '@/lib/api/trades';
-import { MedalType } from '@/types/user';
+import { getTrades } from '../lib/api/trades';
+import { MedalType } from '../types/user';
 
 import { useTheme } from 'next-themes';
 
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '../hooks/useAuth';
 
 // This type might need to be adjusted based on the actual structure of your user object
 interface UserData {

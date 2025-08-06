@@ -3,9 +3,9 @@
 import React, { useEffect, useState } from "react";
 import { useRouter } from 'next/navigation';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import { PageHeader } from "@/components/PageHeader";
-import SharedTradesContent from "@/components/SharedTradesContent";
-import DashboardFooter from "@/components/DashboardFooter";
+import { PageHeader } from "../src/components/PageHeader";
+import SharedTradesContent from "../src/components/SharedTradesContent";
+import DashboardFooter from "../src/components/DashboardFooter";
 import { LoadingPage } from '../components/ui/loading-spinner';
 
 export default function SharedTradesPage() {
