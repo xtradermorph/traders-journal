@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { supabase, useAuth } from '../lib/supabase';
+import { supabase, useAuth } from '../src/lib/supabase';
 import { Trade } from '../src/types/trade';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../src/components/ui/table';
 import { Skeleton } from '../src/components/ui/skeleton';

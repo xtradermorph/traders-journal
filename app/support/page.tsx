@@ -4,7 +4,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../src/lib/supabase';
 import { toast } from 'sonner';
 import { CheckCircle } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from "../src/components/ui/alert";

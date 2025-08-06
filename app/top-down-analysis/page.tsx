@@ -2,7 +2,7 @@
 
 import React, { useRef, useEffect, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../src/lib/supabase';
 import { TopDownAnalysis } from '../src/types/tda';
 import { Badge } from '../src/components/ui/badge';
 import { Button } from '../src/components/ui/button';
