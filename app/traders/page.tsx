@@ -15,7 +15,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../src
 import { PageHeader } from '../src/components/PageHeader';
 import { UserProfile } from '../src/types';
 import { PublicProfileView } from '../src/components/PublicProfileView';
-import { sendFriendRequest, getFriendshipStatusString, acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from '../src/lib/friendsUtils';
+import { sendFriendRequest, getFriendshipStatusString, acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from '../lib/friendsUtils';
 import { useChatStore } from '../src/lib/store/chatStore';
 import DashboardFooter from '../src/components/DashboardFooter';
 
