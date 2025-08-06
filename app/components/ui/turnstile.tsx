@@ -43,6 +43,45 @@ declare global {
   }
 }
 
+// Global script loading state
+let scriptLoadingPromise: Promise<void> | null = null
+
+const loadTurnstileScript = (): Promise<void> => {
+  if (window.turnstile) {
+    return Promise.resolve()
+  }
+
+  if (scriptLoadingPromise) {
+    return scriptLoadingPromise
+  }
+
+  scriptLoadingPromise = new Promise((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+    script.async = true
+    script.defer = true
+    
+    script.onload = () => {
+      // Wait a bit for the script to initialize
+      setTimeout(() => {
+        if (window.turnstile) {
+          resolve()
+        } else {
+          reject(new Error('Turnstile failed to initialize'))
+        }
+      }, 100)
+    }
+    
+    script.onerror = () => {
+      reject(new Error('Failed to load Turnstile script'))
+    }
+    
+    document.head.appendChild(script)
+  })
+
+  return scriptLoadingPromise
+}
+
 export function Turnstile({
   siteKey,
   onVerify,
@@ -61,42 +100,34 @@ export function Turnstile({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load Turnstile script only once
-    if (!window.turnstile) {
-      const script = document.createElement('script')
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
-      script.async = true
-      script.defer = true
-      
-      script.onload = () => {
+    let mounted = true
+
+    const initializeTurnstile = async () => {
+      try {
+        await loadTurnstileScript()
+        
+        if (!mounted) return
+        
         setIsLoaded(true)
-      }
-      
-      script.onerror = () => {
-        const errorMessage = 'Failed to load Turnstile script'
+      } catch (err) {
+        if (!mounted) return
+        
+        const errorMessage = 'Failed to load security check'
         setError(errorMessage)
         onError?.(errorMessage)
       }
-      
-      document.head.appendChild(script)
-    } else {
-      setIsLoaded(true)
     }
 
+    initializeTurnstile()
+
     return () => {
-      // Cleanup widget on unmount
-      if (widgetId && window.turnstile) {
-        try {
-          window.turnstile.remove(widgetId)
-        } catch (err) {
-          // Ignore cleanup errors
-        }
-      }
+      mounted = false
     }
-  }, [widgetId, onError])
+  }, [onError])
 
   useEffect(() => {
     if (isLoaded && containerRef.current && !widgetId) {
+      
       try {
         const id = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
@@ -133,6 +164,19 @@ export function Turnstile({
       }
     }
   }, [isLoaded, siteKey, theme, size, appearance, action, cdata, onVerify, onError, onExpire, widgetId])
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (widgetId && window.turnstile) {
+        try {
+          window.turnstile.remove(widgetId)
+        } catch (err) {
+          // Ignore cleanup errors
+        }
+      }
+    }
+  }, [widgetId])
 
   const reset = () => {
     if (widgetId && window.turnstile) {
