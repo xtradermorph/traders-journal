@@ -17,7 +17,20 @@ const nextConfig = {
     // your project has type errors.
     ignoreBuildErrors: true,
   },
-
+  // Completely disable static generation
+  output: 'standalone',
+  trailingSlash: true,
+  skipTrailingSlashRedirect: true,
+  // Force all pages to be dynamic
+  generateBuildId: async () => {
+    return 'build-' + Date.now()
+  },
+  // Disable static generation globally
+  staticPageGenerationTimeout: 0,
+  // Force dynamic rendering for all pages
+  generateStaticParams: async () => {
+    return []
+  },
 
   webpack: (config, { isServer }) => {
     config.resolve.alias = {
@@ -29,7 +42,14 @@ const nextConfig = {
     return config
   },
   experimental: {
-    esmExternals: 'loose'
+    esmExternals: 'loose',
+    // Completely disable static optimization
+    staticPageGenerationTimeout: 0,
+    // Force all pages to be dynamic
+    isrMemoryCacheSize: 0,
+    // Disable static generation entirely
+    workerThreads: false,
+    cpus: 1
   }
 }
 
