@@ -40,6 +40,9 @@ declare global {
       isExpired: (widgetId?: string) => boolean
       ready: (callback: () => void) => void
     }
+    onTurnstileSuccess?: (token: string) => void
+    onTurnstileError?: (error: string) => void
+    onTurnstileExpire?: () => void
   }
 }
 
@@ -59,125 +62,62 @@ export function Turnstile({
   const [widgetId, setWidgetId] = useState<string | null>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [retryCount, setRetryCount] = useState(0)
+  const [useIframe, setUseIframe] = useState(false)
+
+  // Set up global callbacks for iframe approach
+  useEffect(() => {
+    window.onTurnstileSuccess = (token: string) => {
+      onVerify(token)
+    }
+    window.onTurnstileError = (error: string) => {
+      setError(error)
+      onError?.(error)
+    }
+    window.onTurnstileExpire = () => {
+      setError('Security check expired')
+      onExpire?.()
+    }
+
+    return () => {
+      delete window.onTurnstileSuccess
+      delete window.onTurnstileError
+      delete window.onTurnstileExpire
+    }
+  }, [onVerify, onError, onExpire])
 
   useEffect(() => {
     let mounted = true
-    let scriptLoaded = false
+    let attempts = 0
+    const maxAttempts = 3
 
-    const loadScript = () => {
-      return new Promise<void>((resolve, reject) => {
-        // Check if script is already loaded
-        if (window.turnstile) {
-          resolve()
-          return
-        }
-
-        // Check if script is already in the process of loading
-        if (document.querySelector('script[src*="turnstile"]')) {
-          const checkLoaded = () => {
-            if (window.turnstile) {
-              resolve()
-            } else {
-              setTimeout(checkLoaded, 100)
-            }
-          }
-          checkLoaded()
-          return
-        }
-
-        const script = document.createElement('script')
-        script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
-        script.async = true
-        script.defer = true
-        
-        script.onload = () => {
-          if (mounted) {
-            scriptLoaded = true
-            // Give the script time to initialize
-            setTimeout(() => {
-              if (window.turnstile) {
-                resolve()
-              } else {
-                reject(new Error('Turnstile failed to initialize'))
-              }
-            }, 500)
-          }
-        }
-        
-        script.onerror = () => {
-          if (mounted) {
-            reject(new Error('Failed to load Turnstile script'))
-          }
-        }
-        
-        document.head.appendChild(script)
-      })
-    }
-
-    const initializeTurnstile = async () => {
+    const tryStandardApproach = async () => {
       try {
-        await loadScript()
-        
-        if (!mounted) return
-        
-        setIsLoaded(true)
-      } catch (err) {
-        if (!mounted) return
-        
-        // Try alternative approach - load script without explicit render
-        try {
-          const altScript = document.createElement('script')
-          altScript.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js'
-          altScript.async = true
-          altScript.defer = true
+        // Try to load Turnstile script
+        if (!window.turnstile) {
+          const script = document.createElement('script')
+          script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+          script.async = true
+          script.defer = true
           
-          altScript.onload = () => {
-            if (mounted) {
+          await new Promise<void>((resolve, reject) => {
+            script.onload = () => {
               setTimeout(() => {
                 if (window.turnstile) {
-                  setIsLoaded(true)
+                  resolve()
                 } else {
-                  const errorMessage = 'Failed to load security check'
-                  setError(errorMessage)
-                  onError?.(errorMessage)
+                  reject(new Error('Turnstile not initialized'))
                 }
-              }, 500)
+              }, 1000)
             }
-          }
-          
-          altScript.onerror = () => {
-            if (mounted) {
-              const errorMessage = 'Failed to load security check'
-              setError(errorMessage)
-              onError?.(errorMessage)
-            }
-          }
-          
-          document.head.appendChild(altScript)
-        } catch (altErr) {
-          const errorMessage = 'Failed to load security check'
-          setError(errorMessage)
-          onError?.(errorMessage)
+            script.onerror = () => reject(new Error('Script load failed'))
+            document.head.appendChild(script)
+          })
         }
-      }
-    }
 
-    initializeTurnstile()
+        if (!mounted) return
 
-    return () => {
-      mounted = false
-    }
-  }, [onError])
-
-  useEffect(() => {
-    if (isLoaded && containerRef.current && !widgetId) {
-      const renderWidget = () => {
-        try {
-          if (!window.turnstile || !containerRef.current) {
-            return false
-          }
-
+        // Try to render widget
+        if (containerRef.current && window.turnstile) {
           const id = window.turnstile.render(containerRef.current, {
             sitekey: siteKey,
             theme,
@@ -206,31 +146,104 @@ export function Turnstile({
           })
           
           setWidgetId(id)
+          setIsLoaded(true)
           setError(null)
           return true
-        } catch (err) {
-          return false
         }
+      } catch (err) {
+        return false
       }
+      return false
+    }
 
-      // Try to render immediately
-      if (!renderWidget()) {
-        // If immediate render fails, retry after a delay
-        const timer = setTimeout(() => {
-          if (!widgetId && containerRef.current) {
-            renderWidget()
+    const tryIframeApproach = () => {
+      if (!containerRef.current) return false
+
+      try {
+        // Create iframe with Turnstile
+        const iframe = document.createElement('iframe')
+        iframe.src = `https://challenges.cloudflare.com/turnstile/v0/iframe?sitekey=${siteKey}&theme=${theme}&size=${size}&appearance=${appearance}${action ? `&action=${action}` : ''}${cdata ? `&cdata=${cdata}` : ''}`
+        iframe.width = size === 'compact' ? '300' : '400'
+        iframe.height = size === 'compact' ? '65' : '85'
+        iframe.frameBorder = '0'
+        iframe.scrolling = 'no'
+        iframe.style.border = 'none'
+        iframe.style.borderRadius = '4px'
+        iframe.style.width = '100%'
+        iframe.style.maxWidth = '400px'
+        iframe.style.margin = '0 auto'
+        iframe.style.display = 'block'
+
+        // Clear container and add iframe
+        containerRef.current.innerHTML = ''
+        containerRef.current.appendChild(iframe)
+
+        // Set up message listener for iframe communication
+        const handleMessage = (event: MessageEvent) => {
+          if (event.origin !== 'https://challenges.cloudflare.com') return
+          
+          if (event.data && typeof event.data === 'object') {
+            if (event.data.type === 'turnstile-success' && event.data.token) {
+              onVerify(event.data.token)
+            } else if (event.data.type === 'turnstile-error') {
+              const errorMessage = `Security check failed: ${event.data.error || 'Unknown error'}`
+              setError(errorMessage)
+              onError?.(errorMessage)
+            } else if (event.data.type === 'turnstile-expire') {
+              setError('Security check expired')
+              onExpire?.()
+            }
           }
-        }, 1000)
+        }
 
-        return () => clearTimeout(timer)
+        window.addEventListener('message', handleMessage)
+        setIsLoaded(true)
+        setUseIframe(true)
+        setError(null)
+
+        return true
+      } catch (err) {
+        return false
       }
     }
-  }, [isLoaded, siteKey, theme, size, appearance, action, cdata, onVerify, onError, onExpire, widgetId])
+
+    const attemptLoad = async () => {
+      if (attempts >= maxAttempts) {
+        setError('Unable to load security check. Please try refreshing the page.')
+        return
+      }
+
+      attempts++
+      
+      // Try standard approach first
+      if (await tryStandardApproach()) {
+        return
+      }
+
+      // If standard approach fails, try iframe approach
+      if (tryIframeApproach()) {
+        return
+      }
+
+      // If both fail, retry after delay
+      setTimeout(() => {
+        if (mounted) {
+          attemptLoad()
+        }
+      }, 2000)
+    }
+
+    attemptLoad()
+
+    return () => {
+      mounted = false
+    }
+  }, [siteKey, theme, size, appearance, action, cdata, onVerify, onError, onExpire])
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (widgetId && window.turnstile) {
+      if (widgetId && window.turnstile && !useIframe) {
         try {
           window.turnstile.remove(widgetId)
         } catch (err) {
@@ -238,20 +251,17 @@ export function Turnstile({
         }
       }
     }
-  }, [widgetId])
-
-  const reset = () => {
-    if (widgetId && window.turnstile) {
-      window.turnstile.reset(widgetId)
-      setError(null)
-    }
-  }
+  }, [widgetId, useIframe])
 
   const retry = () => {
-    setRetryCount(prev => prev + 1)
     setError(null)
     setWidgetId(null)
     setIsLoaded(false)
+    setUseIframe(false)
+    
+    // Force re-render by updating the component
+    const event = new Event('retry-turnstile')
+    window.dispatchEvent(event)
   }
 
   return (
@@ -271,7 +281,7 @@ export function Turnstile({
         ref={containerRef} 
         className="turnstile-container"
         style={{ 
-          minHeight: '65px',
+          minHeight: '85px',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center'
@@ -280,17 +290,6 @@ export function Turnstile({
       {!isLoaded && !error && (
         <div className="text-center text-sm text-gray-500 py-4">
           Loading security check...
-        </div>
-      )}
-      {isLoaded && !widgetId && !error && (
-        <div className="text-center text-sm text-orange-600 py-4 border border-orange-200 rounded bg-orange-50">
-          Security check not available. Please try refreshing the page.
-          <button 
-            onClick={retry}
-            className="ml-2 text-blue-600 hover:text-blue-800 underline"
-          >
-            Retry
-          </button>
         </div>
       )}
     </div>

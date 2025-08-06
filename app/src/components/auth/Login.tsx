@@ -19,7 +19,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Eye, EyeOff, X } from "lucide-react";
 import { User } from '@supabase/supabase-js';
 import Image from 'next/image';
-import { Turnstile } from '../../../components/ui/turnstile';
+import { Turnstile } from '../../../components/ui/turnstile-simple'
 import { LOGO_CONFIG } from '../../../lib/logo-config';
 
 const loginFormSchema = z.object({
@@ -403,8 +403,6 @@ const Login = () => {
                           setTurnstileToken(null);
                           setTurnstileError('Security check expired. Please try again.');
                         }}
-                        action="login"
-                        appearance="interaction-only"
                         theme="auto"
                         size="normal"
                       />
