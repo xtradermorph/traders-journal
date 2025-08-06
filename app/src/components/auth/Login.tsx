@@ -57,21 +57,6 @@ const Login = () => {
                   window.location.hostname === 'localhost' || 
                   window.location.hostname === '127.0.0.1';
     setIsDevelopment(isDev);
-    
-    // Debug logging
-    console.log('Environment check:', {
-      NODE_ENV: process.env.NODE_ENV,
-      hostname: window.location.hostname,
-      isDevelopment: isDev,
-      turnstileSiteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-      // For testing purposes, you can temporarily enable Turnstile in development
-      // by setting this to false
-      forceProductionMode: false
-    });
-    
-    // For testing purposes, you can temporarily enable Turnstile in development
-    // by uncommenting the line below
-    // setIsDevelopment(false);
   }, []);
   
   // Get redirect URL from query parameters
@@ -109,7 +94,6 @@ const Login = () => {
 
         // Handle auth errors
         if (authError) {
-          console.error('Auth error:', authError);
           if (authError.message.includes('Invalid login credentials')) {
             throw new Error('Invalid email or password');
           }
@@ -121,7 +105,6 @@ const Login = () => {
 
         // Verify we have a user
         if (!authData?.user) {
-          console.error('No user data returned');
           throw new Error('Authentication failed');
         }
 
@@ -130,18 +113,14 @@ const Login = () => {
           // First try to get the profile using the RPC function
           const { data: profileData, error: profileError } = await supabase
             .rpc('get_user_profile', { user_id: authData.user.id });
-            
-          console.log('Profile query result:', { profileData, profileError });
 
           if (profileError) {
-            console.error('Profile error:', profileError);
             // Fall back to user metadata if RPC fails
             const username = authData.user.user_metadata?.username || 
                             authData.user.user_metadata?.name || 
                             authData.user.email?.split('@')[0] || 
                             'user';
             
-            console.log('Falling back to username from metadata:', username);
             localStorage.setItem('username', username);
           } else if (profileData) {
             // Use the profile data from the RPC function
@@ -149,7 +128,6 @@ const Login = () => {
                             authData.user.email?.split('@')[0] || 
                             'user';
             
-            console.log('Using username from profile:', username);
             localStorage.setItem('username', username);
           } else {
             // If no profile data and no error, use metadata as fallback
@@ -158,11 +136,9 @@ const Login = () => {
                             authData.user.email?.split('@')[0] || 
                             'user';
             
-            console.log('No profile found, using metadata username:', username);
             localStorage.setItem('username', username);
           }
         } catch (profileError) {
-          console.error('Error handling profile data:', profileError);
           // Continue with login even if there's an error with the profile
           const username = authData.user.email?.split('@')[0] || 'user';
           localStorage.setItem('username', username);
@@ -181,7 +157,6 @@ const Login = () => {
 
         return authData;
       } catch (error) {
-        console.error('Login error:', error);
         throw error;
       } finally {
         setIsLoading(false);
@@ -195,7 +170,6 @@ const Login = () => {
       });
     },
     onError: (error: Error) => {
-      console.error('Login failed:', error);
       const errorMessage = error.message;
       setError(errorMessage);
       
@@ -244,7 +218,6 @@ const Login = () => {
       await loginMutation.mutateAsync(data);
     } catch (error: unknown) {
       // Error is handled by the mutation's onError callback
-      console.error('Submit error:', error);
       setIsLoading(false);
     }
   };
@@ -263,7 +236,7 @@ const Login = () => {
           await supabase.auth.signOut();
         }
       } catch (error) {
-        console.error('Auth check error:', error);
+        // Ignore auth check errors
       }
     };
 
@@ -419,17 +392,14 @@ const Login = () => {
                       <Turnstile
                         siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
                         onVerify={(token) => {
-                          console.log('Turnstile verified with token:', token);
                           setTurnstileToken(token);
                           setTurnstileError(null);
                         }}
                         onError={(error) => {
-                          console.error('Turnstile error:', error);
                           setTurnstileError('Security check failed. Please try again.');
                           setTurnstileToken(null);
                         }}
                         onExpire={() => {
-                          console.log('Turnstile token expired');
                           setTurnstileToken(null);
                           setTurnstileError('Security check expired. Please try again.');
                         }}
@@ -441,7 +411,7 @@ const Login = () => {
                     )}
                     {isDevelopment && (
                       <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-                        <p>Turnstile disabled in development mode</p>
+                        <p>Security check disabled in development mode</p>
                         <p className="text-xs mt-1">Security check will be enabled in production</p>
                       </div>
                     )}
@@ -504,7 +474,6 @@ const Login = () => {
                       
                       if (error) {
                         setError(error.message);
-                        console.error('Google sign-in error:', error);
                       } else if (!data.url) {
                         setError('Failed to get authentication URL');
                       } else {
@@ -512,7 +481,6 @@ const Login = () => {
                         window.location.href = data.url;
                       }
                     } catch (err) {
-                      console.error('Exception during Google sign-in:', err);
                       setError('Failed to sign in with Google');
                     } finally {
                       setIsLoading(false);

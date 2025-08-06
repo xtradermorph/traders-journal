@@ -40,7 +40,6 @@ declare global {
       isExpired: (widgetId?: string) => boolean
       ready: (callback: () => void) => void
     }
-    onloadTurnstileCallback?: () => void
   }
 }
 
@@ -62,41 +61,36 @@ export function Turnstile({
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Load Turnstile script with explicit rendering
+    // Load Turnstile script only once
     if (!window.turnstile) {
       const script = document.createElement('script')
-      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit&onload=onloadTurnstileCallback'
+      script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
       script.async = true
       script.defer = true
       
-      // Set up the callback
-      window.onloadTurnstileCallback = () => {
-        console.log('Turnstile script loaded successfully');
+      script.onload = () => {
         setIsLoaded(true)
       }
       
       script.onerror = () => {
         const errorMessage = 'Failed to load Turnstile script'
         setError(errorMessage)
-        console.error('Turnstile script failed to load')
         onError?.(errorMessage)
-      }
-      
-      script.onload = () => {
-        console.log('Turnstile script loaded via onload event');
-        setIsLoaded(true)
       }
       
       document.head.appendChild(script)
     } else {
-      console.log('Turnstile already loaded');
       setIsLoaded(true)
     }
 
     return () => {
-      // Cleanup
+      // Cleanup widget on unmount
       if (widgetId && window.turnstile) {
-        window.turnstile.remove(widgetId)
+        try {
+          window.turnstile.remove(widgetId)
+        } catch (err) {
+          // Ignore cleanup errors
+        }
       }
     }
   }, [widgetId, onError])
@@ -104,7 +98,6 @@ export function Turnstile({
   useEffect(() => {
     if (isLoaded && containerRef.current && !widgetId) {
       try {
-        console.log('Rendering Turnstile widget with siteKey:', siteKey);
         const id = window.turnstile.render(containerRef.current, {
           sitekey: siteKey,
           theme,
@@ -113,36 +106,29 @@ export function Turnstile({
           action,
           'c-data': cdata,
           callback: (token: string) => {
-            console.log('Turnstile callback received token');
             onVerify(token)
           },
           'error-callback': (errorCode: string) => {
-            const errorMessage = `Turnstile error: ${errorCode}`
-            console.error('Turnstile error callback:', errorCode);
+            const errorMessage = `Security check failed: ${errorCode}`
             setError(errorMessage)
             onError?.(errorMessage)
           },
           'expired-callback': () => {
-            console.log('Turnstile token expired');
-            setError('Turnstile token expired')
+            setError('Security check expired')
             onExpire?.()
           },
           'timeout-callback': () => {
-            console.log('Turnstile challenge timed out');
-            setError('Turnstile challenge timed out')
+            setError('Security check timed out')
           },
           'unsupported-callback': () => {
-            console.log('Turnstile not supported in this browser');
-            setError('Turnstile not supported in this browser')
+            setError('Security check not supported in this browser')
           }
         })
-        console.log('Turnstile widget rendered with ID:', id);
         setWidgetId(id)
         setError(null)
       } catch (err) {
-        const errorMessage = 'Failed to render Turnstile widget'
+        const errorMessage = 'Failed to render security check'
         setError(errorMessage)
-        console.error('Turnstile render error:', err)
         onError?.(errorMessage)
       }
     }
@@ -151,6 +137,7 @@ export function Turnstile({
   const reset = () => {
     if (widgetId && window.turnstile) {
       window.turnstile.reset(widgetId)
+      setError(null)
     }
   }
 
