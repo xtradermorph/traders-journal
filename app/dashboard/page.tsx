@@ -7,6 +7,9 @@ import DashboardContent from '@/src/pages/Dashboard'
 import Layout from '@/src/components/Layout'
 import { LoadingPage } from '../components/ui/loading-spinner'
 
+// Force dynamic rendering to prevent static generation errors
+export const dynamic = 'force-dynamic';
+
 export default function DashboardPage() {
   const router = useRouter()
   const { loading, isAuthenticated, user } = useAuth()

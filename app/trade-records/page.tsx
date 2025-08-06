@@ -1,6 +1,9 @@
 'use client';
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+
+// Force dynamic rendering to prevent static generation errors
+export const dynamic = 'force-dynamic';
 import { supabase, useAuth } from '../src/lib/supabase';
 import { Trade } from '../src/types/trade';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../src/components/ui/table';

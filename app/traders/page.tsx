@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+
+// Force dynamic rendering to prevent static generation errors
+export const dynamic = 'force-dynamic';
 import { supabase } from '../src/lib/supabase';
 import { Card, CardContent, CardFooter } from '../src/components/ui/card';
 import { Input } from '../src/components/ui/input';

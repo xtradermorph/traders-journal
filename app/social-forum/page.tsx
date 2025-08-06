@@ -4,6 +4,9 @@ import { PageHeader } from '../src/components/PageHeader';
 import SocialForumContent from '../src/components/SocialForumContent';
 import DashboardFooter from '../src/components/DashboardFooter';
 
+// Force dynamic rendering to prevent static generation errors
+export const dynamic = 'force-dynamic';
+
 export default function SocialForumPage() {
   console.log('SocialForumPage component loading...');
   
