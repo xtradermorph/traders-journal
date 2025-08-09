@@ -8,6 +8,25 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
+// Safe error logging utility
+export const safeLog = {
+  error: (message: string, error?: any) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.error(message, error);
+    }
+  },
+  warn: (message: string, data?: any) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn(message, data);
+    }
+  },
+  info: (message: string, data?: any) => {
+    if (process.env.NODE_ENV === 'development') {
+      console.log(message, data);
+    }
+  }
+};
+
 export interface ProcessedTrade extends Trade {
   month_trade_number: number;
 }

@@ -8,8 +8,18 @@ interface TurnstileProps {
   onError?: (error: string) => void
   onExpire?: () => void
   theme?: 'light' | 'dark' | 'auto'
-  size?: 'normal' | 'compact' | 'flexible'
+  size?: 'normal' | 'compact' | 'invisible'
   className?: string
+}
+
+declare global {
+  interface Window {
+    turnstile: {
+      render: (container: string | HTMLElement, options: any) => string
+      reset: (widgetId: string) => void
+      remove: (widgetId: string) => void
+    }
+  }
 }
 
 export function Turnstile({
@@ -24,71 +34,115 @@ export function Turnstile({
   const containerRef = useRef<HTMLDivElement>(null)
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [widgetId, setWidgetId] = useState<string | null>(null)
 
   useEffect(() => {
-    if (!containerRef.current) return
+    let mounted = true
 
-    try {
-      // Create iframe with Turnstile
-      const iframe = document.createElement('iframe')
-      iframe.src = `https://challenges.cloudflare.com/turnstile/v0/iframe?sitekey=${siteKey}&theme=${theme}&size=${size}`
-      iframe.width = size === 'compact' ? '300' : '400'
-      iframe.height = size === 'compact' ? '65' : '85'
-      iframe.frameBorder = '0'
-      iframe.scrolling = 'no'
-      iframe.style.border = 'none'
-      iframe.style.borderRadius = '4px'
-      iframe.style.width = '100%'
-      iframe.style.maxWidth = '400px'
-      iframe.style.margin = '0 auto'
-      iframe.style.display = 'block'
+    const loadTurnstile = async () => {
+      try {
+        // Load Turnstile script if not already loaded
+        if (!window.turnstile) {
+          const script = document.createElement('script')
+          script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+          script.async = true
+          script.defer = true
+          
+          await new Promise<void>((resolve, reject) => {
+            script.onload = () => resolve()
+            script.onerror = () => reject(new Error('Failed to load Turnstile'))
+            document.head.appendChild(script)
+          })
+        }
 
-      // Clear container and add iframe
-      containerRef.current.innerHTML = ''
-      containerRef.current.appendChild(iframe)
+        if (!mounted || !containerRef.current) return
 
-      // Set up message listener for iframe communication
-      const handleMessage = (event: MessageEvent) => {
-        if (event.origin !== 'https://challenges.cloudflare.com') return
-        
-        if (event.data && typeof event.data === 'object') {
-          if (event.data.type === 'turnstile-success' && event.data.token) {
-            onVerify(event.data.token)
-          } else if (event.data.type === 'turnstile-error') {
-            const errorMessage = `Security check failed: ${event.data.error || 'Unknown error'}`
-            setError(errorMessage)
-            onError?.(errorMessage)
-          } else if (event.data.type === 'turnstile-expire') {
-            setError('Security check expired')
+        // Wait a bit for Turnstile to be ready
+        await new Promise(resolve => setTimeout(resolve, 100))
+
+        if (!window.turnstile) {
+          throw new Error('Turnstile not available')
+        }
+
+        // Render the widget
+        const id = window.turnstile.render(containerRef.current, {
+          sitekey: siteKey,
+          theme: theme,
+          size: size,
+          callback: (token: string) => {
+            if (mounted) {
+              onVerify(token)
+              setError(null)
+            }
+          },
+          'error-callback': () => {
+            if (mounted) {
+              const errorMsg = 'Security check failed. Please try again.'
+              setError(errorMsg)
+              onError?.(errorMsg)
+            }
+          },
+          'expired-callback': () => {
+            if (mounted) {
+              const errorMsg = 'Security check expired. Please try again.'
+              setError(errorMsg)
             onExpire?.()
           }
         }
-      }
+        })
 
-      window.addEventListener('message', handleMessage)
+        if (mounted) {
+          setWidgetId(id)
       setIsLoaded(true)
       setError(null)
+        }
+      } catch (err) {
+        if (mounted) {
+          const errorMsg = 'Failed to load security check. Please refresh the page.'
+          setError(errorMsg)
+          onError?.(errorMsg)
+        }
+      }
+    }
+
+    loadTurnstile()
 
       return () => {
-        window.removeEventListener('message', handleMessage)
+      mounted = false
+      // Cleanup widget if it exists
+      if (widgetId && window.turnstile) {
+        try {
+          window.turnstile.remove(widgetId)
+        } catch (err) {
+          // Ignore cleanup errors
+        }
       }
-    } catch (err) {
-      setError('Failed to load security check')
-      onError?.('Failed to load security check')
     }
   }, [siteKey, theme, size, onVerify, onError, onExpire])
 
   const retry = () => {
     setError(null)
     setIsLoaded(false)
-    // Force re-render
-    window.location.reload()
+    setWidgetId(null)
+    
+    // Remove existing widget
+    if (widgetId && window.turnstile) {
+      try {
+        window.turnstile.remove(widgetId)
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+    }
+    
+    // Force re-render by updating the component
+    const event = new Event('retry-turnstile')
+    window.dispatchEvent(event)
   }
 
   return (
     <div className={`turnstile-wrapper ${className}`}>
       {error && (
-        <div className="text-red-600 text-sm mb-2 p-2 bg-red-50 border border-red-200 rounded">
+        <div className="text-red-600 text-sm mb-2 p-2 bg-red-50 border border-red-200 rounded text-center">
           {error}
           <button 
             onClick={retry}
@@ -100,9 +154,9 @@ export function Turnstile({
       )}
       <div 
         ref={containerRef} 
-        className="turnstile-container"
+        className="turnstile-container flex justify-center"
         style={{ 
-          minHeight: '85px',
+          minHeight: size === 'compact' ? '65px' : '85px',
           display: 'flex',
           justifyContent: 'center',
           alignItems: 'center'

@@ -95,11 +95,12 @@ const Layout = ({ children, pathname }: LayoutProps) => {
   const { data: userData, isSuccess, refetch } = useQuery({
     queryKey: ['userProfile'],
     enabled: !isAuthPage && !isLandingPage && isClient,
-    retry: false,
-    refetchOnWindowFocus: true, // Enable refetch on window focus
-    refetchOnMount: true, // Always refetch when component mounts
-    staleTime: 0, // Consider data stale immediately
-    refetchInterval: 60000, // Refetch every minute to keep user data fresh
+    retry: 1, // Reduce retries to prevent excessive console errors
+    retryDelay: 1000,
+    refetchOnWindowFocus: false, // Disable to reduce unnecessary refetches
+    refetchOnMount: true, // Keep this for initial load
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    refetchInterval: 300000, // Refetch every 5 minutes instead of every minute
     queryFn: async () => {
       if (!isClient) return { user: null };
       
@@ -123,13 +124,13 @@ const Layout = ({ children, pathname }: LayoutProps) => {
           .single();
           
         if (error) {
-          console.error('Error fetching profile:', error);
+          console.warn('Error fetching profile:', error.message);
           return { user: null };
         }
         
         return { user: profile };
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.warn('Error fetching user data:', error);
         return { user: null };
       }
     }

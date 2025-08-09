@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, TrendingUp, User, Download, X, ImageIcon, Bell, Brain } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, User, Download, X, ImageIcon, Bell, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { downloadTDAAsWord } from '@/lib/tdaWordExport';
@@ -36,6 +36,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
   const [isDownloading, setIsDownloading] = useState(false);
   const [selectedScreenshot, setSelectedScreenshot] = useState<TDAScreenshot | null>(null);
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
   const { toast } = useToast();
 
   const fetchAnalysisData = useCallback(async () => {
@@ -243,7 +244,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
     if (isOpen && analysisId) {
       fetchAnalysisData();
     }
-  }, [isOpen, analysisId, fetchAnalysisData]);
+  }, [isOpen, analysisId]);
 
   if (loading) {
     return (
@@ -286,32 +287,55 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-sm [&>button]:hidden">
-          <DialogHeader className="bg-black/80 backdrop-blur-md rounded-t-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-3 sm:p-4 md:p-6">
+        <DialogContent className={`w-[95vw] max-w-4xl overflow-y-auto bg-gradient-to-br from-slate-50 to-slate-100 border-0 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.1)] backdrop-blur-sm [&>button]:hidden transition-all duration-300 ease-in-out ${
+          isExpanded ? 'max-h-[90vh] sm:max-h-[85vh]' : 'max-h-[70vh] sm:max-h-[75vh]'
+        }`}>
+          <DialogHeader className="bg-black/80 backdrop-blur-md rounded-t-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-2 sm:p-4 md:p-6">
             <div className="flex items-start justify-between w-full">
               <div className="flex-1 min-w-0">
-                <DialogTitle className="text-white font-bold text-lg sm:text-xl md:text-2xl px-1 sm:px-2">
+                <DialogTitle className="text-white font-bold text-base sm:text-xl md:text-2xl px-1 sm:px-2">
                   Top Down Analysis Details
                 </DialogTitle>
-                <DialogDescription className="text-gray-200 mt-1 sm:mt-2 font-medium px-1 sm:px-2 text-sm sm:text-base">
+                <DialogDescription className="text-gray-200 mt-1 sm:mt-2 font-medium px-1 sm:px-2 text-xs sm:text-base">
                   {data.analysis?.currency_pair} - {formatDateTime(data.analysis?.analysis_date)}
                 </DialogDescription>
               </div>
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <TooltipProvider>
                   <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        onClick={() => setIsExpanded(!isExpanded)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-white hover:bg-white/10 p-1 sm:p-2"
+                      >
+                        {isExpanded ? (
+                          <ChevronUp className="h-4 w-4 sm:h-5 sm:w-5" />
+                        ) : (
+                          <ChevronDown className="h-4 w-4 sm:h-5 sm:w-5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                      {isExpanded ? 'Collapse Details' : 'Expand Details'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
                     <TooltipTrigger asChild>
                       <Button
                         onClick={handleDownload}
                         disabled={isDownloading}
                         variant="ghost"
                         size="sm"
-                        className="text-white hover:bg-white/10"
+                        className="text-white hover:bg-white/10 p-1 sm:p-2"
                       >
                         {isDownloading ? (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                          <div className="animate-spin rounded-full h-3 w-3 sm:h-4 sm:w-4 border-b-2 border-white"></div>
                         ) : (
-                          <Download className="h-5 w-5" />
+                          <Download className="h-4 w-4 sm:h-5 sm:w-5" />
                         )}
                       </Button>
                     </TooltipTrigger>
@@ -321,15 +345,15 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                   </Tooltip>
                 </TooltipProvider>
                 <TooltipProvider>
-                  <Tooltip>
+                  <Tooltip delayDuration={300}>
                     <TooltipTrigger asChild>
                       <Button
                         onClick={onClose}
                         variant="ghost"
                         size="sm"
-                        className="text-white hover:bg-white/10"
+                        className="text-white hover:bg-white/10 p-1 sm:p-2"
                       >
-                        <X className="h-5 w-5" />
+                        <X className="h-4 w-4 sm:h-5 sm:w-5" />
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent className="z-50 bg-background text-foreground border shadow">
@@ -341,7 +365,9 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
             </div>
           </DialogHeader>
 
-          <div className="p-6 space-y-6 overflow-y-auto max-h-[60vh]">
+          <div className={`p-3 sm:p-6 space-y-4 sm:space-y-6 overflow-y-auto transition-all duration-300 ease-in-out ${
+            isExpanded ? 'max-h-[80vh] sm:max-h-[75vh]' : 'max-h-[40vh] sm:max-h-[45vh]'
+          }`}>
             {/* Analysis Setup Section */}
             <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
               <CardHeader className="pb-3">

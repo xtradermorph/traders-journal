@@ -16,7 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Checkbox } from "../components/ui/checkbox";
 import { Eye, EyeOff, X } from "lucide-react";
 import Image from 'next/image';
-import { Turnstile } from '../../components/ui/turnstile';
+import { Turnstile } from '../../components/ui/turnstile-simple';
 import { LOGO_CONFIG } from '../../lib/logo-config';
 
 const registerSchema = z.object({
@@ -51,22 +51,13 @@ const Register = () => {
                   window.location.hostname === 'localhost' || 
                   window.location.hostname === '127.0.0.1';
     setIsDevelopment(isDev);
-    
-    // Debug logging
-    console.log('Environment check:', {
-      NODE_ENV: process.env.NODE_ENV,
-      hostname: window.location.hostname,
-      isDevelopment: isDev,
-      turnstileSiteKey: process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY,
-      // For testing purposes, you can temporarily enable Turnstile in development
-      // by setting this to false
-      forceProductionMode: false
-    });
-    
-    // For testing purposes, you can temporarily enable Turnstile in development
-    // by uncommenting the line below
-    // setIsDevelopment(false);
   }, []);
+
+  // Get Turnstile site key - use proper environment variable or fallback
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm";
+
+  // Turnstile is enabled for bot protection
+  const enableTurnstile = true;
 
   const registerForm = useForm({
     resolver: zodResolver(registerSchema),
@@ -89,8 +80,8 @@ const Register = () => {
           throw new Error('Passwords do not match');
         }
         
-        // Skip Turnstile verification in development mode
-        if (!isDevelopment) {
+        // Skip Turnstile verification in development mode or if disabled
+        if (enableTurnstile && !isDevelopment) {
           // Verify Turnstile token
           if (!turnstileToken) {
             throw new Error('Security check required');
@@ -115,7 +106,7 @@ const Register = () => {
         }
         
         // Use direct client-side signup
-        console.log('Attempting direct client-side signup');
+
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email: data.email.toLowerCase().trim(),
           password: data.password,
@@ -424,16 +415,16 @@ const Register = () => {
                 )}
 
                 {/* Turnstile Security Check */}
-                <div className="space-y-2">
-                  <p className="text-center text-sm text-muted-foreground">
-                    Let us know you&apos;re human
-                  </p>
-                  <div className="flex justify-center">
-                    {!isDevelopment && (
+                {enableTurnstile && !isDevelopment && (
+                  <div className="space-y-2">
+                    <p className="text-center text-sm text-muted-foreground">
+                      Let us know you&apos;re human
+                    </p>
+                    <div className="flex justify-center">
                       <Turnstile
-                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
+                        siteKey={turnstileSiteKey}
                         onVerify={(token) => {
-                          console.log('Turnstile verified with token:', token);
+                  
                           setTurnstileToken(token);
                           setTurnstileError(null);
                         }}
@@ -443,7 +434,7 @@ const Register = () => {
                           setTurnstileToken(null);
                         }}
                         onExpire={() => {
-                          console.log('Turnstile token expired');
+                  
                           setTurnstileToken(null);
                           setTurnstileError('Security check expired. Please try again.');
                         }}
@@ -452,20 +443,22 @@ const Register = () => {
                         theme="auto"
                         size="normal"
                       />
-                    )}
-                    {isDevelopment && (
-                      <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-                        <p>Turnstile disabled in development mode</p>
-                        <p className="text-xs mt-1">Security check will be enabled in production</p>
+                    </div>
+                    {turnstileError && (
+                      <div className="text-red-500 text-sm text-center">
+                        {turnstileError}
                       </div>
                     )}
                   </div>
-                  {turnstileError && (
-                    <div className="text-red-500 text-sm text-center">
-                      {turnstileError}
-                    </div>
-                  )}
-                </div>
+                )}
+                
+                {/* Development mode message */}
+                {enableTurnstile && isDevelopment && (
+                  <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                    <p>Security check disabled in development mode</p>
+                    <p className="text-xs mt-1">Security check will be enabled in production</p>
+                  </div>
+                )}
 
                 <Button 
                   type="submit" 

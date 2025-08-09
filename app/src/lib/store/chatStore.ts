@@ -8,10 +8,20 @@ interface ChatState {
   resetChat: () => void;
 }
 
-export const useChatStore = create<ChatState>((set) => ({
+export const useChatStore = create<ChatState>((set, get) => ({
   isChatOpen: false,
   activeConversation: null,
   openChat: (isOpen) => set({ isChatOpen: isOpen }),
-  setActiveConversation: (conversation) => set({ activeConversation: conversation }),
+  setActiveConversation: (conversation) => {
+    // If conversation is null, just set it
+    if (!conversation) {
+      set({ activeConversation: null });
+      return;
+    }
+    
+    // For now, just set the conversation directly
+    // The ChatWidget will handle checking for existing conversations
+    set({ activeConversation: conversation });
+  },
   resetChat: () => set({ isChatOpen: false, activeConversation: null }),
 })); 

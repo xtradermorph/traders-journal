@@ -1,117 +1,96 @@
 'use client'
 
-import { useEffect, useState } from 'react';
-import { Session, User } from '@supabase/supabase-js';
-import { supabase } from '../lib/supabase';
+import { useState, useEffect } from 'react'
+import { supabase } from '@/lib/supabase'
 
-export function useAuth() {
-  const [isClient, setIsClient] = useState(false);
-  const [authState, setAuthState] = useState<{
-    isAuthenticated: boolean;
-    loading: boolean;
-    session: Session | null;
-    user: User | null;
-  }>({
+interface AuthState {
+  isAuthenticated: boolean
+  loading: boolean
+  session: any
+  user: any
+}
+
+export const useAuth = () => {
+  const [authState, setAuthState] = useState<AuthState>({
     isAuthenticated: false,
     loading: true,
     session: null,
     user: null
-  });
+  })
+  const [isClient, setIsClient] = useState(false)
 
-  // Ensure we're on the client side
   useEffect(() => {
     setIsClient(true);
   }, []);
 
-  // Check auth state with Supabase - ALWAYS call this useEffect
   useEffect(() => {
-    // Don't proceed if not on client side or if supabase is not available
-    if (!isClient || !supabase) {
-      setAuthState({
-        isAuthenticated: false,
-        loading: true,
-        session: null,
-        user: null
-      });
-      return;
-    }
+    if (!isClient) return
+
+    let mounted = true
 
     const checkAuth = async () => {
       try {
-        if (!supabase || !supabase.auth) {
-          console.error('Supabase client not properly initialized');
-          setAuthState({
-            isAuthenticated: false,
-            loading: false,
-            session: null,
-            user: null
-          });
-          return;
-        }
-
-        const { data: { session }, error } = await supabase.auth.getSession();
+        const { data: { session }, error } = await supabase.auth.getSession()
         
+        if (!mounted) return
+
         if (error) {
-          console.error('Auth check error:', error);
-          setAuthState({
+          console.warn('Auth session check error:', error.message);
+          setAuthState(prev => ({
+            ...prev,
             isAuthenticated: false,
             loading: false,
             session: null,
             user: null
-          });
-          return;
+          }))
+          return
         }
 
-        setAuthState({
+        setAuthState(prev => ({
+          ...prev,
           isAuthenticated: !!session,
           loading: false,
           session: session,
           user: session?.user ?? null
-        });
+        }))
       } catch (error) {
-        console.error('Auth check failed:', error);
-        setAuthState({
-          isAuthenticated: false,
-          loading: false,
-          session: null,
-          user: null
-        });
+        if (mounted) {
+          console.warn('Auth check exception:', error);
+          setAuthState(prev => ({
+            ...prev,
+            isAuthenticated: false,
+            loading: false,
+            session: null,
+            user: null
+          }))
+        }
       }
-    };
-
-    checkAuth();
-
-    let subscription: { unsubscribe: () => void } | null = null;
-    
-    try {
-      if (supabase && supabase.auth) {
-        const { data: { subscription: authSubscription } } = supabase.auth.onAuthStateChange(
-          async (event, session) => {
-            setAuthState({
-              isAuthenticated: !!session,
-              loading: false,
-              session: session,
-              user: session?.user ?? null
-            });
-          }
-        );
-        subscription = authSubscription;
-      }
-    } catch (error) {
-      console.error('Failed to set up auth state change listener:', error);
     }
 
-    return () => {
-      if (subscription) {
-        subscription.unsubscribe();
+    checkAuth()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (!mounted) return
+        
+        setAuthState(prev => ({
+          ...prev,
+          isAuthenticated: !!session,
+          loading: false,
+          session: session,
+          user: session?.user ?? null
+        }))
       }
-    };
-  }, [isClient]);
-  
+    )
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [isClient])
+
   return {
-    isAuthenticated: authState.isAuthenticated,
-    user: authState.user,
-    loading: authState.loading,
-    session: authState.session
-  };
+    ...authState,
+    isClient
+  }
 }

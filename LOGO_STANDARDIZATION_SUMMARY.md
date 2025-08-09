@@ -52,7 +52,7 @@ This document summarizes all the changes made to standardize logo usage across t
 
 ### Main Logo URL
 ```
-https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal.png
+https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png
 ```
 
 ### Logo Sizes Used

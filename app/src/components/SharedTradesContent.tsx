@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -80,6 +80,7 @@ const SharedTradesContent = () => {
   const [loadingComments, setLoadingComments] = useState<Record<string, boolean>>({});
   const [editingComment, setEditingComment] = useState<string | null>(null);
   const [editInput, setEditInput] = useState<Record<string, string>>({});
+  const toastRef = useRef(toast);
 
   // Fetch shared trades
   const fetchSharedTrades = useCallback(async () => {
@@ -96,7 +97,7 @@ const SharedTradesContent = () => {
       setSharedTrades(data || []);
     } catch (error) {
       console.error('Error fetching shared trades:', error);
-      toast({
+      toastRef.current({
         title: "Error",
         description: "Failed to load shared trades. Please try again.",
         variant: 'destructive'
@@ -104,11 +105,11 @@ const SharedTradesContent = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [currentUser?.id, toast]);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     fetchSharedTrades();
-  }, [currentUser?.id, fetchSharedTrades]);
+  }, [currentUser?.id]);
 
   // Filter trades based on active tab and search
   const filteredTrades = sharedTrades.filter(trade => {

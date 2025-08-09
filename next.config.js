@@ -9,12 +9,6 @@ const nextConfig = {
   reactStrictMode: true,
   // Completely disable static generation
   distDir: '.next',
-  // Force all pages to be dynamic
-  generateStaticParams: async () => {
-    return []
-  },
-  // Disable static generation completely
-  staticPageGenerationTimeout: 0,
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
@@ -60,17 +54,9 @@ const nextConfig = {
   },
   experimental: {
     esmExternals: 'loose',
-    // Completely disable static optimization
-    staticPageGenerationTimeout: 0,
     // Force all pages to be dynamic
-    isrMemoryCacheSize: 0,
-    // Disable static generation entirely
     workerThreads: false,
-    cpus: 1,
-    // Disable static generation completely
-    staticGenerationAsyncStorage: false,
-    // Force dynamic rendering
-    dynamicImports: true
+    cpus: 1
   }
 }
 

@@ -10,13 +10,21 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
+import Image from "next/image";
 // Import types from the types file we created
 import { TradeSetup, UserProfile } from '../types';
 import { 
   Users, MessageSquare, ThumbsUp, MessageCircle, Share2, 
   Filter, TrendingUp, Globe, User, PlusCircle, AlertTriangle, Eye, EyeOff,
-  X, Calendar, BarChart3, Clock, SortAsc, SortDesc, Loader2, Trash2, Send
+  X, Calendar, BarChart3, Clock, SortAsc, SortDesc, Loader2, Trash2, Send, Reply, Upload, Plus, Check
 } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { createClient } from "@supabase/supabase-js";
 import { supabase } from '@/lib/supabase';
 import Link from "next/link";
@@ -54,7 +62,7 @@ interface CommentWithReplies extends Comment {
 }
 
 const SocialForumContent = () => {
-  console.log('SocialForumContent component loading...');
+
   
   const router = useRouter();
   const { toast } = useToast();
@@ -96,6 +104,7 @@ const SocialForumContent = () => {
   const [loadingComments, setLoadingComments] = React.useState<{ [setupId: string]: boolean }>({});
   const [submittingComment, setSubmittingComment] = React.useState<{ [setupId: string]: boolean }>({});
   const [deletingComment, setDeletingComment] = React.useState<{ [commentId: string]: boolean }>({});
+  const [expandedReplies, setExpandedReplies] = React.useState<{ [commentId: string]: boolean }>({});
   const [commentCounts, setCommentCounts] = React.useState<{ [setupId: string]: number }>({});
 
   // Like state per trade
@@ -125,6 +134,110 @@ const SocialForumContent = () => {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState<{ [setupId: string]: boolean }>({});
   const [deleteType, setDeleteType] = React.useState<'trade' | 'comment'>('trade');
   const [itemToDelete, setItemToDelete] = React.useState<{ id: string, setupId?: string } | null>(null);
+
+  // Create trade setup dialog state
+  const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
+  const [tags, setTags] = React.useState<string[]>([]);
+  const [tagInput, setTagInput] = React.useState("");
+  const [selectedImages, setSelectedImages] = React.useState<File[]>([]);
+  const [imagePreviews, setImagePreviews] = React.useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [showSuccessMessage, setShowSuccessMessage] = React.useState(false);
+  const [successMessage, setSuccessMessage] = React.useState("");
+
+  // Form schema for trade setup
+  const tradeSetupSchema = z.object({
+    title: z.string()
+      .min(5, "Title must be at least 5 characters")
+      .max(50, "Title must be 50 characters or less"),
+    description: z.string()
+      .min(20, "Description must be at least 20 characters")
+      .max(300, "Description must be 300 characters or less"),
+    pair: z.string()
+      .min(3, "Currency pair is required and must be at least 3 characters"),
+    entry_price: z.string()
+      .min(1, "Entry price is required")
+      .max(10, "Entry price must be 10 characters or less")
+      .refine(
+        (val) => /^[0-9.]+$/.test(val) && parseFloat(val) > 0,
+        { message: "Entry price must be a positive number" }
+      ),
+    stop_loss: z.string()
+      .min(1, "Stop loss is required")
+      .max(10, "Stop loss must be 10 characters or less")
+      .refine(
+        (val) => /^[0-9.]+$/.test(val) && parseFloat(val) > 0,
+        { message: "Stop loss must be a positive number" }
+      ),
+    target_price: z.string()
+      .min(1, "Target price is required")
+      .max(10, "Target price must be 10 characters or less")
+      .refine(
+        (val) => /^[0-9.]+$/.test(val) && parseFloat(val) > 0,
+        { message: "Target price must be a positive number" }
+      ),
+    direction: z.enum(["LONG", "SHORT"], {
+      required_error: "Trade direction is required",
+    }),
+    timeframe: z.string().min(1, "Timeframe is required"),
+    is_public: z.boolean().optional().default(true),
+    forum_ids: z.array(z.string()).min(1, "Please select one forum to share your trade setup"),
+  }).refine(
+    (data) => {
+      if (data.is_public) {
+        return data.pair && data.pair.length >= 3;
+      }
+      return true;
+    },
+    {
+      message: "Currency pair is required for public trade setups",
+      path: ["pair"],
+    }
+  );
+
+  type TradeSetupFormValues = z.infer<typeof tradeSetupSchema>;
+
+  const timeframeOptions = [
+    { value: "1m", label: "1 Minute" },
+    { value: "3m", label: "3 Minutes" },
+    { value: "5m", label: "5 Minutes" },
+    { value: "15m", label: "15 Minutes" },
+    { value: "30m", label: "30 Minutes" },
+    { value: "1h", label: "1 Hour" },
+    { value: "4h", label: "4 Hours" },
+    { value: "1d", label: "Daily" },
+    { value: "1w", label: "Weekly" },
+    { value: "1M", label: "Monthly" },
+  ];
+
+  const commonPairs = [
+    "EUR/USD", "GBP/USD", "USD/JPY", "USD/CHF", 
+    "AUD/USD", "USD/CAD", "NZD/USD", "EUR/GBP", 
+    "EUR/JPY", "GBP/JPY", "AUD/JPY", "EUR/AUD"
+  ];
+
+  const forumOptions = [
+    { id: "gbp_usd", name: "GBP/USD" },
+    { id: "eur_usd", name: "EUR/USD" },
+    { id: "usd_jpy", name: "USD/JPY" },
+    { id: "other", name: "Other Pairs" }
+  ];
+
+  const createTradeForm = useForm<TradeSetupFormValues>({
+    resolver: zodResolver(tradeSetupSchema),
+    defaultValues: {
+      title: "",
+      description: "",
+      pair: "",
+      entry_price: "",
+      stop_loss: "",
+      target_price: "",
+      direction: "LONG",
+      timeframe: "",
+      is_public: true,
+      forum_ids: [],
+    },
+  });
 
   // Pagination state
   const [currentPage, setCurrentPage] = React.useState<{ [forum: string]: number }>({
@@ -239,41 +352,81 @@ const SocialForumContent = () => {
     
     return (
       <div className="flex justify-center items-center gap-2 mt-6">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(1)}
-          disabled={currentPage[state.activeForumTab] === 1}
-        >
-          First
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(Math.max(1, currentPage[state.activeForumTab] - 1))}
-          disabled={currentPage[state.activeForumTab] === 1}
-        >
-          Previous
-        </Button>
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(1)}
+                disabled={currentPage[state.activeForumTab] === 1}
+              >
+                First
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Go to first page</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(Math.max(1, currentPage[state.activeForumTab] - 1))}
+                disabled={currentPage[state.activeForumTab] === 1}
+              >
+                Previous
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Go to previous page</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
         <span className="mx-4 text-sm font-medium">
           Page {currentPage[state.activeForumTab]} of {totalPages}
         </span>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(Math.min(totalPages, currentPage[state.activeForumTab] + 1))}
-          disabled={currentPage[state.activeForumTab] === totalPages}
-        >
-          Next
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => handlePageChange(totalPages)}
-          disabled={currentPage[state.activeForumTab] === totalPages}
-        >
-          Last
-        </Button>
+        
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(Math.min(totalPages, currentPage[state.activeForumTab] + 1))}
+                disabled={currentPage[state.activeForumTab] === totalPages}
+              >
+                Next
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Go to next page</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+        
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handlePageChange(totalPages)}
+                disabled={currentPage[state.activeForumTab] === totalPages}
+              >
+                Last
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Go to last page</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </div>
     );
   };
@@ -373,7 +526,98 @@ const SocialForumContent = () => {
     } finally {
       setState(prev => ({ ...prev, isLoading: false }));
     }
-  }, [toast]);
+  }, []);
+
+  // Search for users by username, first_name, or last_name - moved before useEffect to avoid temporal dead zone
+  const searchUsers = useCallback(async (query: string, exactMatch: boolean = false) => {
+    if (!query.trim()) {
+      if (exactMatch) {
+        setPrivateSearchResults([]);
+      } else {
+        setPublicSearchResults([]);
+      }
+      return;
+    }
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      let searchQuery;
+      if (exactMatch) {
+        // Use exact username matching for private profiles
+        searchQuery = supabase
+          .from('profiles')
+          .select('id, username, first_name, last_name, avatar_url')
+          .eq('username', query.trim()) // Exact match only
+          .neq('id', user.id) // Exclude current user
+          .limit(10);
+      } else {
+        // Use partial matching for public profiles
+        searchQuery = supabase
+          .from('profiles')
+          .select('id, username, first_name, last_name, avatar_url')
+          .or(`username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+          .neq('id', user.id) // Exclude current user
+          .limit(10);
+      }
+
+      const { data, error } = await searchQuery;
+
+      if (error) throw error;
+
+      // Set the appropriate results state based on search type
+      if (exactMatch) {
+        setPrivateSearchResults(data || []);
+        setPrivateSearchPerformed(true); // Mark that a search has been performed
+        // Show message if no exact match found (only for button click, not real-time search)
+        if (!data || !Array.isArray(data) || data.length === 0) {
+        toast({
+            id: 'no-user-found',
+            title: 'User Not Found',
+            description: `No user found with username "${query.trim()}". Please check the spelling and try again.`,
+            variant: 'destructive',
+          });
+        }
+      } else {
+        setPublicSearchResults(data || []);
+      }
+    } catch (error) {
+      console.error('Error searching users:', error);
+      toast({
+        id: 'search-error',
+        title: 'Error Searching Users',
+        description: 'Failed to search for users. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  }, []);
+
+  // Fetch comments for a trade setup (with parent_id) - moved before useEffect to avoid temporal dead zone
+  const fetchComments = useCallback(async (setupId: string) => {
+    setLoadingComments((prev) => ({ ...prev, [setupId]: true }));
+    try {
+      const { data, error } = await supabase
+        .from('trade_setup_comments')
+        .select(`
+          *,
+          user:profiles(id, username, avatar_url)
+        `)
+        .eq('trade_setup_id', setupId)
+        .order('created_at', { ascending: true });
+
+      if (error) throw error;
+
+      setComments((prev) => ({ ...prev, [setupId]: data || [] }));
+      // Initialize comment count when comments are loaded
+      const topLevelCount = (data || []).filter((c: any) => !c.parent_id).length;
+      setCommentCounts((prev) => ({ ...prev, [setupId]: topLevelCount }));
+    } catch (error) {
+      console.error('Error fetching comments:', error);
+    } finally {
+      setLoadingComments((prev) => ({ ...prev, [setupId]: false }));
+    }
+  }, []);
 
   // Single useEffect for initialization and data fetching
   useEffect(() => {
@@ -470,7 +714,7 @@ const SocialForumContent = () => {
     if (!state.isInitialized) {
       initializeComponent();
     }
-  }, [fetchTradeSetups, toast, state.isInitialized]);
+  }, [state.isInitialized]);
 
   // Debounced real-time subscription
   useEffect(() => {
@@ -544,7 +788,7 @@ const SocialForumContent = () => {
       supabase.removeChannel(tradeSetupsChannel);
       supabase.removeChannel(commentsChannel);
     };
-  }, [state.user_id, state.isInitialized, fetchTradeSetups]);
+  }, [state.user_id, state.isInitialized]);
 
   // State update helpers
   const updateState = useCallback((updates: Partial<typeof state>) => {
@@ -552,20 +796,283 @@ const SocialForumContent = () => {
   }, []);
 
   const handleCreateTradeSetup = () => {
-    router.push('/social-forum/create');
+    setCreateDialogOpen(true);
+  };
+
+  const handleTagAdd = () => {
+    if (tagInput.trim() && !tags.includes(tagInput.trim()) && tags.length < 5) {
+      if (tagInput.trim().length <= 10) {
+        setTags([...tags, tagInput.trim()]);
+        setTagInput("");
+      } else {
+        toast({
+          title: "Tag Too Long",
+          description: "Tags must be 10 characters or less.",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+
+  const handleTagRemove = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const files = Array.from(e.target.files);
+      
+      if (selectedImages.length + files.length > 5) {
+        toast({
+          title: "Too Many Images",
+          description: `You can upload a maximum of 5 images. You currently have ${selectedImages.length} images.`,
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const validTypes = ['image/png', 'image/jpg', 'image/jpeg', 'image/heic'];
+      const maxSize = 3 * 1024 * 1024; // 3MB
+      
+      const validFiles = files.filter(file => {
+        if (!validTypes.includes(file.type)) {
+          toast({
+            title: "Invalid File Type",
+            description: `${file.name} is not a supported image type. Please use PNG, JPG, JPEG, or HEIC.`,
+            variant: "destructive"
+          });
+          return false;
+        }
+        
+        if (file.size > maxSize) {
+          toast({
+            title: "File Too Large",
+            description: `${file.name} is larger than 3MB. Please choose a smaller file.`,
+            variant: "destructive"
+          });
+          return false;
+        }
+        
+        return true;
+      });
+      
+      if (validFiles.length === 0) return;
+      
+      setSelectedImages(prev => [...prev, ...validFiles]);
+      
+      validFiles.forEach(file => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          setImagePreviews(prev => [...prev, reader.result as string]);
+        };
+        reader.readAsDataURL(file);
+      });
+      
+      if (validFiles.length > 0) {
+        toast({
+          title: "Images Added",
+          description: `Added ${validFiles.length} image(s). ${selectedImages.length + validFiles.length}/5 images selected.`,
+        });
+      }
+      
+      e.target.value = '';
+    }
+  };
+
+  const removeImage = (index: number) => {
+    setSelectedImages(selectedImages.filter((_, i) => i !== index));
+    setImagePreviews(imagePreviews.filter((_, i) => i !== index));
+  };
+
+  const handleCreateTradeSubmit = async (data: TradeSetupFormValues) => {
+    setIsSubmitting(true);
+    setShowSuccessMessage(false);
+    
+    try {
+      if (selectedImages.length === 0) {
+        toast({
+          title: "Chart Image Required",
+          description: "Please upload at least 1 chart image to share your trade setup.",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const entryPrice = parseFloat(data.entry_price);
+      const stopLoss = parseFloat(data.stop_loss);
+      const targetPrice = parseFloat(data.target_price);
+      
+      const riskRewardRatio = Math.abs((targetPrice - entryPrice) / (entryPrice - stopLoss));
+      
+      const priceDifference = Math.abs(entryPrice - stopLoss);
+      if (priceDifference < 0.01) {
+        toast({
+          title: 'Invalid Setup',
+          description: 'Stop loss is too close to entry price. Please increase the distance between entry and stop loss.',
+          variant: 'destructive'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+      
+      const limitedRiskRewardRatio = Math.min(riskRewardRatio, 999.99);
+      
+      if (riskRewardRatio > 999.99) {
+        console.warn('Risk-reward ratio was limited from', riskRewardRatio, 'to', limitedRiskRewardRatio);
+        toast({
+          title: 'Warning',
+          description: 'Risk-reward ratio was adjusted to fit database constraints. Consider adjusting your stop loss or target price.',
+          variant: 'default'
+        });
+      }
+
+      const imageUrls = [];
+      try {
+        const { data: userData } = await supabase.auth.getUser();
+        if (!userData || !userData.user) {
+          throw new Error('User not authenticated');
+        }
+        
+        const userId = userData.user.id;
+        for (let i = 0; i < selectedImages.length; i++) {
+          const { data: uploadData, error } = await supabase.storage
+            .from('setup-images')
+            .upload(`${userId}/${Date.now()}-${selectedImages[i].name}`, selectedImages[i]);
+          
+          if (error) {
+            console.error(`Error uploading image ${i + 1}:`, error);
+            toast({
+              title: "Upload Error",
+              description: `Failed to upload image ${i + 1}. Please try again.`,
+              variant: "destructive"
+            });
+            setIsSubmitting(false);
+            return;
+          }
+          
+          const { data } = supabase.storage
+            .from('setup-images')
+            .getPublicUrl(uploadData?.path ?? '');
+          
+          imageUrls.push(data.publicUrl);
+        }
+      } catch (imageError) {
+        console.error("Error uploading images:", imageError);
+        toast({
+          title: "Upload Error",
+          description: "Failed to upload images. Please try again.",
+          variant: "destructive"
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      const primaryForumId = data.pair.replace('/', '_').toLowerCase();
+      const forumIds = data.forum_ids.length > 0 ? 
+        data.forum_ids : 
+        [primaryForumId];
+
+      const setupData = {
+        user_id: (await supabase.auth.getUser()).data.user?.id,
+        title: data.title,
+        description: data.description,
+        currency_pair: data.pair,
+        direction: data.direction,
+        entry_price: entryPrice,
+        stop_loss: stopLoss,
+        target_price: targetPrice,
+        timeframe: data.timeframe,
+        is_public: data.is_public,
+        image_urls: imageUrls,
+        forum_id: primaryForumId,
+        forum_ids: forumIds,
+        risk_reward_ratio: limitedRiskRewardRatio
+      };
+      
+      const { data: createdSetup, error: setupError } = await supabase
+        .from('trade_setups')
+        .insert(setupData)
+        .select()
+        .single();
+
+      if (setupError) {
+        console.error('Error inserting trade setup:', setupError);
+        toast({
+          title: 'Database Error',
+          description: `Failed to save trade setup: ${setupError.message}`,
+          variant: 'destructive'
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (createdSetup && tags.length > 0) {
+        const tradeSetupId = createdSetup.id;
+        const tagsToInsert = tags.map(tag => ({
+          setup_id: tradeSetupId,
+          tag: tag
+        }));
+        const { error: tagsError } = await supabase
+          .from('trade_setup_tags')
+          .insert(tagsToInsert);
+
+        if (tagsError) {
+          console.error('Error inserting tags:', tagsError);
+          toast({
+            title: 'Tagging Error',
+            description: 'Trade setup created, but failed to save tags.',
+            variant: 'destructive'
+          });
+        }
+      }
+
+      setShowSuccessMessage(true);
+      setSuccessMessage(data.is_public 
+        ? "Your trade setup has been successfully shared with the community." 
+        : "Your private trade setup has been successfully saved.");
+      
+      setTimeout(() => {
+        setShowSuccessMessage(false);
+        setCreateDialogOpen(false);
+        // Reset form and state
+        createTradeForm.reset();
+        setTags([]);
+        setSelectedImages([]);
+        setImagePreviews([]);
+        // Refresh the trade setups
+        if (state.user_id) {
+          fetchTradeSetups(state.user_id);
+        }
+      }, 2000);
+
+    } catch (error) {
+      console.error("Error creating trade setup:", error);
+      toast({
+        id: "trade-setup-error",
+        title: "Error",
+        description: "Failed to create trade setup. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Fetch likes for a trade setup (on mount or after like/unlike)
   const fetchLikes = useCallback(async (setupId: string) => {
-    const { data: userData } = await supabase.auth.getUser();
-    const user_id = userData?.user?.id;
-    const { data: likes, error } = await supabase
+    try {
+      const { data, error } = await supabase
       .from('trade_setup_likes')
       .select('user_id')
       .eq('trade_setup_id', setupId);
-    if (!error && likes) {
-      setLikeCounts((prev) => ({ ...prev, [setupId]: likes.length }));
-      setLikedSetups((prev) => ({ ...prev, [setupId]: !!likes.find((l: any) => l.user_id === user_id) }));
+
+      if (error) throw error;
+
+      setLikes((prev) => ({ ...prev, [setupId]: data || [] }));
+      setLikeCounts((prev) => ({ ...prev, [setupId]: data?.length || 0 }));
+    } catch (error) {
+      console.error('Error fetching likes:', error);
     }
   }, []);
 
@@ -603,7 +1110,7 @@ const SocialForumContent = () => {
       }
     });
     // eslint-disable-next-line
-  }, [filteredData.length, fetchLikes, fetchComments, comments, loadingComments]);
+  }, [filteredData.length, comments, loadingComments]);
 
   // Safe delete trade handler
   const handleDeleteTrade = (setupId: string) => {
@@ -673,72 +1180,7 @@ const SocialForumContent = () => {
       console.log('Clearing search results');
       setSearchResults([]);
     }
-  }, [searchQuery, searchUsers]);
-
-  // Search for users by username, first_name, or last_name
-  const searchUsers = useCallback(async (query: string, exactMatch: boolean = false) => {
-    if (!query.trim()) {
-      if (exactMatch) {
-        setPrivateSearchResults([]);
-      } else {
-        setPublicSearchResults([]);
-      }
-      return;
-    }
-
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error('User not authenticated');
-
-      let searchQuery;
-      if (exactMatch) {
-        // Use exact username matching for private profiles
-        searchQuery = supabase
-          .from('profiles')
-          .select('id, username, first_name, last_name, avatar_url')
-          .eq('username', query.trim()) // Exact match only
-          .neq('id', user.id) // Exclude current user
-          .limit(10);
-      } else {
-        // Use partial matching for public profiles
-        searchQuery = supabase
-          .from('profiles')
-          .select('id, username, first_name, last_name, avatar_url')
-          .or(`username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
-          .neq('id', user.id) // Exclude current user
-          .limit(10);
-      }
-
-      const { data, error } = await searchQuery;
-
-      if (error) throw error;
-
-      // Set the appropriate results state based on search type
-      if (exactMatch) {
-        setPrivateSearchResults(data || []);
-        setPrivateSearchPerformed(true); // Mark that a search has been performed
-        // Show message if no exact match found (only for button click, not real-time search)
-        if (!data || !Array.isArray(data) || data.length === 0) {
-        toast({
-            id: 'no-user-found',
-            title: 'User Not Found',
-            description: `No user found with username "${query.trim()}". Please check the spelling and try again.`,
-            variant: 'destructive',
-          });
-        }
-      } else {
-        setPublicSearchResults(data || []);
-      }
-    } catch (error) {
-      console.error('Error searching users:', error);
-      toast({
-        id: 'search-error',
-        title: 'Error Searching Users',
-        description: 'Failed to search for users. Please try again.',
-        variant: 'destructive',
-      });
-    }
-  }, []);
+  }, [searchQuery]);
 
   // Handle search queries for public tab
   useEffect(() => {
@@ -915,32 +1357,6 @@ const SocialForumContent = () => {
     return count;
   };
 
-  // Fetch comments for a trade setup (with parent_id)
-  const fetchComments = useCallback(async (setupId: string) => {
-    setLoadingComments((prev) => ({ ...prev, [setupId]: true }));
-    try {
-      const { data, error } = await supabase
-        .from('trade_setup_comments')
-        .select(`
-          *,
-          user:profiles(id, username, avatar_url)
-        `)
-        .eq('trade_setup_id', setupId)
-        .order('created_at', { ascending: true });
-
-      if (error) throw error;
-
-      setComments((prev) => ({ ...prev, [setupId]: data || [] }));
-      // Initialize comment count when comments are loaded
-      const topLevelCount = (data || []).filter((c: any) => !c.parent_id).length;
-      setCommentCounts((prev) => ({ ...prev, [setupId]: topLevelCount }));
-    } catch (error) {
-      console.error('Error fetching comments:', error);
-    } finally {
-      setLoadingComments((prev) => ({ ...prev, [setupId]: false }));
-    }
-  }, []);
-
   // Handle toggling comments
   const handleToggleComments = (setupId: string) => {
     setOpenComments((prev) => {
@@ -1064,18 +1480,22 @@ const SocialForumContent = () => {
   function renderComment(setupId: string, comment: CommentWithReplies, depth = 0) {
     const isOwner = comment.user_id === state.user_id;
     const isReplying = replyingTo[setupId] === comment.id;
+    const hasReplies = comment.replies && comment.replies.length > 0;
+    const replyCount = comment.replies?.length || 0;
+    const isExpanded = expandedReplies[comment.id];
+    const shouldCollapseReplies = replyCount > 2 && !isExpanded;
     
     return (
-      <div key={comment.id} className={`space-y-1 ${depth > 0 ? 'ml-4 border-l-2 border-muted pl-2' : ''}`}>
-        <div className="flex items-start gap-2">
-          <Avatar className="h-5 w-5 flex-shrink-0">
+      <div key={comment.id} className={`${depth > 0 ? 'ml-3 border-l border-border/20 pl-2' : ''}`}>
+        <div className="flex items-start gap-1.5 py-0.5">
+          <Avatar className="h-4 w-4 flex-shrink-0 mt-0.5">
             <AvatarImage src={comment.user?.avatar_url} alt={comment.user?.username || 'User'} />
             <AvatarFallback className="text-xs">
               {comment.user?.username?.charAt(0) || 'U'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1">
+            <div className="flex items-center gap-1.5 mb-0.5">
               <span className="text-xs font-medium text-foreground">
                 {comment.user?.username || 'Anonymous'}
               </span>
@@ -1083,46 +1503,68 @@ const SocialForumContent = () => {
                 {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </span>
             </div>
-            <div className="bg-background border rounded-lg p-2 mb-1">
-              <p className="text-xs text-foreground">{comment.content}</p>
+            <div className="bg-background border border-border/30 rounded-md p-1.5 mb-0.5 mr-1">
+              <p className="text-xs text-foreground leading-relaxed break-words">{comment.content}</p>
             </div>
-            {/* Action buttons on the right side below the message */}
-            <div className="flex items-center justify-end gap-1 mb-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => handleReplyClick(setupId, comment.id)}
-                className="h-4 w-4 p-0 hover:bg-muted"
-              >
-                <MessageSquare className="h-2.5 w-2.5" />
-              </Button>
+            
+            {/* Action buttons - compact */}
+            <div className="flex items-center justify-end gap-1 mb-0.5">
+              <TooltipProvider>
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleReplyClick(setupId, comment.id);
+                      }}
+                      className="h-4 w-4 p-0 hover:bg-muted"
+                    >
+                      <Reply className="h-2.5 w-2.5" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Reply to this comment</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
               {isOwner && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteComment(setupId, comment.id)}
-                  disabled={deletingComment[comment.id]}
-                  className="h-4 w-4 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                >
-                  {deletingComment[comment.id] ? (
-                    <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-2.5 w-2.5" />
-                  )}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteComment(setupId, comment.id)}
+                        disabled={deletingComment[comment.id]}
+                        className="h-4 w-4 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        {deletingComment[comment.id] ? (
+                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-2.5 w-2.5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete this comment</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
             
-            {/* Reply input */}
+            {/* Reply input - compact */}
             {isReplying && (
-              <div className="mt-2 flex gap-2">
+              <div className="mt-1 flex gap-1 mr-1">
                 <Input
                   placeholder="Write a reply..."
                   value={replyInputs[comment.id] || ''}
                   onChange={(e) => handleReplyInputChange(comment.id, e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSubmitReply(setupId, comment.id)}
                   onBlur={() => {
-                    // Close reply box if input is empty and user clicks away
                     if (!replyInputs[comment.id]?.trim()) {
                       setTimeout(() => {
                         setReplyingTo(prev => ({ ...prev, [setupId]: null }));
@@ -1130,31 +1572,68 @@ const SocialForumContent = () => {
                       }, 200);
                     }
                   }}
-                  className="h-6 text-xs"
+                  className="h-5 text-xs flex-1"
                 />
-                <Button
-                  size="sm"
-                  onClick={() => handleSubmitReply(setupId, comment.id)}
-                  disabled={submittingComment[setupId] || !replyInputs[comment.id]?.trim()}
-                  className="h-6 px-2 text-xs"
-                >
-                  {submittingComment[setupId] ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Send className="h-3 w-3" />
-                  )}
-                </Button>
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSubmitReply(setupId, comment.id)}
+                        disabled={submittingComment[setupId] || !replyInputs[comment.id]?.trim()}
+                        className="h-5 px-2 text-xs"
+                      >
+                        {submittingComment[setupId] ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Send className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Send reply</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
+            )}
+            
+            {/* Replies section with collapse logic */}
+            {hasReplies && (
+              <div className="mt-0.5">
+                {shouldCollapseReplies ? (
+                  // Show only first 2 replies + collapse button
+                  <>
+                    {comment.replies.slice(0, 2).map((reply: any) => renderComment(setupId, reply, depth + 1))}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setExpandedReplies(prev => ({ ...prev, [comment.id]: true }))}
+                      className="h-4 px-1 text-xs text-muted-foreground hover:text-foreground ml-4"
+                    >
+                      View {replyCount - 2} more replies
+                    </Button>
+                  </>
+                ) : (
+                  // Show all replies + collapse button if expanded
+                  <>
+                    {comment.replies.map((reply: any) => renderComment(setupId, reply, depth + 1))}
+                    {replyCount > 2 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setExpandedReplies(prev => ({ ...prev, [comment.id]: false }))}
+                        className="h-4 px-1 text-xs text-muted-foreground hover:text-foreground ml-4"
+                      >
+                        Show less
+                      </Button>
+                    )}
+                  </>
+                )}
               </div>
             )}
           </div>
         </div>
-        
-        {/* Render replies */}
-        {comment.replies && comment.replies.length > 0 && (
-          <div className="space-y-1">
-            {comment.replies.map((reply: any) => renderComment(setupId, reply, depth + 1))}
-          </div>
-        )}
       </div>
     );
   }
@@ -1323,60 +1802,94 @@ const SocialForumContent = () => {
             {/* Action Buttons - Compact */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Button
-                  variant={liked ? 'default' : 'ghost'}
-                  size="sm"
-                  onClick={() => handleLikeTradeSetup(setup.id)}
-                  disabled={liking[setup.id]}
-                  className={`h-6 px-2 text-xs ${liked ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'hover:bg-muted'}`}
-                >
-                  <ThumbsUp className={`h-3 w-3 ${liked ? 'text-white' : ''}`} />
-                  {likeCount > 0 && <span className="ml-1 text-xs">{likeCount}</span>}
-        </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  onClick={() => handleShareTrade(setup.id)}
-                  className="h-6 px-2 hover:bg-muted text-xs"
-                >
-                  <Share2 className="h-3 w-3 mr-1" />
-          <span>Share</span>
-        </Button>
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={liked ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => handleLikeTradeSetup(setup.id)}
+                        disabled={liking[setup.id]}
+                        className={`h-6 px-2 text-xs ${liked ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'hover:bg-muted'}`}
+                      >
+                        <ThumbsUp className={`h-3 w-3 ${liked ? 'text-white' : ''}`} />
+                        {likeCount > 0 && <span className="ml-1 text-xs">{likeCount}</span>}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{liked ? 'Unlike this trade setup' : 'Like this trade setup'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={() => handleShareTrade(setup.id)}
+                        className="h-6 px-2 hover:bg-muted text-xs"
+                      >
+                        <Share2 className="h-3 w-3 mr-1" />
+                        <span>Share</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Share this trade setup with others</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
               
               {isOwner && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleDeleteTrade(setup.id)}
-                  disabled={deletingTrade[setup.id]}
-                  className="h-6 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
-                >
-                  {deletingTrade[setup.id] ? (
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                  ) : (
-                    <Trash2 className="h-3 w-3" />
-                  )}
-        </Button>
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteTrade(setup.id)}
+                        disabled={deletingTrade[setup.id]}
+                        className="h-6 px-2 text-red-600 hover:bg-red-50 hover:text-red-700"
+                      >
+                        {deletingTrade[setup.id] ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Delete this trade setup</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               )}
             </div>
           </div>
 
           {/* Right 1/3 - Live Comments Area */}
-          <div className="w-1/3 p-3 bg-muted/20">
-            <div className="h-full flex flex-col">
+          <div className="w-1/3 p-3 bg-muted/20 border-l">
+            <div className="h-full flex flex-col pr-1">
               {/* Comments Header */}
-              <div className="flex items-center justify-between mb-2 pb-2 border-b">
-                <h4 className="text-sm font-medium">Live Chat ({totalCommentCount})</h4>
+              <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/50">
+                <h4 className="text-sm font-semibold text-foreground">Live Chat ({totalCommentCount})</h4>
                 <div className="flex items-center gap-1">
                   <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-muted-foreground">Live</span>
+                  <span className="text-xs text-muted-foreground font-medium">Live</span>
                 </div>
               </div>
 
-              {/* Comments List - Fixed height, scrollable */}
+              {/* Comments List - Fixed height, scrollable with proper spacing */}
               <div 
-                className="flex-1 overflow-y-auto mb-2 space-y-2 min-h-[120px] max-h-[200px]"
+                className="flex-1 overflow-y-auto mb-1"
+                style={{ 
+                  maxHeight: 'calc(100vh - 450px)', 
+                  minHeight: '200px',
+                  paddingRight: '12px',
+                  marginRight: '-4px'
+                }}
                 ref={(el) => {
                   // Auto-scroll to bottom when new comments arrive
                   if (el && comments[setup.id]?.length > 0) {
@@ -1388,18 +1901,21 @@ const SocialForumContent = () => {
               >
                 {loadingComments[setup.id] ? (
                   <div className="flex items-center justify-center py-4">
-                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <div className="space-y-0">
                     {buildCommentTree(comments[setup.id] || []).map((comment) => 
                       renderComment(setup.id, comment, 0)
                     )}
                     {comments[setup.id]?.length === 0 && (
                       <div className="text-center py-4">
                         <MessageCircle className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-xs text-muted-foreground font-medium">
                           Start the conversation!
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Be the first to comment on this trade setup
                         </p>
                       </div>
                     )}
@@ -1407,28 +1923,37 @@ const SocialForumContent = () => {
                 )}
               </div>
 
-              {/* Comment Input - Always visible */}
-              <div className="border-t pt-2">
-                <div className="flex gap-2">
+              {/* Comment Input - Always visible with better styling */}
+              <div className="border-t border-border/50 pt-1 pr-1">
+                <div className="flex gap-1">
                   <Input
                     placeholder="Type your message..."
                     value={commentInputs[setup.id] || ''}
                     onChange={(e) => handleCommentInputChange(setup.id, e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment(setup.id)}
-                    className="h-7 text-xs"
+                    className="h-5 text-xs flex-1"
                   />
-                  <Button
-                    size="sm"
-                    onClick={() => handleSubmitComment(setup.id)}
-                    disabled={submittingComment[setup.id] || !commentInputs[setup.id]?.trim()}
-                    className="h-7 px-2 text-xs"
-                  >
-                    {submittingComment[setup.id] ? (
-                      <Loader2 className="h-3 w-3 animate-spin" />
-                    ) : (
-                      <Send className="h-3 w-3" />
-                    )}
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSubmitComment(setup.id)}
+                          disabled={submittingComment[setup.id] || !commentInputs[setup.id]?.trim()}
+                          className="h-5 px-1 text-xs"
+                        >
+                          {submittingComment[setup.id] ? (
+                            <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          ) : (
+                            <Send className="h-2.5 w-2.5" />
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Send comment</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </div>
               </div>
             </div>
@@ -1446,9 +1971,18 @@ const SocialForumContent = () => {
         <p className="text-muted-foreground text-center mb-4">
           No trade setups in this forum yet. Be the first to share a setup!
         </p>
-        <Button onClick={createAction}>
-          Create Trade Setup
-        </Button>
+        <TooltipProvider>
+          <Tooltip delayDuration={300}>
+            <TooltipTrigger asChild>
+              <Button onClick={createAction}>
+                Create Trade Setup
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Create a new trade setup to share with the community</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
       </CardContent>
     </Card>
   );
@@ -1485,7 +2019,7 @@ const SocialForumContent = () => {
 
   const renderFilterDialog = () => (
     <Dialog open={state.filterDialogOpen} onOpenChange={(open) => updateState({ filterDialogOpen: open })}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md p-4">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Filter className="h-5 w-5" />
@@ -1537,16 +2071,43 @@ const SocialForumContent = () => {
         </div>
 
         <DialogFooter className="flex justify-between">
-          <Button variant="outline" onClick={resetFilters}>
-            Reset Filters
-          </Button>
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Button variant="outline" onClick={resetFilters}>
+                  Reset Filters
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Reset all filters to default values</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => updateState({ filterDialogOpen: false })}>
-              Cancel
-            </Button>
-            <Button onClick={() => updateState({ filterDialogOpen: false })}>
-              Apply Filters
-            </Button>
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button variant="outline" onClick={() => updateState({ filterDialogOpen: false })}>
+                    Cancel
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Cancel and close filter dialog</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button onClick={() => updateState({ filterDialogOpen: false })}>
+                    Apply Filters
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Apply the selected filters</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
         </DialogFooter>
       </DialogContent>
@@ -1580,7 +2141,7 @@ const SocialForumContent = () => {
     <div className="space-y-6">
       {/* Delete Confirmation Dialog */}
       <Dialog open={state.deleteDialogOpen} onOpenChange={(open) => updateState({ deleteDialogOpen: open })}>
-        <DialogContent>
+        <DialogContent className="p-4">
           <DialogHeader>
             <DialogTitle>Delete Trade Setup</DialogTitle>
             <DialogDescription>
@@ -1620,6 +2181,22 @@ const SocialForumContent = () => {
               Trending
             </TabsTrigger>
           </TabsList>
+          <TooltipProvider>
+            <Tooltip delayDuration={300}>
+              <TooltipTrigger asChild>
+                <Button 
+                  onClick={handleCreateTradeSetup}
+                  className="flex items-center gap-2"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  Add Trade Setup
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Create a new trade setup to share</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
         
         {/* Community Setups Tab Content */}
@@ -1646,20 +2223,29 @@ const SocialForumContent = () => {
                   Other Pairs
                 </TabsTrigger>
               </TabsList>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => updateState({ filterDialogOpen: true })}
-                className="flex items-center gap-2"
-              >
-                <Filter className="h-4 w-4" />
-                Filter
-                {getActiveFiltersCount() > 0 && (
-                  <Badge variant="secondary" className="h-5 w-5 p-0 text-xs">
-                    {getActiveFiltersCount()}
-                  </Badge>
-                )}
-              </Button>
+              <TooltipProvider>
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => updateState({ filterDialogOpen: true })}
+                      className="flex items-center gap-2"
+                    >
+                      <Filter className="h-4 w-4" />
+                      Filter
+                      {getActiveFiltersCount() > 0 && (
+                        <Badge variant="secondary" className="h-5 w-5 p-0 text-xs">
+                          {getActiveFiltersCount()}
+                        </Badge>
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Filter and sort trade setups</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
 
             <TabsContent value="gbp_usd" className="space-y-4">
@@ -1717,20 +2303,29 @@ const SocialForumContent = () => {
                 Your personal trade setups - private only
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => updateState({ filterDialogOpen: true })}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              Filter
-              {getActiveFiltersCount() > 0 && (
-                <Badge variant="secondary" className="h-5 w-5 p-0 text-xs">
-                  {getActiveFiltersCount()}
-                </Badge>
-              )}
-            </Button>
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => updateState({ filterDialogOpen: true })}
+                    className="flex items-center gap-2"
+                  >
+                    <Filter className="h-4 w-4" />
+                    Filter
+                    {getActiveFiltersCount() > 0 && (
+                      <Badge variant="secondary" className="h-5 w-5 p-0 text-xs">
+                        {getActiveFiltersCount()}
+                      </Badge>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Filter and sort trade setups</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
           {state.isLoading ? (
@@ -1746,9 +2341,18 @@ const SocialForumContent = () => {
                   <p className="text-muted-foreground text-center mb-4">
                     You haven&apos;t created any trade setups yet. Create your first one!
                   </p>
-                  <Button onClick={handleCreateTradeSetup}>
-                    Create Your First Setup
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <Button onClick={handleCreateTradeSetup}>
+                          Create Your First Setup
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Create your first trade setup to get started</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </CardContent>
               </Card>
             </div>
@@ -1765,20 +2369,29 @@ const SocialForumContent = () => {
                 Most popular and engaging setups based on likes, comments, and shares
               </p>
             </div>
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={() => updateState({ filterDialogOpen: true })}
-              className="flex items-center gap-2"
-            >
-              <Filter className="h-4 w-4" />
-              Filter
-              {getActiveFiltersCount() > 0 && (
-                <Badge variant="secondary" className="h-5 w-5 p-0 text-xs">
-                  {getActiveFiltersCount()}
-                </Badge>
-              )}
-            </Button>
+            <TooltipProvider>
+              <Tooltip delayDuration={300}>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => updateState({ filterDialogOpen: true })}
+                    className="flex items-center gap-2"
+                  >
+                    <Filter className="h-4 w-4" />
+                    Filter
+                    {getActiveFiltersCount() > 0 && (
+                      <Badge variant="secondary" className="h-5 w-5 p-0 text-xs">
+                        {getActiveFiltersCount()}
+                      </Badge>
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Filter and sort trade setups</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           </div>
           
           {state.isLoading ? (
@@ -1808,7 +2421,7 @@ const SocialForumContent = () => {
           <Dialog key={setupId} open={shareDialogOpen[setupId]} onOpenChange={(open) => 
             setShareDialogOpen(prev => ({ ...prev, [setupId]: open }))
           }>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md p-4">
           <DialogHeader>
             <DialogTitle>Share Trade Setup</DialogTitle>
             <DialogDescription>
@@ -1945,16 +2558,25 @@ const SocialForumContent = () => {
                     onChange={(e) => setPrivateSearchQuery(e.target.value)}
                     className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                   />
-                  <Button
-                    onClick={() => {
-                      if (privateSearchQuery.trim()) {
-                        searchUsers(privateSearchQuery.trim(), true);
-                      }
-                    }}
-                    disabled={!privateSearchQuery.trim()}
-                  >
-                    Search User
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => {
+                            if (privateSearchQuery.trim()) {
+                              searchUsers(privateSearchQuery.trim(), true);
+                            }
+                          }}
+                          disabled={!privateSearchQuery.trim()}
+                        >
+                          Search User
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Search for a user by exact username</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                   <div className="max-h-60 overflow-y-auto">
                     {!privateSearchPerformed ? (
                       <p className="text-muted-foreground text-center py-4">Enter a username and click &quot;Search User&quot; to find someone</p>
@@ -2011,33 +2633,51 @@ const SocialForumContent = () => {
                       value={`${window.location.origin}/social-forum/${setupId}`}
                       readOnly
                     />
-                    <Button
-                      onClick={() => {
-                        navigator.clipboard.writeText(`${window.location.origin}/social-forum/${setupId}`);
-                        toast({ title: 'Link copied', description: 'Trade link copied to clipboard.' });
-                      }}
-                    >
-                      Copy
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip delayDuration={300}>
+                        <TooltipTrigger asChild>
+                          <Button
+                            onClick={() => {
+                              navigator.clipboard.writeText(`${window.location.origin}/social-forum/${setupId}`);
+                              toast({ title: 'Link copied', description: 'Trade link copied to clipboard.' });
+                            }}
+                          >
+                            Copy
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Copy trade setup link to clipboard</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                 </TabsContent>
               </Tabs>
               
               {shareType !== 'link' && (
           <DialogFooter>
-                  <Button
-                    onClick={() => handleShareSubmit(setupId)}
-                    disabled={selectedUsers.length === 0 || sharing}
-                  >
-                    {sharing ? (
-                      <>
-                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                        Sharing...
-                      </>
-                    ) : (
-                      `Share with ${selectedUsers.length} user(s)`
-                    )}
-                  </Button>
+                  <TooltipProvider>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={() => handleShareSubmit(setupId)}
+                          disabled={selectedUsers.length === 0 || sharing}
+                        >
+                          {sharing ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                              Sharing...
+                            </>
+                          ) : (
+                            `Share with ${selectedUsers.length} user(s)`
+                          )}
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Share this trade setup with selected users</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
                 </DialogFooter>
               )}
             </DialogContent>
@@ -2051,7 +2691,7 @@ const SocialForumContent = () => {
           <Dialog key={itemId} open={deleteConfirmOpen[itemId]} onOpenChange={(open) => 
             setDeleteConfirmOpen(prev => ({ ...prev, [itemId]: open }))
           }>
-            <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md p-4">
               <DialogHeader>
                 <DialogTitle>Confirm Delete</DialogTitle>
                 <DialogDescription>
@@ -2061,32 +2701,539 @@ const SocialForumContent = () => {
               </DialogHeader>
               
               <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setDeleteConfirmOpen(prev => ({ ...prev, [itemId]: false }));
-                    setItemToDelete(null);
-                  }}
-                >
-              Cancel
-            </Button>
-                <Button
-                  variant="destructive"
-                  onClick={() => {
-                    if (deleteType === 'trade') {
-                      confirmDeleteTrade();
-                    } else {
-                      confirmDeleteComment();
-                    }
-                  }}
-                >
-                  Delete
-            </Button>
-          </DialogFooter>
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setDeleteConfirmOpen(prev => ({ ...prev, [itemId]: false }));
+                          setItemToDelete(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Cancel deletion</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="destructive"
+                        onClick={() => {
+                          if (deleteType === 'trade') {
+                            confirmDeleteTrade();
+                          } else {
+                            confirmDeleteComment();
+                          }
+                        }}
+                      >
+                        Delete
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Confirm deletion - this action cannot be undone</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </DialogFooter>
         </DialogContent>
       </Dialog>
         )
       )}
+
+      {/* Create Trade Setup Dialog */}
+      <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold text-foreground">Create Trade Setup</DialogTitle>
+            <DialogDescription className="text-muted-foreground">
+              Share your trade setup with the community. Include all relevant details to help others understand your analysis.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-6 py-4">
+            <Form {...createTradeForm}>
+              <form onSubmit={createTradeForm.handleSubmit(handleCreateTradeSubmit)} className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={createTradeForm.control}
+                    name="title"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Title *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            placeholder="E.g., EUR/USD Bullish Breakout Setup" 
+                            maxLength={50}
+                            className="h-10"
+                            {...field} 
+                          />
+                        </FormControl>
+                        <div className="flex justify-between items-center">
+                          <FormDescription className="text-xs">
+                            A clear, concise title for your trade setup.
+                          </FormDescription>
+                          {(field.value?.length || 0) >= 45 && (
+                            <span className="text-xs text-muted-foreground">
+                              {field.value?.length || 0}/50
+                            </span>
+                          )}
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={createTradeForm.control}
+                    name="pair"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Currency Pair *</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="Select a currency pair" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {commonPairs.map((pair) => (
+                              <SelectItem key={pair} value={pair}>
+                                {pair}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-xs">
+                          Select the currency pair for your trade setup.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={createTradeForm.control}
+                  name="description"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-semibold">Description *</FormLabel>
+                      <FormControl>
+                        <Textarea 
+                          placeholder="Describe your analysis, entry conditions, and rationale..." 
+                          className="min-h-24 resize-none"
+                          maxLength={300}
+                          {...field} 
+                        />
+                      </FormControl>
+                      <div className="flex justify-between items-center">
+                        <FormDescription className="text-xs">
+                          Provide a detailed explanation of your trade setup and analysis.
+                        </FormDescription>
+                        {(field.value?.length || 0) >= 270 && (
+                          <span className="text-xs text-muted-foreground">
+                            {field.value?.length || 0}/300
+                          </span>
+                        )}
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <FormField
+                    control={createTradeForm.control}
+                    name="entry_price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Entry Price *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="text" 
+                            placeholder="1.0865" 
+                            inputMode="decimal"
+                            maxLength={10}
+                            className="h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            onKeyPress={(e) => {
+                              const char = String.fromCharCode(e.which);
+                              if (!/[0-9.]/.test(char)) {
+                                e.preventDefault();
+                              }
+                              if (char === '.' && field.value?.includes('.')) {
+                                e.preventDefault();
+                              }
+                            }}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9.]/g, '');
+                              if (value.length <= 10) {
+                                field.onChange(value);
+                              }
+                            }}
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={createTradeForm.control}
+                    name="stop_loss"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Stop Loss *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="text" 
+                            placeholder="1.0830" 
+                            inputMode="decimal"
+                            maxLength={10}
+                            className="h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            onKeyPress={(e) => {
+                              const char = String.fromCharCode(e.which);
+                              if (!/[0-9.]/.test(char)) {
+                                e.preventDefault();
+                              }
+                              if (char === '.' && field.value?.includes('.')) {
+                                e.preventDefault();
+                              }
+                            }}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9.]/g, '');
+                              if (value.length <= 10) {
+                                field.onChange(value);
+                              }
+                            }}
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={createTradeForm.control}
+                    name="target_price"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Target Price *</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="text" 
+                            placeholder="1.0935" 
+                            inputMode="decimal"
+                            maxLength={10}
+                            className="h-10 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                            onKeyPress={(e) => {
+                              const char = String.fromCharCode(e.which);
+                              if (!/[0-9.]/.test(char)) {
+                                e.preventDefault();
+                              }
+                              if (char === '.' && field.value?.includes('.')) {
+                                e.preventDefault();
+                              }
+                            }}
+                            onChange={(e) => {
+                              const value = e.target.value.replace(/[^0-9.]/g, '');
+                              if (value.length <= 10) {
+                                field.onChange(value);
+                              }
+                            }}
+                            value={field.value || ''}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={createTradeForm.control}
+                    name="timeframe"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Timeframe *</FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Select a timeframe" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {timeframeOptions.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription className="text-xs">
+                          The timeframe of your chart analysis.
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <FormField
+                    control={createTradeForm.control}
+                    name="direction"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Trade Direction *</FormLabel>
+                        <FormControl>
+                          <div className="flex gap-4">
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="LONG"
+                                value="LONG"
+                                checked={field.value === "LONG"}
+                                onChange={(e) => field.onChange(e.target.value)}
+                                className="h-4 w-4 border-primary text-primary focus:ring-primary"
+                              />
+                              <label htmlFor="LONG" className="text-sm font-medium">Long</label>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <input
+                                type="radio"
+                                id="SHORT"
+                                value="SHORT"
+                                checked={field.value === "SHORT"}
+                                onChange={(e) => field.onChange(e.target.value)}
+                                className="h-4 w-4 border-primary text-primary focus:ring-primary"
+                              />
+                              <label htmlFor="SHORT" className="text-sm font-medium">Short</label>
+                            </div>
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={createTradeForm.control}
+                    name="is_public"
+                    render={({ field }) => (
+                      <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                        <div className="space-y-0.5">
+                          <FormLabel className="text-sm font-semibold">Public Visibility</FormLabel>
+                          <FormDescription className="text-xs">
+                            {field.value 
+                              ? "Your trade setup will be visible to all community members." 
+                              : "Your trade setup will only be visible to you."}
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {createTradeForm.watch('is_public') && (
+                  <FormField
+                    control={createTradeForm.control}
+                    name="forum_ids"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-semibold">Share to Forum *</FormLabel>
+                        <FormDescription className="text-xs">
+                          Select one forum to share your trade setup with the community.
+                        </FormDescription>
+                        <FormControl>
+                          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {forumOptions.map((forum) => (
+                              <div key={forum.id} className="flex items-center space-x-2">
+                                <input
+                                  type="radio"
+                                  id={forum.id}
+                                  value={forum.id}
+                                  checked={field.value?.[0] === forum.id}
+                                  onChange={(e) => field.onChange([e.target.value])}
+                                  className="h-4 w-4 border-primary text-primary focus:ring-primary"
+                                />
+                                <label htmlFor={forum.id} className="text-sm font-medium">
+                                  {forum.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                <div>
+                  <FormLabel className="text-sm font-semibold">Tags (optional, max 5)</FormLabel>
+                  <div className="flex flex-wrap gap-2 mb-2">
+                    {tags.map((tag, index) => (
+                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
+                        {tag}
+                        <X 
+                          className="h-3 w-3 cursor-pointer" 
+                          onClick={() => handleTagRemove(tag)}
+                        />
+                      </Badge>
+                    ))}
+                  </div>
+                  <div className="flex gap-2">
+                    <Input
+                      value={tagInput}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value.length <= 10) {
+                          setTagInput(value);
+                        }
+                      }}
+                      placeholder="Add a tag (e.g., breakout, trend)"
+                      maxLength={10}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleTagAdd();
+                        }
+                      }}
+                      disabled={tags.length >= 5}
+                      className="h-10"
+                    />
+                    <Button 
+                      type="button" 
+                      variant="outline" 
+                      onClick={handleTagAdd}
+                      disabled={tags.length >= 5 || !tagInput.trim()}
+                      className="h-10"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <FormDescription className="text-xs">
+                    Add up to 5 tags to help categorize your trade setup (optional).
+                  </FormDescription>
+                </div>
+
+                <div>
+                  <FormLabel className="text-sm font-semibold">Chart Images * (minimum 1, max 5)</FormLabel>
+                  {selectedImages.length === 0 ? (
+                    <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-8 text-center cursor-pointer hover:bg-muted/50 transition-colors">
+                      <Input
+                        type="file"
+                        accept="image/png,image/jpg,image/jpeg,image/heic"
+                        onChange={handleImageChange}
+                        className="hidden"
+                        id="chart-images"
+                        multiple
+                      />
+                      <label htmlFor="chart-images" className="cursor-pointer flex flex-col items-center">
+                        <Upload className="h-8 w-8 text-muted-foreground mb-2" />
+                        <span className="text-muted-foreground">Click to upload chart images</span>
+                        <span className="text-xs text-muted-foreground mt-1">PNG, JPG, JPEG, HEIC (max 3MB each)</span>
+                      </label>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">
+                          {selectedImages.length}/5 images selected
+                        </span>
+                        {selectedImages.length < 5 && (
+                          <div className="border-2 border-dashed border-muted-foreground/25 rounded-lg p-4 text-center cursor-pointer hover:bg-muted/50 transition-colors">
+                            <Input
+                              type="file"
+                              accept="image/png,image/jpg,image/jpeg,image/heic"
+                              onChange={handleImageChange}
+                              className="hidden"
+                              id="add-more-images"
+                              multiple
+                            />
+                            <label htmlFor="add-more-images" className="cursor-pointer flex flex-col items-center">
+                              <Plus className="h-6 w-6 text-muted-foreground mb-1" />
+                              <span className="text-xs text-muted-foreground">Add more images</span>
+                            </label>
+                          </div>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        {imagePreviews.map((preview, index) => (
+                          <div key={index} className="relative">
+                            <Image 
+                              src={preview} 
+                              alt={`Chart preview ${index + 1}`} 
+                              width={200}
+                              height={320}
+                              className="max-h-40 rounded-lg mx-auto object-contain"
+                            />
+                            <Button
+                              type="button"
+                              variant="destructive"
+                              size="sm"
+                              className="absolute top-2 right-2 h-6 w-6 p-0"
+                              onClick={() => removeImage(index)}
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <FormDescription className="text-xs mt-2">
+                    Upload at least 1 chart image to illustrate your trade setup. Maximum 5 images allowed.
+                  </FormDescription>
+                </div>
+
+                <DialogFooter className="flex justify-between pt-6 border-t">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setCreateDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmitting || showSuccessMessage}
+                    className="min-w-[200px]"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                        Creating Trade Setup...
+                      </>
+                    ) : showSuccessMessage ? (
+                      <>
+                        <Check className="w-4 h-4 mr-2" />
+                        {successMessage}
+                      </>
+                    ) : (
+                      "Create Trade Setup"
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

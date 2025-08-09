@@ -48,13 +48,13 @@ const Sidebar = () => {
   const router = useRouter();
   const { data: userData, refetch: refetchUserData } = useQuery({
     queryKey: ['userProfile'],
-    retry: 3,
+    retry: 1, // Reduce retries
     retryDelay: 1000,
-    refetchOnWindowFocus: true,
+    refetchOnWindowFocus: false, // Disable to reduce unnecessary refetches
     refetchOnMount: true,
     refetchOnReconnect: true,
-    staleTime: 0,
-    gcTime: 0, // Don't cache this data to ensure fresh data on navigation
+    staleTime: 30000, // Consider data fresh for 30 seconds
+    gcTime: 300000, // Keep in cache for 5 minutes
     queryFn: async () => {
       try {
         // Get the current session
@@ -72,22 +72,18 @@ const Sidebar = () => {
           .single();
           
         if (error) {
-          console.error('Error fetching profile:', error);
+          console.warn('Error fetching profile:', error.message);
           return { user: null, isAdmin: false };
         }
         
         const isAdmin = profile?.role?.toLowerCase() === 'admin';
-        // Only log on initial load, not on every refetch
-        if (process.env.NODE_ENV === 'development') {
-          console.log('User profile loaded, isAdmin:', isAdmin);
-        }
         
         return { 
           user: profile, 
           isAdmin: isAdmin 
         };
       } catch (error) {
-        console.error('Error fetching user data:', error);
+        console.warn('Error fetching user data:', error);
         return { user: null, isAdmin: false };
       }
     }
@@ -101,41 +97,21 @@ const Sidebar = () => {
     // If admin status changes, update localStorage
     if (userData?.isAdmin !== undefined) {
       localStorage.setItem('isAdmin', String(userData.isAdmin));
-      // Only log in development mode
-      if (process.env.NODE_ENV === 'development') {
-        // console.log('Updated stored admin status:', userData.isAdmin);
-      }
     }
   }, [userData?.isAdmin]);
   
   // Refresh user data when pathname changes
   useEffect(() => {
     refetchUserData();
-    // Only log in development mode
-    if (process.env.NODE_ENV === 'development') {
-      // console.log('Pathname changed, refetching user data:', pathname);
-    }
   }, [pathname, refetchUserData]);
   
   // Force refetch on component mount
   useEffect(() => {
     // Initial fetch
     refetchUserData();
-    // Only log in development mode
-    if (process.env.NODE_ENV === 'development') {
-      // console.log('Sidebar mounted, fetching user data');
-    }
     
-    // Set up interval to periodically check admin status
-    const intervalId = setInterval(() => {
-      refetchUserData();
-      // Only log in development mode
-      if (process.env.NODE_ENV === 'development') {
-        // console.log('Periodic admin status check');
-      }
-    }, 10000); // Check every 10 seconds
-    
-    return () => clearInterval(intervalId);
+    // Remove periodic interval to reduce console noise
+    // The query will refetch when needed based on its configuration
   }, [refetchUserData]);
   
   // Use localStorage as fallback for admin status to prevent menu items from disappearing
@@ -161,17 +137,7 @@ const Sidebar = () => {
   
   // If user is not an admin, do not render the sidebar at all
   if (!isAdmin) {
-    // Optional: log for debugging in development
-    if (process.env.NODE_ENV === 'development') {
-      console.log('Sidebar: User is not admin, rendering null. Current isAdmin state:', isAdmin);
-    }
     return null;
-  }
-
-  // Optional: log for debugging in development if user is admin
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Sidebar: User is admin, rendering sidebar. Current isAdmin state:', isAdmin);
-    // console.log('Nav items with admin items:', navItems); // Original log for nav items
   }
   
   return (

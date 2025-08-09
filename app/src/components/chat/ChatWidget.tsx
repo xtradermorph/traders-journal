@@ -895,6 +895,29 @@ const ChatWidget = () => {
     }
   }, [showInviteModal]);
 
+  // Check for existing conversations when activeConversation changes from outside
+  useEffect(() => {
+    if (activeConversation && conversations.length > 0) {
+      // If this is a direct conversation, check if we already have one with this user
+      if (activeConversation.is_direct && activeConversation.members && activeConversation.members.length > 0) {
+        const otherUserId = activeConversation.members.find((m: any) => m.profile.id !== currentUser?.id)?.profile.id;
+        
+        if (otherUserId) {
+          const existingConversation = conversations.find(conv => 
+            conv.is_direct && 
+            conv.members.some(m => m.profile.id === otherUserId) &&
+            conv.members.some(m => m.profile.id === currentUser?.id)
+          );
+          
+          if (existingConversation && existingConversation.group_id !== activeConversation.group_id) {
+            // Use the existing conversation instead of the new one
+            setActiveConversation(existingConversation);
+          }
+        }
+      }
+    }
+  }, [activeConversation, conversations, currentUser]);
+
   const handleSendMessage = async () => {
     if (!messageInput.trim() || !activeConversation || !currentUser || isSendingMessage) return;
     
@@ -1466,7 +1489,32 @@ const ChatWidget = () => {
     }
   };
 
-  // Handle clicking on a friend to start a chat
+  // Check for existing conversation and update if found
+  const checkAndUpdateExistingConversation = (newConversation: any) => {
+    // If it's a direct conversation, check if we already have one with this user
+    if (newConversation.is_direct && newConversation.members && newConversation.members.length > 0) {
+      const otherUserId = newConversation.members.find((m: any) => m.profile.id !== currentUser?.id)?.profile.id;
+      
+      if (otherUserId) {
+        const existingConversation = conversations.find(conv => 
+          conv.is_direct && 
+          conv.members.some(m => m.profile.id === otherUserId) &&
+          conv.members.some(m => m.profile.id === currentUser?.id)
+        );
+        
+        if (existingConversation) {
+          // Use the existing conversation instead of the new one
+          setActiveConversation(existingConversation);
+          return true; // Indicates we found and used an existing conversation
+        }
+      }
+    }
+    
+    // If no existing conversation found, use the new one
+    setActiveConversation(newConversation);
+    return false; // Indicates we used the new conversation
+  };
+
   const handleFriendClick = async (friend: Profile) => {
     // Check if a direct chat already exists between these users
     const existingConversation = conversations.find(conv => 
@@ -1500,7 +1548,7 @@ const ChatWidget = () => {
     };
     
     setTempConversation(tempConversation);
-    setActiveConversation(tempConversation);
+    checkAndUpdateExistingConversation(tempConversation);
   };
 
   // 4. Render chat list: pinned at top, then direct, then group chats, with separator
@@ -2115,15 +2163,15 @@ const ChatWidget = () => {
                   &larr; <span className="sr-only">Back</span>
                 </button>
                 {/* Avatar for chats - group avatar for group chats, other user avatar for direct chats */}
-                {!activeConversation.is_direct && (activeConversation.avatar_url as string) ? (
+                {!activeConversation?.is_direct && (activeConversation?.avatar_url as string) ? (
                   <Avatar className="h-8 w-8 border-2 border-background bg-blue-500">
                     <AvatarFallback>
-                      <span className="text-lg">{activeConversation.avatar_url as string}</span>
+                      <span className="text-lg">{activeConversation?.avatar_url as string}</span>
                     </AvatarFallback>
                   </Avatar>
-                ) : activeConversation.is_direct && (
+                ) : activeConversation?.is_direct && (
                   (() => {
-                    const other = (activeConversation.members as any[])?.find((m: any) => m.profile && m.profile.id !== currentUser?.id);
+                    const other = (activeConversation?.members as any[])?.find((m: any) => m.profile && m.profile.id !== currentUser?.id);
                     return (
                       <Avatar className="h-8 w-8 border-2 border-background">
                         <AvatarImage src={other?.profile?.avatar_url} />
@@ -2135,10 +2183,10 @@ const ChatWidget = () => {
                   })()
                 )}
                 <span className="text-lg font-semibold truncate">
-                  {activeConversation.name as string}
+                  {activeConversation?.name as string}
                 </span>
                 {/* Invite button for direct chats with 2+ users or group chats */}
-                {(activeConversation.is_direct && (activeConversation.members as any[]).length >= 2) && (
+                {(activeConversation?.is_direct && activeConversation?.members && (activeConversation.members as any[]).length >= 2) && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -2155,7 +2203,7 @@ const ChatWidget = () => {
                   </TooltipProvider>
                 )}
                 {/* Invite button for group chats */}
-                {!activeConversation.is_direct && (
+                {!activeConversation?.is_direct && (
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger asChild>
@@ -2205,7 +2253,7 @@ const ChatWidget = () => {
             </Button>
           </div>
           {/* Group members section - only for group chats or direct chats with 3+ users */}
-          {activeConversation && ((!activeConversation.is_direct) || (activeConversation.is_direct && (activeConversation.members as any[]).length > 2)) && (
+          {activeConversation && ((!activeConversation.is_direct) || (activeConversation.is_direct && activeConversation.members && (activeConversation.members as any[]).length > 2)) && (
             <div className="px-4 py-2 border-b bg-muted/30">
               <div className="flex items-center gap-2 overflow-x-auto pb-1" style={{ scrollbarWidth: 'thin' }}>
                 {(activeConversation.members as any[]).map((member: any) => (
@@ -2586,7 +2634,7 @@ const ChatWidget = () => {
                                 };
                                 
                                 setTempConversation(tempConversation);
-                                setActiveConversation(tempConversation);
+                                checkAndUpdateExistingConversation(tempConversation);
                               }}
                             >
                               <Avatar className="h-8 w-8 mr-2">

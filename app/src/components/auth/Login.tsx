@@ -71,6 +71,12 @@ const Login = () => {
       }
     }
   }, []);
+
+  // Get Turnstile site key - use proper environment variable or fallback
+  const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm";
+
+  // Turnstile is enabled for bot protection
+  const enableTurnstile = true;
   const loginForm = useForm({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -189,15 +195,15 @@ const Login = () => {
       setError(null);
       setTurnstileError(null);
       
-      // Check if Turnstile token is present (only in production)
-      if (!isDevelopment && !turnstileToken) {
+      // Check if Turnstile token is present (only if enabled and in production)
+      if (enableTurnstile && !isDevelopment && !turnstileToken) {
         setTurnstileError('Please complete the security check');
         setIsLoading(false);
         return;
       }
 
-      // Verify Turnstile token (only in production)
-      if (!isDevelopment) {
+      // Verify Turnstile token (only if enabled and in production)
+      if (enableTurnstile && !isDevelopment) {
         const verificationResponse = await fetch('/api/turnstile/verify', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -383,14 +389,14 @@ const Login = () => {
                 )}
                 
                 {/* Turnstile Security Check */}
-                <div className="space-y-2">
-                  <p className="text-center text-sm text-muted-foreground">
-                    Let us know you&apos;re human
-                  </p>
-                  <div className="flex justify-center">
-                    {!isDevelopment && (
+                {enableTurnstile && !isDevelopment && (
+                  <div className="space-y-2">
+                    <p className="text-center text-sm text-muted-foreground">
+                      Let us know you&apos;re human
+                    </p>
+                    <div className="flex justify-center">
                       <Turnstile
-                        siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm"}
+                        siteKey={turnstileSiteKey}
                         onVerify={(token) => {
                           setTurnstileToken(token);
                           setTurnstileError(null);
@@ -406,27 +412,29 @@ const Login = () => {
                         theme="auto"
                         size="normal"
                       />
-                    )}
-                    {isDevelopment && (
-                      <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
-                        <p>Security check disabled in development mode</p>
-                        <p className="text-xs mt-1">Security check will be enabled in production</p>
+                    </div>
+                    {turnstileError && (
+                      <div className="text-red-500 text-sm text-center">
+                        {turnstileError}
                       </div>
                     )}
                   </div>
-                  {turnstileError && (
-                    <div className="text-red-500 text-sm text-center">
-                      {turnstileError}
-                    </div>
-                  )}
-                </div>
+                )}
+                
+                {/* Development mode message */}
+                {enableTurnstile && isDevelopment && (
+                  <div className="p-4 border-2 border-dashed border-gray-300 rounded-lg text-center text-gray-500">
+                    <p>Security check disabled in development mode</p>
+                    <p className="text-xs mt-1">Security check will be enabled in production</p>
+                  </div>
+                )}
                 
               <Button
                 type="submit"
                 className="w-full"
                 disabled={
                   isLoading || 
-                  (!isDevelopment && !turnstileToken) ||
+                  (enableTurnstile && !isDevelopment && !turnstileToken) ||
                   !loginForm.formState.isValid ||
                   !loginForm.watch('email') ||
                   !loginForm.watch('password')

@@ -3,10 +3,10 @@
 
 export const LOGO_CONFIG = {
   // Main application logo URL from Supabase storage
-  MAIN_LOGO_URL: "https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal.png",
+  MAIN_LOGO_URL: "https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png",
   
   // Email template logo URL from Supabase storage (same as main logo for consistency)
-  EMAIL_LOGO_URL: "https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal.png",
+  EMAIL_LOGO_URL: "https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png",
   
   // Logo alt text
   ALT_TEXT: "Trader's Journal Logo",

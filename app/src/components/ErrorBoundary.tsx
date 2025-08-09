@@ -1,7 +1,6 @@
 "use client"
 
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
 
 interface Props {
   children: ReactNode;
@@ -19,39 +18,34 @@ class ErrorBoundary extends Component<Props, State> {
   };
 
   public static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI.
+    // Update state so the next render will show the fallback UI
     return { hasError: true, error };
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    // Log error to console only in development
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('ErrorBoundary caught an error:', error, errorInfo);
+    }
+    
+    // You can also log the error to an error reporting service here
+    // logErrorToService(error, errorInfo);
   }
-
-  private handleReload = () => {
-    window.location.reload();
-  };
 
   public render() {
     if (this.state.hasError) {
       // You can render any custom fallback UI
       return this.props.fallback || (
-        <div className="min-h-screen flex items-center justify-center bg-background">
-          <div className="text-center space-y-4 p-8">
-            <h1 className="text-2xl font-bold text-destructive">Something went wrong</h1>
-            <p className="text-muted-foreground">
-              An unexpected error occurred. Please try refreshing the page.
-            </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
-              <details className="text-left bg-muted p-4 rounded-lg">
-                <summary className="cursor-pointer font-medium">Error Details</summary>
-                <pre className="mt-2 text-sm text-muted-foreground whitespace-pre-wrap">
-                  {this.state.error.toString()}
-                </pre>
-              </details>
-            )}
-            <Button onClick={this.handleReload} className="mt-4">
-              Reload Page
-            </Button>
+        <div className="flex flex-col items-center justify-center min-h-screen p-4">
+          <div className="text-center space-y-4">
+            <h2 className="text-2xl font-bold text-gray-900">Something went wrong</h2>
+            <p className="text-gray-600">Please refresh the page to try again.</p>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Refresh Page
+            </button>
           </div>
         </div>
       );

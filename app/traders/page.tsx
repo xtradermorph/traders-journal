@@ -308,20 +308,8 @@ const TradersPage = () => {
 
       // Apply search filter if provided
       if (debouncedSearchQuery) {
-        // Check if the search query looks like an exact username (no spaces, reasonable length)
-        const isExactUsername = debouncedSearchQuery.length >= 3 && 
-                               debouncedSearchQuery.length <= 20 && 
-                               !debouncedSearchQuery.includes(' ');
-        
-        if (isExactUsername) {
-          // For exact username search, allow both public and private profiles
-          query = query.ilike('username', `%${debouncedSearchQuery}%`);
-        } else {
-          // For general search, we'll filter for public profiles after fetching
-          query = query.ilike('username', `%${debouncedSearchQuery}%`);
-        }
+        query = query.ilike('username', `%${debouncedSearchQuery}%`);
       }
-      // Note: We'll filter for public profiles after fetching the data
 
       // Apply sorting
       switch (sortBy) {
@@ -361,6 +349,8 @@ const TradersPage = () => {
           description: "Failed to load traders.",
           variant: "destructive",
         });
+        setTraders([]);
+        setTotalPages(1);
         return;
       }
 
@@ -373,11 +363,6 @@ const TradersPage = () => {
           user_presence: null,
           public_profile: true // Assume all are public for now
         }));
-
-      // Filter for public profiles if not doing an exact username search
-      if (!debouncedSearchQuery || (debouncedSearchQuery && (debouncedSearchQuery.length < 3 || debouncedSearchQuery.includes(' ')))) {
-        filteredTraders = filteredTraders.filter(trader => trader.public_profile === true);
-      }
 
       console.log('Setting traders:', filteredTraders.length);
       setTraders(filteredTraders);
@@ -397,9 +382,9 @@ const TradersPage = () => {
         
         const { count } = await countQuery;
         
-        // Estimate that about 50% of profiles are public for pagination
-        const estimatedPublicCount = Math.floor((count || 0) * 0.5);
-        setTotalPages(Math.ceil(estimatedPublicCount / tradersPerPage));
+        // Use a simple pagination approach
+        const totalCount = count || 0;
+        setTotalPages(Math.ceil(totalCount / tradersPerPage));
         console.log('Count query successful:', count);
       } catch (countError) {
         console.error('Count query error:', countError);
@@ -414,6 +399,8 @@ const TradersPage = () => {
         description: "Failed to load traders.",
         variant: "destructive",
       });
+      setTraders([]);
+      setTotalPages(1);
     } finally {
       setLoading(false);
     }
@@ -436,11 +423,14 @@ const TradersPage = () => {
       for (let i = 0; i < traderIds.length; i += batchSize) {
         const batch = traderIds.slice(i, i + batchSize);
         
-        // Process batch in parallel
+        // Process batch in parallel with timeout
         const batchPromises = batch.map(async (traderId) => {
           try {
             console.log('Getting friendship status for trader:', traderId);
-            const status = await getFriendshipStatusString(traderId);
+            const status = await Promise.race([
+              getFriendshipStatusString(traderId),
+              new Promise<'NONE'>((resolve) => setTimeout(() => resolve('NONE'), 5000)) // 5 second timeout
+            ]);
             console.log('Status for', traderId, ':', status);
             return { traderId, status };
           } catch (error) {
@@ -468,7 +458,7 @@ const TradersPage = () => {
 
   useEffect(() => {
     fetchTraders();
-  }, [debouncedSearchQuery, sortBy, currentPage, fetchTraders]);
+  }, [debouncedSearchQuery, sortBy, currentPage]);
 
   // Fetch friendship statuses when traders change
   useEffect(() => {
@@ -476,7 +466,7 @@ const TradersPage = () => {
       console.log('Fetching friendship statuses for', traders.length, 'traders');
       fetchFriendshipStatuses(traders.map(t => t.id));
     }
-  }, [traders, fetchFriendshipStatuses]);
+  }, [traders]);
 
   const handleSendFriendRequest = async (traderId: string) => {
     try {
@@ -632,6 +622,35 @@ const TradersPage = () => {
 
   const handleSendMessage = async (recipientId: string) => {
     try {
+      // Find the trader's information to get their username
+      const trader = traders.find(t => t.id === recipientId);
+      if (!trader) {
+        toast({
+          title: 'Error',
+          description: 'Trader not found.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Get current user information
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast({
+          title: 'Error',
+          description: 'You must be logged in to send messages.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Get current user's profile information
+      const { data: currentUserProfile } = await supabase
+        .from('profiles')
+        .select('username, avatar_url')
+        .eq('id', user.id)
+        .single();
+
       // Call the DB function to get or create the chat
       const { data, error } = await supabase.rpc('create_or_get_direct_chat', {
         recipient_id_param: recipientId
@@ -643,12 +662,28 @@ const TradersPage = () => {
 
       if (data && data.length > 0) {
         const groupId = data[0].group_id;
-        // In a real app, we'd fetch the full conversation details
-        // For now, we'll create a placeholder to open the chat
+        
+        // Create a proper conversation object with the user's name
         const tempConversation = {
           group_id: groupId,
-          name: 'Direct Message', // This will be updated in the widget
+          name: trader.username, // Use the actual username instead of "Direct Message"
           is_direct: true,
+          members: [
+            {
+              profile: {
+                id: user.id, // Current user
+                username: currentUserProfile?.username || user.email?.split('@')[0] || 'You',
+                avatar_url: currentUserProfile?.avatar_url
+              }
+            },
+            {
+              profile: {
+                id: trader.id,
+                username: trader.username,
+                avatar_url: trader.avatar_url
+              }
+            }
+          ],
           // other fields can be added if needed
         };
         setActiveConversation(tempConversation);

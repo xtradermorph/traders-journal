@@ -98,14 +98,7 @@ const CurrencyPairPerformance = ({ trades, isLoading }: CurrencyPairPerformanceP
     
     const { start, end } = getDateRange();
     
-    // Debug logging for timeframe verification
-    if (timeframe !== 'all') {
-      console.log(`CurrencyPairPerformance - ${timeframe}:`, {
-        start: start?.toISOString(),
-        end: end?.toISOString(),
-        totalTrades: trades.length
-      });
-    }
+
     
     // Filter trades based on timeframe
     const filteredTrades = trades.filter(trade => {
@@ -119,13 +112,7 @@ const CurrencyPairPerformance = ({ trades, isLoading }: CurrencyPairPerformanceP
       return true;
     });
     
-    // Debug logging for filtered results
-    if (timeframe !== 'all') {
-      console.log(`CurrencyPairPerformance - ${timeframe} filtered:`, {
-        filteredTrades: filteredTrades.length,
-        pairs: Array.from(new Set(filteredTrades.map(t => t.currency_pair)))
-      });
-    }
+
     
     // Group trades by currency pair
     const pairPerformance: Record<string, { totalTrades: number; profitLoss: number }> = {};

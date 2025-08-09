@@ -281,7 +281,7 @@ export default function TopDownAnalysisPage() {
   if (error) {
     return (
       <>
-        <PageHeader title="Top Down Analysis" mainScrollRef={mainScrollRef} />
+        <PageHeader title="Top Down Analysis" mainScrollRef={mainScrollRef} showBackButton backUrl="/dashboard" />
         <div className="min-h-screen relative flex items-center justify-center bg-gradient-to-br from-background to-muted/40">
           <div className="absolute inset-0 bg-white/90 backdrop-blur-md z-0 pointer-events-none" />
           <div className="relative w-full max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-6 md:p-12 my-8 z-10 flex flex-col min-h-[80vh]">
@@ -307,7 +307,7 @@ export default function TopDownAnalysisPage() {
 
   return (
     <>
-      <PageHeader title="Top Down Analysis" mainScrollRef={mainScrollRef} />
+      <PageHeader title="Top Down Analysis" mainScrollRef={mainScrollRef} showBackButton backUrl="/dashboard" />
       <div className="min-h-screen relative flex items-center justify-center bg-gradient-to-br from-background to-muted/40">
         <div className="absolute inset-0 bg-white/90 backdrop-blur-md z-0 pointer-events-none" />
         <div className="relative w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-4 sm:my-6 md:my-8 z-10 flex flex-col min-h-[80vh] max-h-[90vh]">
@@ -452,7 +452,6 @@ export default function TopDownAnalysisPage() {
                                      size="sm"
                                      onClick={() => handleViewDetails(analysis)}
                                      className="p-2"
-                                     title="View Details"
                                    >
                                      <Eye className="h-4 w-4" />
                                    </Button>
@@ -461,9 +460,7 @@ export default function TopDownAnalysisPage() {
                                    <p>View Analysis Details</p>
                                  </TooltipContent>
                                </Tooltip>
-                             </TooltipProvider>
-                             
-                             <TooltipProvider>
+                               
                                <Tooltip>
                                  <TooltipTrigger asChild>
                                    <Button 
@@ -472,7 +469,6 @@ export default function TopDownAnalysisPage() {
                                      onClick={() => handleDownload(analysis)}
                                      disabled={isDownloading}
                                      className="p-2"
-                                     title="Download Analysis"
                                    >
                                      {isDownloading ? (
                                        <Loader2 className="h-4 w-4 animate-spin" />
@@ -485,37 +481,36 @@ export default function TopDownAnalysisPage() {
                                    <p>Download Analysis Report</p>
                                  </TooltipContent>
                                </Tooltip>
-                             </TooltipProvider>
-                             
-                             <AlertDialog>
-                               <AlertDialogTrigger asChild>
-                                 <Button 
-                                   variant="outline" 
-                                   size="sm"
-                                   className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                   title="Delete Analysis"
-                                 >
-                                   <Trash2 className="h-4 w-4" />
-                                 </Button>
-                               </AlertDialogTrigger>
-                               <AlertDialogContent>
-                                 <AlertDialogHeader>
-                                   <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
-                                   <AlertDialogDescription>
-                                     Are you sure you want to delete this analysis? This action cannot be undone.
-                                   </AlertDialogDescription>
-                                 </AlertDialogHeader>
-                                 <AlertDialogFooter>
-                                   <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                   <AlertDialogAction
-                                     onClick={() => handleDelete(analysis.id)}
-                                     className="bg-red-600 hover:bg-red-700"
+                               
+                               <AlertDialog>
+                                 <AlertDialogTrigger asChild>
+                                   <Button 
+                                     variant="outline" 
+                                     size="sm"
+                                     className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                    >
-                                     Delete
-                                   </AlertDialogAction>
-                                 </AlertDialogFooter>
-                               </AlertDialogContent>
-                             </AlertDialog>
+                                     <Trash2 className="h-4 w-4" />
+                                   </Button>
+                                 </AlertDialogTrigger>
+                                 <AlertDialogContent>
+                                   <AlertDialogHeader>
+                                     <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+                                     <AlertDialogDescription>
+                                       Are you sure you want to delete this analysis? This action cannot be undone.
+                                     </AlertDialogDescription>
+                                   </AlertDialogHeader>
+                                   <AlertDialogFooter>
+                                     <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                     <AlertDialogAction
+                                       onClick={() => handleDelete(analysis.id)}
+                                       className="bg-red-600 hover:bg-red-700"
+                                     >
+                                       Delete
+                                     </AlertDialogAction>
+                                   </AlertDialogFooter>
+                                 </AlertDialogContent>
+                               </AlertDialog>
+                             </TooltipProvider>
                            </div>
                          </div>
                        ))}
@@ -636,7 +631,6 @@ export default function TopDownAnalysisPage() {
                                           size="sm"
                                           onClick={() => handleViewDetails(analysis)}
                                           className="p-2"
-                                          title="View Details"
                                         >
                                           <Eye className="h-4 w-4" />
                                         </Button>
@@ -645,9 +639,7 @@ export default function TopDownAnalysisPage() {
                                         <p>View Analysis Details</p>
                                       </TooltipContent>
                                     </Tooltip>
-                                  </TooltipProvider>
-                                  
-                                  <TooltipProvider>
+                                    
                                     <Tooltip>
                                       <TooltipTrigger asChild>
                                         <Button 
@@ -656,7 +648,6 @@ export default function TopDownAnalysisPage() {
                                           onClick={() => handleDownload(analysis)}
                                           disabled={isDownloading}
                                           className="p-2"
-                                          title="Download Analysis"
                                         >
                                           {isDownloading ? (
                                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -669,37 +660,36 @@ export default function TopDownAnalysisPage() {
                                         <p>Download Analysis Report</p>
                                       </TooltipContent>
                                     </Tooltip>
-                                  </TooltipProvider>
-                                  
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <Button 
-                                        variant="outline" 
-                                        size="sm"
-                                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                        title="Delete Analysis"
-                                      >
-                                        <Trash2 className="h-4 w-4" />
-                                      </Button>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Are you sure you want to delete this analysis? This action cannot be undone.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
-                                          onClick={() => handleDelete(analysis.id)}
-                                          className="bg-red-600 hover:bg-red-700"
+                                    
+                                    <AlertDialog>
+                                      <AlertDialogTrigger asChild>
+                                        <Button 
+                                          variant="outline" 
+                                          size="sm"
+                                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
                                         >
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
+                                          <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                      </AlertDialogTrigger>
+                                      <AlertDialogContent>
+                                        <AlertDialogHeader>
+                                          <AlertDialogTitle>Delete Analysis</AlertDialogTitle>
+                                          <AlertDialogDescription>
+                                            Are you sure you want to delete this analysis? This action cannot be undone.
+                                          </AlertDialogDescription>
+                                        </AlertDialogHeader>
+                                        <AlertDialogFooter>
+                                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                          <AlertDialogAction
+                                            onClick={() => handleDelete(analysis.id)}
+                                            className="bg-red-600 hover:bg-red-700"
+                                          >
+                                            Delete
+                                          </AlertDialogAction>
+                                        </AlertDialogFooter>
+                                      </AlertDialogContent>
+                                    </AlertDialog>
+                                  </TooltipProvider>
                                 </div>
                               </div>
                             ))}

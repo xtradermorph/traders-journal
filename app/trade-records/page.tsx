@@ -496,9 +496,8 @@ const getYearGroups = (trades: Trade[]): YearGroup[] => {
 
   if (loading) {
     pageContent = (
-      <div className="w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-4 sm:my-6 md:my-8 flex flex-col min-h-[80vh]">
-        <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
-          <div className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 lg:px-8">
+      <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
+        <div className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <Skeleton className="h-6 sm:h-8 w-24 sm:w-32" />
               <Skeleton className="h-8 sm:h-10 w-24 sm:w-32" />
@@ -582,25 +581,19 @@ const getYearGroups = (trades: Trade[]): YearGroup[] => {
             ))}
           </div>
         </div>
-        <DashboardFooter />
-      </div>
     );
   } else if (error) {
     pageContent = (
-      <div className="w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-4 sm:my-6 md:my-8 flex flex-col min-h-[80vh]">
-        <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
-          <div className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 lg:px-8">
+      <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
+                  <div className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 lg:px-8">
             <p className="text-destructive">{error}</p>
           </div>
         </div>
-        <DashboardFooter />
-      </div>
     );
   } else if (trades && trades.length === 0) {
     pageContent = (
-      <div className="w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-4 sm:my-6 md:my-8 flex flex-col min-h-[80vh]">
-        <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
-          <div className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 lg:px-8">
+      <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
+        <div className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-4 sm:mb-6">
               <div className="ml-auto flex items-center gap-2 sm:gap-3">
                 <Button 
@@ -635,14 +628,11 @@ const getYearGroups = (trades: Trade[]): YearGroup[] => {
             </div>
           </div>
         </div>
-        <DashboardFooter />
-      </div>
     );
   } else {
     pageContent = (
-      <div className="w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-4 sm:my-6 md:my-8 flex flex-col min-h-[80vh] max-h-[90vh]">
-        <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
-          <div className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 lg:px-8">
+      <div ref={mainScrollRef} className="flex-1 overflow-y-auto">
+        <div className="py-3 sm:py-4 md:py-6 px-2 sm:px-4 md:px-6 lg:px-8">
             {/* Performance Summary Cards */}
             {trades && trades.length > 0 && (
               <div className="grid grid-cols-1 gap-3 sm:gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6 sm:mb-8">
@@ -1292,19 +1282,18 @@ const getYearGroups = (trades: Trade[]): YearGroup[] => {
             })()}
           </div>
         </div>
-        <DashboardFooter />
-      </div>
     );
   }
 
   return (
     <>
-      <PageHeader title="Trade Records" mainScrollRef={mainScrollRef} />
+      <PageHeader title="Trade Records" mainScrollRef={mainScrollRef} showBackButton backUrl="/dashboard" />
       <div className="min-h-screen relative flex items-center justify-center bg-gradient-to-br from-background to-muted/40">
         {/* Glassmorphism background overlay */}
         <div className="absolute inset-0 bg-white/90 backdrop-blur-md z-0 pointer-events-none" />
         <div className="relative w-full max-w-[95vw] sm:max-w-[90vw] md:max-w-[85vw] lg:max-w-6xl xl:max-w-7xl mx-auto bg-card/90 rounded-2xl shadow-2xl border border-border p-3 sm:p-4 md:p-6 lg:p-8 xl:p-12 my-4 sm:my-6 md:my-8 z-10 flex flex-col min-h-[80vh] max-h-[90vh]">
           {pageContent}
+          <DashboardFooter />
         </div>
       </div>
       {/* Always render dialogs at the root so they work in all states */}

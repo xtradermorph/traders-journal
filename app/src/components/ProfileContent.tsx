@@ -386,7 +386,7 @@ export function ProfileContent({ initialProfile, onProfileUpdate }: ProfileConte
         <div className="relative group">
           {/* Avatar: click to zoom */}
           <Avatar
-            className="w-28 h-28 cursor-pointer border-4 border-gradient-to-tr from-blue-400 via-purple-500 to-pink-400 shadow-lg ring-2 ring-primary/30 transition-transform duration-200 hover:scale-105"
+            className="w-28 h-28 cursor-pointer border-4 border-blue-400 shadow-lg ring-2 ring-primary/30 transition-transform duration-200 hover:scale-105"
             onClick={() => profile?.avatar_url && setIsAvatarModalOpen(true)}
           >
             <AvatarImage src={avatarPreview || profile?.avatar_url || undefined} alt={profile?.username || 'User avatar'} className="object-cover object-center" />
@@ -406,7 +406,7 @@ export function ProfileContent({ initialProfile, onProfileUpdate }: ProfileConte
             <img
               src={profile?.avatar_url || ''}
               alt="Avatar Large Preview"
-              className="rounded-full w-72 h-72 object-cover object-center border-4 border-gradient-to-tr from-blue-400 via-purple-500 to-pink-400 shadow-xl"
+              className="rounded-full w-72 h-72 object-cover object-center border-4 border-blue-400 shadow-xl"
             />
             <DialogClose asChild>
               <Button variant="outline" className="mt-4">Close</Button>

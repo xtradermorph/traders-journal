@@ -29,4 +29,4 @@ This directory should contain the following PWA icons for Trader's Journal:
 
 ## Logo Source
 The icons should be based on the main logo stored in Supabase:
-`https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal.png` 
+`https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png` 

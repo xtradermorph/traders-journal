@@ -569,7 +569,125 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     setValidationState(prev => ({ ...prev, validationErrors: prev.validationErrors.filter(error => error.question_id !== questionId) }));
   };
 
+  // Validation functions - moved before useEffect to avoid temporal dead zone
+  const validateCurrentTimeframe = useCallback((): TDAValidationError[] => {
+    const errors: TDAValidationError[] = [];
+    // Inline the logic instead of using getCurrentTimeframeQuestions as dependency
+    const timeframeQuestions = questions ? questions.filter((q: any) => q.timeframe === currentTimeframe)
+      .sort((a: any, b: any) => a.order_index - b.order_index) : [];
+    
+    timeframeQuestions.forEach((question: any) => {
+      const answer = questionAnswers[question.id];
+      
+      // Only validate essential fields - make notes and some technical fields optional
+      let isEssentialField = false;
+      
+      if (question.required) {
+        // Make these fields optional
+        if (question.question_text.includes('Notes') ||
+            question.question_text.includes('Patterns') ||
+            question.question_text.includes('Announcements') ||
+            question.question_text.includes('Screenshot')) {
+          isEssentialField = false;
+        }
+        // All other fields are mandatory
+        else {
+          isEssentialField = true;
+        }
+      }
+      
+      if (isEssentialField) {
+        let isEmpty = false;
+        
+        if (answer === undefined || answer === null) {
+          isEmpty = true;
+        } else if (typeof answer === 'string') {
+          isEmpty = answer.trim() === '';
+        } else if (typeof answer === 'boolean') {
+          // Boolean fields are always valid if they have a value
+          isEmpty = false;
+        } else if (typeof answer === 'number') {
+          // Number fields are valid if they have a value
+          isEmpty = false;
+        } else if (Array.isArray(answer)) {
+          isEmpty = answer.length === 0;
+        } else {
+          isEmpty = !answer;
+        }
+        
+        if (isEmpty) {
+          errors.push({
+            timeframe: currentTimeframe,
+            question_id: question.id,
+            message: ``
+          });
+        }
+      }
+    });
+    
+    return errors;
+  }, [questionAnswers, currentTimeframe, questions]);
 
+  const validateAllTimeframes = (): TDAValidationError[] => {
+    if (!questions) return [];
+    
+    const errors: TDAValidationError[] = [];
+    
+    selectedTimeframes.forEach(timeframe => {
+      const timeframeQuestions = questions.filter((q: any) => q.timeframe === timeframe);
+      
+      timeframeQuestions.forEach((question: any) => {
+        const answer = questionAnswers[question.id];
+        
+        // Only validate essential fields - make notes and some technical fields optional
+        let isEssentialField = false;
+        
+        if (question.required) {
+          // Make these fields optional
+          if (question.question_text.includes('Notes') ||
+              question.question_text.includes('Patterns') ||
+              question.question_text.includes('Announcements') ||
+              question.question_text.includes('Screenshot')) {
+            isEssentialField = false;
+          }
+          // All other fields are mandatory
+          else {
+            isEssentialField = true;
+          }
+        }
+        
+        if (isEssentialField) {
+          let isEmpty = false;
+          
+          if (answer === undefined || answer === null) {
+            isEmpty = true;
+          } else if (typeof answer === 'string') {
+            isEmpty = answer.trim() === '';
+          } else if (typeof answer === 'boolean') {
+            // Boolean fields are always valid if they have a value
+            isEmpty = false;
+          } else if (typeof answer === 'number') {
+            // Number fields are valid if they have a value
+            isEmpty = false;
+          } else if (Array.isArray(answer)) {
+            isEmpty = answer.length === 0;
+          } else {
+            isEmpty = !answer;
+          }
+          
+          if (isEmpty) {
+            errors.push({
+              timeframe: timeframe,
+              question_id: question.id,
+              message: ``
+            });
+          }
+        }
+      });
+    });
+    
+    return errors;
+  };
 
   // Real-time validation effect
   useEffect(() => {
@@ -725,15 +843,10 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
 
 
 
-  const getCurrentTimeframeQuestions = () => {
-    if (!questions) return [];
-    return questions.filter((q: any) => q.timeframe === currentTimeframe)
-      .sort((a: any, b: any) => a.order_index - b.order_index);
-  };
-
   // Organize questions into rows for better layout
   const getOrganizedQuestions = () => {
-    const currentQuestions = getCurrentTimeframeQuestions();
+    const currentQuestions = questions ? questions.filter((q: any) => q.timeframe === currentTimeframe)
+      .sort((a: any, b: any) => a.order_index - b.order_index) : [];
     
     if (currentTimeframe === 'DAILY') {
       // DAILY layout: exact grouping as specified
@@ -751,10 +864,10 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
         (q.question_text === 'Notes' && q.order_index === 5)
       );
       
-      // Row 3: Previous Candle, Pivot Range, Notes
+      // Row 3: Previous Candle Colour, Today's Pivot Point Range, Notes
       const row3 = currentQuestions.filter((q: any) => 
-        q.question_text === 'Previous Candle' ||
-        q.question_text === 'Pivot Range' ||
+        q.question_text === 'Previous Candle Colour' ||
+        q.question_text === "Today's Pivot Point Range" ||
         (q.question_text === 'Notes' && q.order_index === 8)
       );
       
@@ -932,131 +1045,6 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
 
   const progress = getProgress();
 
-  // Validation functions
-  const validateCurrentTimeframe = useCallback((): TDAValidationError[] => {
-    const errors: TDAValidationError[] = [];
-    const timeframeQuestions = getCurrentTimeframeQuestions();
-    
-
-    
-    timeframeQuestions.forEach((question: any) => {
-      const answer = questionAnswers[question.id];
-      
-
-      
-      // Only validate essential fields - make notes and some technical fields optional
-      let isEssentialField = false;
-      
-      if (question.required) {
-        // Make these fields optional
-        if (question.question_text.includes('Notes') ||
-            question.question_text.includes('Patterns') ||
-            question.question_text.includes('Announcements') ||
-            question.question_text.includes('Screenshot')) {
-          isEssentialField = false;
-        }
-        // All other fields are mandatory
-        else {
-          isEssentialField = true;
-        }
-      }
-      
-      if (isEssentialField) {
-        let isEmpty = false;
-        
-        if (answer === undefined || answer === null) {
-          isEmpty = true;
-        } else if (typeof answer === 'string') {
-          isEmpty = answer.trim() === '';
-        } else if (typeof answer === 'boolean') {
-          // Boolean fields are always valid if they have a value
-          isEmpty = false;
-        } else if (typeof answer === 'number') {
-          // Number fields are valid if they have a value
-          isEmpty = false;
-        } else if (Array.isArray(answer)) {
-          isEmpty = answer.length === 0;
-        } else {
-          isEmpty = !answer;
-        }
-        
-
-        
-        if (isEmpty) {
-          errors.push({
-            timeframe: currentTimeframe,
-            question_id: question.id,
-            message: ``
-          });
-        }
-      }
-    });
-    
-    
-    return errors;
-  }, [questionAnswers, currentTimeframe, getCurrentTimeframeQuestions]);
-
-  const validateAllTimeframes = (): TDAValidationError[] => {
-    if (!questions) return [];
-    
-    const errors: TDAValidationError[] = [];
-    
-    selectedTimeframes.forEach(timeframe => {
-      const timeframeQuestions = questions.filter((q: any) => q.timeframe === timeframe);
-      
-      timeframeQuestions.forEach((question: any) => {
-        const answer = questionAnswers[question.id];
-        
-        // Only validate essential fields - make notes and some technical fields optional
-        let isEssentialField = false;
-        
-        if (question.required) {
-          // Make these fields optional
-          if (question.question_text.includes('Notes') ||
-              question.question_text.includes('Patterns') ||
-              question.question_text.includes('Announcements') ||
-              question.question_text.includes('Screenshot')) {
-            isEssentialField = false;
-          }
-          // All other fields are mandatory
-          else {
-            isEssentialField = true;
-          }
-        }
-        
-        if (isEssentialField) {
-          let isEmpty = false;
-          
-          if (answer === undefined || answer === null) {
-            isEmpty = true;
-          } else if (typeof answer === 'string') {
-            isEmpty = answer.trim() === '';
-          } else if (typeof answer === 'boolean') {
-            // Boolean fields are always valid if they have a value
-            isEmpty = false;
-          } else if (typeof answer === 'number') {
-            // Number fields are valid if they have a value
-            isEmpty = false;
-          } else if (Array.isArray(answer)) {
-            isEmpty = answer.length === 0;
-          } else {
-            isEmpty = !answer;
-          }
-          
-          if (isEmpty) {
-            errors.push({
-              timeframe: timeframe,
-              question_id: question.id,
-              message: ``
-            });
-          }
-        }
-      });
-    });
-    
-    return errors;
-  };
-
   const renderQuestion = (question: TDAQuestion) => {
     const value = questionAnswers[question.id];
     const hasError = validationState.validationErrors.some(error => error.question_id === question.id);
@@ -1173,40 +1161,59 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
             className="space-y-0"
           >
             {question.options?.map((option) => {
-              // Fix white text issue - ensure all text is readable
-              let colorClass = 'text-slate-800'; // Default dark color for readability
+              // Color configuration based on reference document
+              let colorClass = 'text-slate-800 font-medium'; // Default black
               
-              // Special handling for MACD Lines options - keep them black
-              if (option.includes('Blue Below Red') || option.includes('Blue Above Red')) {
-                colorClass = 'text-slate-800 font-medium';
-              } else if (option.includes('Long') || option.includes('Bullish') || option.includes('Green') || 
+              // RSI: Black vs Yellow - should be BLACK (not green/red)
+              if (option.includes('Black Below Yellow') || option.includes('Black Above Yellow') || 
+                  option.includes('B Below Y') || option.includes('B Above Y')) {
+                colorClass = 'text-slate-800 font-medium'; // BLACK
+              }
+              // RSI: Position (current database) - should be BLACK
+              else if (option.includes('Above 70') || option.includes('Below 30') || option.includes('Between 30-70')) {
+                colorClass = 'text-slate-800 font-medium'; // BLACK
+              }
+              // MACD Lines: Blue vs Red - should be BLACK
+              else if (option.includes('Blue Below Red') || option.includes('Blue Above Red') ||
+                       option.includes('Converging') || option.includes('Diverging') || option.includes('Parallel')) {
+                colorClass = 'text-slate-800 font-medium'; // BLACK
+              }
+              // MACD Lines: Movement (current database) - should be BLACK
+              else if (option.includes('Rising') || option.includes('Falling') || option.includes('Sideways')) {
+                colorClass = 'text-slate-800 font-medium'; // BLACK
+              }
+              // MACD Histogram - should be BLACK
+              else if (option.includes('MACD Histogram')) {
+                colorClass = 'text-slate-800 font-medium'; // BLACK
+              }
+              // REI - should be BLACK
+              else if (option.includes('REI')) {
+                colorClass = 'text-slate-800 font-medium'; // BLACK
+              }
+              // GREEN options
+              else if (option.includes('Long') || option.includes('Green') || option.includes('Bullish') ||
                   option.includes('Support') || option.includes('Oversold') || option.includes('NZ From Oversold') ||
-                  option.includes('Moving Up') || option.includes('Heading Up') || 
                   option.includes('From Low Moving Up') || option.includes('Nearing Top') || 
-                  option.includes('Accelerating') || option.includes('Strong') || option.includes('High') ||
-                  option.includes('Buying') || option.includes('Positive') || option.includes('Above') ||
-                  option.includes('Higher') || option.includes('Increasing') || option.includes('Expanding') ||
+                       option.includes('Long Drive Zone') || option.includes('Long Exhaustion Zone') ||
                   option.includes('MidS1 to MidR2')) {
                 colorClass = 'text-green-600 font-medium';
-              } else if (option.includes('Short') || option.includes('Bearish') || option.includes('Red') ||
+              }
+              // RED options
+              else if (option.includes('Short') || option.includes('Red') || option.includes('Bearish') ||
                   option.includes('Resistance') || option.includes('Overbought') || option.includes('NZ From Overbought') ||
-                  option.includes('Moving Down') || option.includes('Heading Down') || 
                   option.includes('From High Moving Down') || option.includes('Nearing Bottom') || 
-                  option.includes('Decelerating') || option.includes('Weak') || option.includes('Low') ||
-                  option.includes('Selling') || option.includes('Negative') || option.includes('Below') ||
-                  option.includes('Lower') || option.includes('Decreasing') || option.includes('Contracting') ||
+                       option.includes('Short Drive Zone') || option.includes('Short Exhaustion Zone') ||
                   option.includes('MidS2 to MidR1')) {
                 colorClass = 'text-red-600 font-medium';
-              } else if (option.includes('RED') || option.includes('Red')) {
-                colorClass = 'text-red-600 font-medium';
-              } else if (option.includes('GREEN') || option.includes('Green')) {
-                colorClass = 'text-green-600 font-medium';
-              } else if (option.includes('Sideways') || option.includes('Neutral') || option.includes('Balanced') ||
-                  option.includes('Stable') || option.includes('Normal') || option.includes('Mixed') ||
-                  option.includes('Consolidation') || option.includes('No Clear') || option.includes('No Divergence')) {
+              }
+              // NEUTRAL options
+              else if (option.includes('Sideways') || option.includes('Neutral') || option.includes('Parallel') ||
+                       option.includes('From Middle Sideways')) {
                 colorClass = 'text-slate-600 font-medium';
-              } else {
-                colorClass = 'text-slate-800';
+              }
+              // Default to black for everything else
+              else {
+                colorClass = 'text-slate-800 font-medium';
               }
 
               return (
@@ -1830,7 +1837,8 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
       case 2:
       case 3:
         const { hasTriedNext, validationErrors } = validationState;
-        const currentQuestions = getCurrentTimeframeQuestions();
+        const currentQuestions = questions ? questions.filter((q: any) => q.timeframe === currentTimeframe)
+          .sort((a: any, b: any) => a.order_index - b.order_index) : [];
         const currentTimeframeData = allTimeframes.find(t => t.value === currentTimeframe);
         const isLastTimeframe = currentTimeframe === selectedTimeframes[selectedTimeframes.length - 1];
 
@@ -2189,7 +2197,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
               </div>
               <div className="flex items-center space-x-2">
                 <TooltipProvider>
-                  <Tooltip>
+                  <Tooltip delayDuration={300}>
                     <TooltipTrigger asChild>
                       <Button
                         onClick={handleClose}

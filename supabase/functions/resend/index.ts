@@ -55,7 +55,7 @@ const emailTemplates = {
     <body>
       <div class="container">
         <img 
-          src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/logo.png" 
+          src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png" 
           alt="Trader's Journal Logo" 
           class="logo"
         />
@@ -121,7 +121,7 @@ const emailTemplates = {
     <body>
       <div class="container">
         <img 
-          src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/logo.png" 
+          src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png" 
           alt="Trader's Journal Logo" 
           class="logo"
         />
@@ -189,7 +189,7 @@ const emailTemplates = {
     <body>
       <div class="container">
         <img 
-          src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/logo.png" 
+          src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png" 
           alt="Trader's Journal Logo" 
           class="logo"
         />

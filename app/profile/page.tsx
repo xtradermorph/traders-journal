@@ -66,7 +66,7 @@ export default function ProfilePage() {
   if (error) {
     return (
       <div className="min-h-screen bg-background">
-        <PageHeader title="Profile" />
+        <PageHeader title="Profile" showBackButton backUrl="/dashboard" />
         <div className="container mx-auto px-4 py-8">
           <div className="text-center">
             <p className="text-red-500">{error}</p>
@@ -91,7 +91,7 @@ export default function ProfilePage() {
 
   return (
     <>
-      <PageHeader title="Profile" />
+              <PageHeader title="Profile" showBackButton backUrl="/dashboard" />
       <div className="min-h-screen relative flex items-center justify-center bg-gradient-to-br from-background to-muted/40">
         {/* Glassmorphism background overlay */}
         <div className="absolute inset-0 bg-white/90 backdrop-blur-md z-0 pointer-events-none" />

@@ -370,7 +370,7 @@ const AddTradeDialog = ({ isOpen, onClose }: AddTradeDialogProps) => {
               </div>
               <div className="flex items-center space-x-2">
                 <TooltipProvider>
-                  <Tooltip>
+                  <Tooltip delayDuration={300}>
                     <TooltipTrigger asChild>
                       <Button
                         onClick={onClose}
