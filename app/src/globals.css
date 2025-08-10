@@ -775,6 +775,19 @@ input, select, textarea {
   }
 }
 
+/* Prevent layout shift during Turnstile loading */
+.turnstile-wrapper {
+  min-height: 85px;
+  position: relative;
+}
+
+/* Loading state for Turnstile */
+.turnstile-wrapper:not(.loaded) {
+  background: #f9fafb;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
 /* Turnstile widget in dark mode */
 .dark .turnstile-container iframe {
   filter: invert(1) hue-rotate(180deg);

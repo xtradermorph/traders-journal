@@ -35,8 +35,8 @@ export function Turnstile({
   const [isLoaded, setIsLoaded] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [widgetId, setWidgetId] = useState<string | null>(null)
-  const [isInitialized, setIsInitialized] = useState(false)
   const scriptLoadedRef = useRef(false)
+  const widgetRenderedRef = useRef(false)
 
   // Memoize callback functions to prevent unnecessary re-renders
   const handleVerify = useCallback((token: string) => {
@@ -55,26 +55,11 @@ export function Turnstile({
     onExpire?.()
   }, [onExpire])
 
-  // Cleanup function to properly remove widget
-  const cleanupWidget = useCallback(() => {
-    if (widgetId && window.turnstile) {
-      try {
-        window.turnstile.remove(widgetId)
-      } catch (err) {
-        // Ignore cleanup errors - widget might already be removed
-        console.debug('[Turnstile] Cleanup error (ignored):', err)
-      }
-    }
-    setWidgetId(null)
-    setIsLoaded(false)
-    setIsInitialized(false)
-  }, [widgetId])
-
   useEffect(() => {
     let mounted = true
 
-    // Prevent multiple initializations
-    if (isInitialized) return
+    // Prevent multiple renders
+    if (widgetRenderedRef.current || !containerRef.current) return
 
     const loadTurnstile = async () => {
       try {
@@ -120,44 +105,33 @@ export function Turnstile({
           return
         }
 
-        // Clear container to ensure clean state
-        if (containerRef.current) {
-          containerRef.current.innerHTML = ''
-        }
-
-        // Render the widget with error handling
-        let id: string
-        try {
-          id = window.turnstile.render(containerRef.current, {
-            sitekey: siteKey,
-            theme: theme,
-            size: size,
-            callback: (token: string) => {
-              if (mounted) {
-                handleVerify(token)
-              }
-            },
-            'error-callback': () => {
-              if (mounted) {
-                handleError('Security check failed. Please try again.')
-              }
-            },
-            'expired-callback': () => {
-              if (mounted) {
-                handleExpire()
-              }
+        // Render the widget
+        const id = window.turnstile.render(containerRef.current, {
+          sitekey: siteKey,
+          theme: theme,
+          size: size,
+          callback: (token: string) => {
+            if (mounted) {
+              handleVerify(token)
             }
-          })
-        } catch (renderError) {
-          console.error('[Turnstile] Render error:', renderError)
-          throw new Error('Failed to render security check')
-        }
+          },
+          'error-callback': () => {
+            if (mounted) {
+              handleError('Security check failed. Please try again.')
+            }
+          },
+          'expired-callback': () => {
+            if (mounted) {
+              handleExpire()
+            }
+          }
+        })
 
         if (mounted) {
           setWidgetId(id)
           setIsLoaded(true)
           setError(null)
-          setIsInitialized(true)
+          widgetRenderedRef.current = true
         }
       } catch (err) {
         if (mounted) {
@@ -172,19 +146,30 @@ export function Turnstile({
 
     return () => {
       mounted = false
-      cleanupWidget()
+      // Only cleanup on unmount, not on every render
     }
-  }, [siteKey, theme, size, handleVerify, handleError, handleExpire, isInitialized, cleanupWidget])
+  }, [siteKey, theme, size, handleVerify, handleError, handleExpire])
 
   const retry = useCallback(() => {
     setError(null)
-    cleanupWidget()
+    setIsLoaded(false)
+    widgetRenderedRef.current = false
+    
+    // Reset the widget if it exists
+    if (widgetId && window.turnstile) {
+      try {
+        window.turnstile.remove(widgetId)
+      } catch (err) {
+        // Ignore cleanup errors
+      }
+    }
+    setWidgetId(null)
     
     // Clear container
     if (containerRef.current) {
       containerRef.current.innerHTML = ''
     }
-  }, [cleanupWidget])
+  }, [widgetId])
 
   return (
     <div className={`turnstile-wrapper ${className}`}>
