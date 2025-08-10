@@ -12,33 +12,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Verify Turnstile token if provided
-    if (turnstileToken) {
-      const clientIp = request.headers.get('x-forwarded-for') || 
-                      request.headers.get('x-real-ip') || 
-                      'unknown';
-
-      const formData = new FormData();
-      formData.append('secret', process.env.TURNSTILE_SECRET_KEY!);
-      formData.append('response', turnstileToken);
-      formData.append('remoteip', clientIp);
-
-      const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        body: formData
-      });
-
-      const turnstileResult = await turnstileResponse.json();
-
-      if (!turnstileResult.success) {
-        console.error('Turnstile verification failed:', turnstileResult['error-codes']);
-        return NextResponse.json(
-          { error: 'Captcha verification failed' },
-          { status: 400 }
-        );
-      }
-    }
-
     // Create Supabase client
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -53,7 +26,8 @@ export async function POST(request: NextRequest) {
         data: {
           username: username
         },
-        emailRedirectTo: `${request.headers.get('origin')}/login`
+        emailRedirectTo: `${request.headers.get('origin')}/login`,
+        captchaToken: turnstileToken // Pass Turnstile token to Supabase
       }
     });
 
