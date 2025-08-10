@@ -83,6 +83,50 @@ export default function RootLayout({
     const originalWarn = console.warn;
     const originalLog = console.log;
 
+    // Filter out common non-critical errors
+    console.error = (...args) => {
+      const message = args.join(' ');
+      
+      // Filter out common Cloudflare/Turnstile related errors that don't affect functionality
+      if (message.includes('Permission denied to access object') ||
+          message.includes('Feature Policy: Skipping unsupported feature') ||
+          message.includes('AT-SDK disabled') ||
+          message.includes('CS WAX not initialized') ||
+          message.includes('InstallTrigger is deprecated') ||
+          message.includes('onmozfullscreenchange is deprecated') ||
+          message.includes('onmozfullscreenerror is deprecated') ||
+          message.includes('WEBGL_debug_renderer_info is deprecated') ||
+          message.includes('This page is in Quirks Mode') ||
+          message.includes('Layout was forced before the page was fully loaded') ||
+          message.includes('The character encoding of a framed document was not declared') ||
+          message.includes('Request for the Private Access Token challenge') ||
+          message.includes('Partitioned cookie or storage access was provided') ||
+          message.includes('The resource at') && message.includes('preloaded with link preload was not used') ||
+          message.includes('GET') && message.includes('favicon.ico') && message.includes('404')) {
+        // Suppress these non-critical errors
+        return;
+      }
+      
+      // Let through important errors
+      originalError.apply(console, args);
+    };
+
+    // Filter out common warnings
+    console.warn = (...args) => {
+      const message = args.join(' ');
+      
+      // Filter out common Cloudflare/Turnstile related warnings
+      if (message.includes('Feature Policy: Skipping unsupported feature') ||
+          message.includes('AT-SDK disabled') ||
+          message.includes('CS WAX not initialized')) {
+        // Suppress these non-critical warnings
+        return;
+      }
+      
+      // Let through important warnings
+      originalWarn.apply(console, args);
+    };
+
     // Global error handlers
     const handleError = (event: ErrorEvent) => {
       // Only prevent default for specific known issues
@@ -91,6 +135,15 @@ export default function RootLayout({
         if (message.includes('WebSocket connection') && 
             (message.includes('was interrupted') || 
              message.includes('establish a connection'))) {
+          event.preventDefault();
+          return;
+        }
+        
+        // Filter out common non-critical errors
+        if (message.includes('Permission denied to access object') ||
+            message.includes('Feature Policy: Skipping unsupported feature') ||
+            message.includes('AT-SDK disabled') ||
+            message.includes('CS WAX not initialized')) {
           event.preventDefault();
           return;
         }
@@ -114,48 +167,6 @@ export default function RootLayout({
 
     window.addEventListener('error', handleError, true);
     window.addEventListener('unhandledrejection', handleUnhandledRejection);
-    
-    // More targeted console filtering - only filter specific known issues
-    console.error = (...args) => {
-      const message = args[0];
-      if (typeof message === 'string') {
-        // Only filter out very specific known issues
-        if (message.includes('WebSocket connection') && 
-            (message.includes('was interrupted') || 
-             message.includes('establish a connection'))) {
-          return; // Don't log these specific WebSocket issues
-        }
-        // Allow other errors to show for debugging
-      }
-      originalError.apply(console, args);
-    };
-    
-    console.warn = (...args) => {
-      const message = args[0];
-      if (typeof message === 'string') {
-        // Only filter out very specific known issues
-        if (message.includes('WebSocket connection') && 
-            (message.includes('was interrupted') || 
-             message.includes('establish a connection'))) {
-          return; // Don't log these specific WebSocket issues
-        }
-        // Allow other warnings to show for debugging
-      }
-      originalWarn.apply(console, args);
-    };
-    
-    // Keep console.log mostly unfiltered for debugging
-    console.log = (...args) => {
-      const message = args[0];
-      if (typeof message === 'string') {
-        // Only filter out very specific WebSocket establishment messages
-        if (message.includes("can't establish a connection to the server") ||
-            message.includes('Firefox can\'t establish a connection')) {
-          return; // Don't log these specific messages
-        }
-      }
-      originalLog.apply(console, args);
-    };
     
     return () => {
       console.error = originalError;

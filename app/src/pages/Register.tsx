@@ -18,6 +18,7 @@ import { Eye, EyeOff, X } from "lucide-react";
 import Image from 'next/image';
 import { Turnstile } from '../../components/ui/turnstile-simple';
 import { LOGO_CONFIG } from '../../lib/logo-config';
+import { User } from "@supabase/supabase-js";
 
 const registerSchema = z.object({
   username: z.string().min(3, "Username must be at least 3 characters").max(20, "Username must be less than 20 characters"),
@@ -33,6 +34,12 @@ interface RegisterFormValues {
   password: string;
   confirmPassword: string;
   agreeToTerms: boolean;
+}
+
+interface RegisterResponse {
+  user: User;
+  session: unknown;
+  error?: Error;
 }
 
 const Register = () => {
@@ -87,77 +94,38 @@ const Register = () => {
     }
   });
 
-  const registerMutation = useMutation({
+  const registerMutation = useMutation<RegisterResponse, Error, RegisterFormValues>({
     mutationFn: async (data: RegisterFormValues) => {
       try {
-        // Validate the data first
-        const validatedData = registerSchema.parse(data);
+        setIsLoading(true);
+        setError(null);
         
-        if (validatedData.password !== validatedData.confirmPassword) {
-          throw new Error('Passwords do not match');
-        }
-        
-        // Skip Turnstile verification in development mode or if disabled
-        if (enableTurnstile && !isDevelopment) {
-          // Verify Turnstile token
-          if (!turnstileToken) {
-            throw new Error('Security check required');
-          }
-          
-          const verificationResponse = await fetch('/api/turnstile/verify', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              token: turnstileToken,
-              action: 'register'
-            })
-          });
-          
-          const verificationResult = await verificationResponse.json();
-          
-          if (!verificationResult.success) {
-            throw new Error('Security check failed. Please try again.');
-          }
-        }
-        
-        // Use direct client-side signup
-
-        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-          email: data.email.toLowerCase().trim(),
-          password: data.password,
-          options: {
-            data: {
-              username: data.username
-            },
-            emailRedirectTo: `${window.location.origin}/login`
-          }
-        });
-        
-        if (signUpError) {
-          console.error('Supabase signup error:', signUpError);
-          throw new Error(signUpError.message || 'Registration failed');
-        }
-        
-        // Create profile manually if user data is available
-        if (signUpData && signUpData.user) {
-          const { error: profileError } = await supabase.from('profiles').insert({
-            id: signUpData.user.id,
+        // Call our custom register API that handles Turnstile verification
+        const response = await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             username: data.username,
-            email: data.email.toLowerCase().trim(),
-            created_at: new Date().toISOString()
-          });
-          if (profileError) {
-            console.error('Profile creation error:', profileError);
-            // Don't throw error here as user is already created
-          }
+            email: data.email,
+            password: data.password,
+            turnstileToken: enableTurnstile && !isDevelopment ? turnstileToken : undefined
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Registration failed');
         }
-        
-        return signUpData;
+
+        return result;
       } catch (error) {
         console.error('Registration error:', error);
         throw error;
+      } finally {
+        setIsLoading(false);
       }
     },
     onSuccess: () => {
@@ -188,25 +156,6 @@ const Register = () => {
         setTurnstileError('Please complete the security check');
         setIsLoading(false);
         return;
-      }
-
-      // Verify Turnstile token (only in production)
-      if (!isDevelopment) {
-        const verificationResponse = await fetch('/api/turnstile/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            token: turnstileToken,
-            action: 'register',
-          }),
-        });
-
-        const verificationResult = await verificationResponse.json();
-        if (!verificationResult.success) {
-          setTurnstileError('Security check failed. Please try again.');
-          setIsLoading(false);
-          return;
-        }
       }
       
       await registerMutation.mutateAsync(data);

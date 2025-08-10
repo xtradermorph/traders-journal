@@ -109,66 +109,31 @@ const Login = () => {
         setError(null);
         setIsLoading(true);
         
-        // First sign in with email and password
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-          email: data.email.toLowerCase().trim(),
-          password: data.password
+        // Call our custom login API that handles Turnstile verification
+        const response = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: data.email,
+            password: data.password,
+            turnstileToken: enableTurnstile && !isDevelopment ? turnstileToken : undefined
+          }),
         });
 
-        // Handle auth errors
-        if (authError) {
-          if (authError.message.includes('Invalid login credentials')) {
-            throw new Error('Invalid email or password');
-          }
-          if (authError.message.includes('Email not confirmed')) {
-            throw new Error('Please verify your email before logging in');
-          }
-          throw new Error(authError.message || 'Authentication failed');
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Authentication failed');
         }
 
-        // Verify we have a user
-        if (!authData?.user) {
-          throw new Error('Authentication failed');
+        // Store username
+        if (result.username) {
+          localStorage.setItem('username', result.username);
         }
 
-        // Get the user's profile with better error handling
-        try {
-          // First try to get the profile using the RPC function
-          const { data: profileData, error: profileError } = await supabase
-            .rpc('get_user_profile', { user_id: authData.user.id });
-
-          if (profileError) {
-            // Fall back to user metadata if RPC fails
-            const username = authData.user.user_metadata?.username || 
-                            authData.user.user_metadata?.name || 
-                            authData.user.email?.split('@')[0] || 
-                            'user';
-            
-            localStorage.setItem('username', username);
-          } else if (profileData) {
-            // Use the profile data from the RPC function
-            const username = profileData.username || 
-                            authData.user.email?.split('@')[0] || 
-                            'user';
-            
-            localStorage.setItem('username', username);
-          } else {
-            // If no profile data and no error, use metadata as fallback
-            const username = authData.user.user_metadata?.username || 
-                            authData.user.user_metadata?.name || 
-                            authData.user.email?.split('@')[0] || 
-                            'user';
-            
-            localStorage.setItem('username', username);
-          }
-        } catch (profileError) {
-          // Continue with login even if there's an error with the profile
-          const username = authData.user.email?.split('@')[0] || 'user';
-          localStorage.setItem('username', username);
-        }
-
-        // Username is already stored in the try block above
-
+        // Handle remember me
         if (data.rememberMe) {
           localStorage.setItem('rememberedCredentials', JSON.stringify({
             email: data.email,
@@ -178,7 +143,7 @@ const Login = () => {
           localStorage.removeItem('rememberedCredentials');
         }
 
-        return authData;
+        return result;
       } catch (error) {
         throw error;
       } finally {
@@ -217,25 +182,6 @@ const Login = () => {
         setTurnstileError('Please complete the security check');
         setIsLoading(false);
         return;
-      }
-
-      // Verify Turnstile token (only if enabled and in production)
-      if (enableTurnstile && !isDevelopment) {
-        const verificationResponse = await fetch('/api/turnstile/verify', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            token: turnstileToken,
-            action: 'login',
-          }),
-        });
-
-        const verificationResult = await verificationResponse.json();
-        if (!verificationResult.success) {
-          setTurnstileError('Security check failed. Please try again.');
-          setIsLoading(false);
-          return;
-        }
       }
       
       await loginMutation.mutateAsync(data);
