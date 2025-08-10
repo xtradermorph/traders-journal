@@ -13,7 +13,6 @@ import { useState } from "react";
 
 import ChatWidget from "./src/components/chat/ChatWidget";
 import CookieConsent from "./src/components/CookieConsent";
-import CookieStatus from "./src/components/CookieStatus";
 import { initializeCookiePreferences } from "./src/lib/cookie-utils";
 
 import { CloudflareAnalytics } from "./components/ui/cloudflare-analytics";
@@ -246,7 +245,6 @@ export default function RootLayout({
             
             {/* Cookie Consent - Show on all pages */}
             <CookieConsent />
-            <CookieStatus />
             
             {/* Version Display */}
             <VersionDisplay />
