@@ -746,11 +746,13 @@ input, select, textarea {
   align-items: center !important;
   min-height: 65px !important;
   width: 100% !important;
+  position: relative !important;
 }
 
 .turnstile-container iframe {
   border: none !important;
   border-radius: 8px !important;
+  max-width: 100% !important;
 }
 
 /* Ensure Turnstile widget is visible */
@@ -758,6 +760,12 @@ input, select, textarea {
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+  margin: 0 auto !important;
+}
+
+/* Prevent multiple widgets */
+.turnstile-container .cf-turnstile + .cf-turnstile {
+  display: none !important;
 }
 
 /* Turnstile widget responsive design */
@@ -781,4 +789,9 @@ input, select, textarea {
   height: 65px;
   color: hsl(var(--muted-foreground));
   font-size: 14px;
+}
+
+/* Hide duplicate widgets */
+.turnstile-wrapper .turnstile-container .cf-turnstile:nth-child(n+2) {
+  display: none !important;
 }

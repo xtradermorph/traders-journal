@@ -18,7 +18,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Image from "next/image";
 // Import types from the types file we created
-import { TradeSetup, UserProfile } from '../types';
+import { TradeSetup } from '../types';
+import { UserProfile } from '../types/user';
 import { 
   Users, MessageSquare, ThumbsUp, MessageCircle, Share2, 
   Filter, TrendingUp, Globe, User, PlusCircle, AlertTriangle, Eye, EyeOff,
@@ -109,6 +110,7 @@ const SocialForumContent = () => {
 
   // Like state per trade
   const [likedSetups, setLikedSetups] = React.useState<{ [setupId: string]: boolean }>({});
+  const [likes, setLikes] = React.useState<{ [setupId: string]: any[] }>({});
   const [likeCounts, setLikeCounts] = React.useState<{ [setupId: string]: number }>({});
   const [liking, setLiking] = React.useState<{ [setupId: string]: boolean }>({});
   const [deletingTrade, setDeletingTrade] = React.useState<{ [setupId: string]: boolean }>({});
@@ -2429,7 +2431,7 @@ const SocialForumContent = () => {
             </DialogDescription>
           </DialogHeader>
               
-              <Tabs value={shareType} onValueChange={(value: string) => setShareType(value)}>
+              <Tabs value={shareType} onValueChange={(value: string) => setShareType(value as 'friends' | 'public' | 'private' | 'link')}>
                 <TabsList className="grid w-full grid-cols-4">
                   <TabsTrigger value="friends">Friends</TabsTrigger>
                   <TabsTrigger value="public">Public Users</TabsTrigger>

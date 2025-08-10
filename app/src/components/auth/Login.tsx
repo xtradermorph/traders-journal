@@ -1,7 +1,7 @@
 "use client"
 
 import React from "react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ClientOnly } from "@/components/ClientOnly";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -77,6 +77,23 @@ const Login = () => {
 
   // Turnstile is enabled for bot protection
   const enableTurnstile = true;
+
+  // Memoize Turnstile callback functions to prevent multiple renders
+  const handleTurnstileVerify = useCallback((token: string) => {
+    setTurnstileToken(token);
+    setTurnstileError(null);
+  }, []);
+
+  const handleTurnstileError = useCallback((error: string) => {
+    setTurnstileError('Security check failed. Please try again.');
+    setTurnstileToken(null);
+  }, []);
+
+  const handleTurnstileExpire = useCallback(() => {
+    setTurnstileToken(null);
+    setTurnstileError('Security check expired. Please try again.');
+  }, []);
+
   const loginForm = useForm({
     resolver: zodResolver(loginFormSchema),
     defaultValues: {
@@ -397,18 +414,9 @@ const Login = () => {
                     <div className="flex justify-center">
                       <Turnstile
                         siteKey={turnstileSiteKey}
-                        onVerify={(token) => {
-                          setTurnstileToken(token);
-                          setTurnstileError(null);
-                        }}
-                        onError={(error) => {
-                          setTurnstileError('Security check failed. Please try again.');
-                          setTurnstileToken(null);
-                        }}
-                        onExpire={() => {
-                          setTurnstileToken(null);
-                          setTurnstileError('Security check expired. Please try again.');
-                        }}
+                        onVerify={handleTurnstileVerify}
+                        onError={handleTurnstileError}
+                        onExpire={handleTurnstileExpire}
                         theme="auto"
                         size="normal"
                       />

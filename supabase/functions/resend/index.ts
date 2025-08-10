@@ -7,14 +7,15 @@ interface EmailRequest {
   to: string;
   subject: string;
   html?: string;
-  type?: 'default' | 'passwordReset' | 'verification';
+  type?: 'default' | 'passwordReset' | 'passwordResetConfirmation' | 'verification';
   resetLink?: string;
   verificationLink?: string;
+  newPassword?: string;
 }
 
 // Email template types
 const emailTemplates = {
-  default: (subject, html)=>`
+  default: (subject, html) => `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -64,13 +65,12 @@ const emailTemplates = {
         </div>
         <div class="footer">
           ${new Date().getFullYear()} Trader's Journal. All rights reserved.
-          <br>
-          If you did not expect this email, please ignore it.
         </div>
       </div>
     </body>
     </html>
   `,
+
   passwordReset: (subject, resetLink)=>`
     <!DOCTYPE html>
     <html lang="en">
@@ -139,7 +139,109 @@ const emailTemplates = {
     </body>
     </html>
   `,
-  verification: (subject, verificationLink)=>`
+
+  passwordResetConfirmation: (subject, newPassword) => `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>${subject}</title>
+      <style>
+        body {
+          font-family: 'Arial', sans-serif;
+          line-height: 1.6;
+          color: #333;
+          max-width: 600px;
+          margin: 0 auto;
+          padding: 20px;
+          background-color: #f4f4f4;
+        }
+        .container {
+          background-color: white;
+          border-radius: 8px;
+          padding: 30px;
+          box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .logo {
+          max-width: 150px;
+          margin-bottom: 20px;
+        }
+        .content {
+          margin-top: 20px;
+        }
+        .success-box {
+          background-color: #d4edda;
+          border: 1px solid #c3e6cb;
+          border-radius: 5px;
+          padding: 15px;
+          margin: 20px 0;
+        }
+        .password-box {
+          background-color: #f8f9fa;
+          border: 1px solid #dee2e6;
+          border-radius: 5px;
+          padding: 15px;
+          margin: 15px 0;
+          font-family: monospace;
+          font-size: 16px;
+          text-align: center;
+          font-weight: bold;
+        }
+        .warning {
+          background-color: #fff3cd;
+          border: 1px solid #ffeaa7;
+          border-radius: 5px;
+          padding: 15px;
+          margin: 20px 0;
+        }
+        .footer {
+          margin-top: 30px;
+          font-size: 12px;
+          color: #777;
+          text-align: center;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="container">
+        <img 
+          src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png" 
+          alt="Trader's Journal Logo" 
+          class="logo"
+        />
+        <div class="content">
+          <h2>Password Reset Successful</h2>
+          <div class="success-box">
+            <p><strong>Your password has been successfully reset!</strong></p>
+            <p>You can now log in to your Trader's Journal account using your new password.</p>
+          </div>
+          
+          <h3>Your New Password:</h3>
+          <div class="password-box">
+            ${newPassword}
+          </div>
+          
+          <div class="warning">
+            <p><strong>Important:</strong></p>
+            <ul>
+              <li>Please save this password in a secure location</li>
+              <li>You can change your password anytime from your account settings</li>
+              <li>If you didn't request this password reset, please contact support immediately</li>
+            </ul>
+          </div>
+          
+          <p>You can now <a href="https://tradersjournal.pro/login" style="color: #007bff;">log in to your account</a> using your new password.</p>
+        </div>
+        <div class="footer">
+          ${new Date().getFullYear()} Trader's Journal. All rights reserved.
+        </div>
+      </div>
+    </body>
+    </html>
+  `,
+
+  verification: (subject, verificationLink) => `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -194,8 +296,8 @@ const emailTemplates = {
           class="logo"
         />
         <div class="content">
-          <h2>Verify Your Email Address</h2>
-          <p>Thank you for signing up for Trader's Journal! Please verify your email address by clicking the button below:</p>
+          <h2>Verify Your Email</h2>
+          <p>Thank you for signing up! Please verify your email address by clicking the button below:</p>
           <a href="${verificationLink}" class="verify-button">Verify Email</a>
           <p>If you did not create an account with us, please ignore this email.</p>
           <p>This link will expire in 24 hours.</p>
@@ -228,7 +330,7 @@ serve(async (req)=>{
   try {
     // Get the request body
     const body = await req.json();
-    const { to, subject, html, type = 'default', resetLink, verificationLink } = body;
+    const { to, subject, html, type = 'default', resetLink, verificationLink, newPassword } = body;
 
     // Validate required fields
     if (!to || !subject) {
@@ -253,6 +355,17 @@ serve(async (req)=>{
           });
         }
         emailHtml = emailTemplates.passwordReset(subject, resetLink);
+        break;
+      case 'passwordResetConfirmation':
+        if (!newPassword) {
+          return new Response(JSON.stringify({
+            error: "Missing newPassword for password reset confirmation email"
+          }), {
+            headers,
+            status: 400
+          });
+        }
+        emailHtml = emailTemplates.passwordResetConfirmation(subject, newPassword);
         break;
       case 'verification':
         if (!verificationLink) {
