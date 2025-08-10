@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import { useToast } from '../src/hooks/use-toast';
@@ -19,82 +19,86 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function ResetPassword() {
+// Separate component for the form content
+function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false);
-  const [isValidSession, setIsValidSession] = useState(false);
-  const [sessionChecked, setSessionChecked] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState('');
+  const [validationErrors, setValidationErrors] = useState<{[key: string]: string}>({});
   
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!, 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
-  // Check if user has a valid session for password reset
-  useEffect(() => {
-    const checkSession = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!session) {
-          toast({
-            id: 'no-session',
-            title: 'Invalid Session',
-            description: 'No active session found. Please request a new password reset.',
-            variant: "destructive"
-          });
-          router.push('/forgot-password');
-          return;
-        }
-        setIsValidSession(true);
-      } catch (error) {
-        console.error('Session check error:', error);
-        toast({
-          id: 'session-error',
-          title: 'Session Error',
-          description: 'Unable to verify your session. Please try again.',
-          variant: "destructive"
-        });
-        router.push('/forgot-password');
-      } finally {
-        setSessionChecked(true);
-      }
-    };
+  const accessToken = searchParams.get('access_token');
+  const refreshToken = searchParams.get('refresh_token');
 
-    checkSession();
-  }, [supabase.auth, router, toast]);
+  // Password validation
+  const validatePassword = (password: string) => {
+    const errors: {[key: string]: string} = {};
+    
+    if (password.length < 8) {
+      errors.length = 'Password must be at least 8 characters';
+    }
+    if (!/[A-Z]/.test(password)) {
+      errors.uppercase = 'Password must contain at least one uppercase letter';
+    }
+    if (!/[a-z]/.test(password)) {
+      errors.lowercase = 'Password must contain at least one lowercase letter';
+    }
+    if (!/[0-9]/.test(password)) {
+      errors.number = 'Password must contain at least one number';
+    }
+    
+    return errors;
+  };
 
-  const handleResetPassword = async (e: React.FormEvent) => {
+  const handlePasswordChange = (value: string) => {
+    setPassword(value);
+    setValidationErrors(validatePassword(value));
+  };
+
+  const handleConfirmPasswordChange = (value: string) => {
+    setConfirmPassword(value);
+    if (value !== password) {
+      setValidationErrors(prev => ({ ...prev, confirm: 'Passwords do not match' }));
+    } else {
+      setValidationErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.confirm;
+        return newErrors;
+      });
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (password !== confirmPassword) {
-      toast({
-        id: `error-${Date.now()}`,
-        title: 'Error',
-        description: 'Passwords do not match'
-      });
+    if (!accessToken || !refreshToken) {
+      setError('Invalid reset link. Please request a new password reset.');
       return;
     }
 
-    // Check password requirements
-    if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber) {
-      toast({
-        id: `error-${Date.now()}`,
-        title: 'Password Requirements',
-        description: 'Please ensure your password meets all requirements'
-      });
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
       return;
     }
-  
+
+    // Check for validation errors
+    const passwordErrors = validatePassword(password);
+    if (Object.keys(passwordErrors).length > 0) {
+      setValidationErrors(passwordErrors);
+      return;
+    }
+
     setIsLoading(true);
-  
+    setError('');
+
     try {
       const response = await fetch('/api/auth/reset-password', {
         method: 'POST',
@@ -103,241 +107,253 @@ export default function ResetPassword() {
         },
         body: JSON.stringify({
           password,
-          confirmPassword
+          confirmPassword,
+          accessToken,
+          refreshToken,
         }),
       });
 
       const data = await response.json();
 
-      if (!response.ok) {
-        throw new Error(data.error || 'Failed to reset password');
+      if (response.ok) {
+        setIsSuccess(true);
+        toast({
+          title: "Password Reset Successful",
+          description: "Your password has been updated successfully. You will receive a confirmation email shortly.",
+        });
+      } else {
+        setError(data.error || 'Failed to reset password');
       }
-
-      // Show success dialog
-      setShowSuccessDialog(true);
-      
-    } catch (error: unknown) {
-      toast({
-        id: `error-${Date.now()}`,
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'An unknown error occurred'
-      });
+    } catch (err) {
+      setError('An error occurred while resetting your password');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSuccessDialogClose = () => {
-    setShowSuccessDialog(false);
+  const handleSuccessOk = () => {
     router.push('/login');
   };
 
-  // Password validation checks (same as registration)
-  const hasMinLength = password.length >= 8;
-  const hasUpperCase = /[A-Z]/.test(password);
-  const hasLowerCase = /[a-z]/.test(password);
-  const hasNumber = /[0-9]/.test(password);
-  const passwordsMatch = password === confirmPassword && confirmPassword.length > 0;
+  // Check if we have valid tokens
+  useEffect(() => {
+    if (!accessToken || !refreshToken) {
+      setError('Invalid reset link. Please request a new password reset.');
+    }
+  }, [accessToken, refreshToken]);
 
-  // Don't render until session is checked
-  if (!sessionChecked) {
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Verifying your session...</p>
+  if (error && !accessToken) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-md w-full space-y-8">
+          <div className="text-center">
+            <Image
+              src={LOGO_CONFIG.MAIN_LOGO_URL}
+              alt={LOGO_CONFIG.ALT_TEXT}
+              width={48}
+              height={48}
+              className="mx-auto h-12 w-auto"
+            />
+            <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+              Invalid Reset Link
+            </h2>
+            <p className="mt-2 text-sm text-gray-600">
+              {error}
+            </p>
+          </div>
+          <div className="mt-8 space-y-6">
+            <div className="text-center">
+              <Link
+                href="/login"
+                className="font-medium text-indigo-600 hover:text-indigo-500"
+              >
+                Return to Login
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  // Don't render if no valid session
-  if (!isValidSession) {
-    return null;
-  }
-
   return (
-    <>
-      <div className="min-h-screen bg-cover bg-center flex flex-col items-center justify-center p-4 relative"
-        style={{ backgroundImage: "url('/images/auth-fullpage-background.jpg')" }}
-      >
-        <Link href="/" passHref legacyBehavior>
-          <a className="absolute top-6 right-6 text-primary p-1.5 rounded-full hover:bg-black transition-colors z-10">
-            <X size={28} aria-label="Close" />
-          </a>
-        </Link>
-        
-        <div className="w-full max-w-md space-y-8 bg-cover bg-center p-8 sm:p-12 rounded-xl shadow-2xl"
-          style={{ backgroundImage: "url('/images/auth-card-background.jpg')" }}
-        >
-        <div className="flex flex-col items-center">
-          <Link href="/" className="hover:opacity-80 transition-opacity">
-              <img src={LOGO_CONFIG.MAIN_LOGO_URL} alt={LOGO_CONFIG.ALT_TEXT} className="h-20 w-20 mb-4" />
-          </Link>
-            <h2 className="text-3xl font-bold text-foreground">
-              Reset Password
-            </h2>
-            <p className="text-muted-foreground text-center mt-2">
-              Choose a new password for your account
-            </p>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <Image
+            src={LOGO_CONFIG.MAIN_LOGO_URL}
+            alt={LOGO_CONFIG.ALT_TEXT}
+            width={48}
+            height={48}
+            className="mx-auto h-12 w-auto"
+          />
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Reset Your Password
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Enter your new password below
+          </p>
         </div>
-          
-          <form onSubmit={handleResetPassword} className="space-y-6">
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+
+        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+          {error && (
+            <div className="rounded-md bg-red-50 p-4">
+              <div className="flex">
+                <X className="h-5 w-5 text-red-400" />
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-red-800">
+                    {error}
+                  </h3>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
                 New Password
               </label>
-              <div className="relative">
-            <Input
+              <div className="mt-1 relative">
+                <Input
+                  id="password"
+                  name="password"
                   type={showPassword ? "text" : "password"}
-                  placeholder="Enter new password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-                  className="pr-10"
+                  required
+                  value={password}
+                  onChange={(e) => handlePasswordChange(e.target.value)}
+                  className={cn(
+                    "pr-10",
+                    Object.keys(validationErrors).length > 0 && "border-red-300 focus:border-red-500 focus:ring-red-500"
+                  )}
+                  placeholder="Enter your new password"
                 />
                 <button
                   type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
                 </button>
               </div>
               
               {/* Password validation indicators */}
-              <div className="space-y-2 mt-3">
-              <div className="flex items-center space-x-2 text-sm">
-                {hasMinLength ? 
-                    <Check className="text-green-500" size={14} /> : 
-                    <X className="text-red-500" size={14} />
-                }
-                <span className={cn(
-                  "transition-colors",
-                    hasMinLength ? "text-green-500" : "text-red-500"
-                )}>
+              <div className="mt-2 space-y-1">
+                <div className={cn("flex items-center text-xs", password.length >= 8 ? "text-green-600" : "text-gray-400")}>
+                  <Check className={cn("h-3 w-3 mr-1", password.length >= 8 ? "text-green-600" : "text-gray-400")} />
                   At least 8 characters
-                </span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm">
-                {hasUpperCase ? 
-                    <Check className="text-green-500" size={14} /> : 
-                    <X className="text-red-500" size={14} />
-                }
-                <span className={cn(
-                  "transition-colors",
-                    hasUpperCase ? "text-green-500" : "text-red-500"
-                )}>
+                </div>
+                <div className={cn("flex items-center text-xs", /[A-Z]/.test(password) ? "text-green-600" : "text-gray-400")}>
+                  <Check className={cn("h-3 w-3 mr-1", /[A-Z]/.test(password) ? "text-green-600" : "text-gray-400")} />
                   One uppercase letter
-                </span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm">
-                {hasLowerCase ? 
-                    <Check className="text-green-500" size={14} /> : 
-                    <X className="text-red-500" size={14} />
-                }
-                <span className={cn(
-                  "transition-colors",
-                    hasLowerCase ? "text-green-500" : "text-red-500"
-                )}>
+                </div>
+                <div className={cn("flex items-center text-xs", /[a-z]/.test(password) ? "text-green-600" : "text-gray-400")}>
+                  <Check className={cn("h-3 w-3 mr-1", /[a-z]/.test(password) ? "text-green-600" : "text-gray-400")} />
                   One lowercase letter
-                </span>
-              </div>
-              <div className="flex items-center space-x-2 text-sm">
-                {hasNumber ? 
-                    <Check className="text-green-500" size={14} /> : 
-                    <X className="text-red-500" size={14} />
-                }
-                <span className={cn(
-                  "transition-colors",
-                    hasNumber ? "text-green-500" : "text-red-500"
-                )}>
+                </div>
+                <div className={cn("flex items-center text-xs", /[0-9]/.test(password) ? "text-green-600" : "text-gray-400")}>
+                  <Check className={cn("h-3 w-3 mr-1", /[0-9]/.test(password) ? "text-green-600" : "text-gray-400")} />
                   One number
-                </span>
+                </div>
               </div>
             </div>
-          </div>
 
-            <div className="space-y-2">
-              <label className="text-sm font-medium text-foreground">
+            <div>
+              <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700">
                 Confirm New Password
               </label>
-              <div className="relative">
-          <Input
+              <div className="mt-1 relative">
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
                   type={showConfirmPassword ? "text" : "password"}
-                  placeholder="Confirm new password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-                  className="pr-10"
+                  required
+                  value={confirmPassword}
+                  onChange={(e) => handleConfirmPasswordChange(e.target.value)}
+                  className={cn(
+                    "pr-10",
+                    validationErrors.confirm && "border-red-300 focus:border-red-500 focus:ring-red-500"
+                  )}
+                  placeholder="Confirm your new password"
                 />
                 <button
                   type="button"
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 >
-                  {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-5 w-5 text-gray-400" />
+                  ) : (
+                    <Eye className="h-5 w-5 text-gray-400" />
+                  )}
                 </button>
               </div>
-              
-              {/* Password match indicator */}
-              {confirmPassword.length > 0 && (
-                <div className="flex items-center space-x-2 text-sm">
-                  {passwordsMatch ? 
-                    <Check className="text-green-500" size={14} /> : 
-                    <X className="text-red-500" size={14} />
-                  }
-                  <span className={cn(
-                    "transition-colors",
-                    passwordsMatch ? "text-green-500" : "text-red-500"
-                  )}>
-                    Passwords match
-                  </span>
-                </div>
+              {validationErrors.confirm && (
+                <p className="mt-1 text-sm text-red-600">{validationErrors.confirm}</p>
               )}
             </div>
+          </div>
 
-          <Button 
-            type="submit" 
-            className="w-full" 
-              disabled={
-                isLoading || 
-                !hasMinLength || 
-                !hasUpperCase || 
-                !hasLowerCase || 
-                !hasNumber || 
-                !passwordsMatch
-              }
+          <div>
+            <Button
+              type="submit"
+              disabled={isLoading || Object.keys(validationErrors).length > 0 || password !== confirmPassword}
+              className="w-full"
             >
-              {isLoading ? (
-                <>
-                  <span className="mr-2">Resetting...</span>
-                  <div className="h-4 w-4 animate-spin border-2 border-primary border-t-transparent rounded-full"></div>
-                </>
-              ) : (
-                "Reset Password"
-              )}
-          </Button>
+              {isLoading ? "Resetting Password..." : "Reset Password"}
+            </Button>
+          </div>
+
+          <div className="text-center">
+            <Link
+              href="/login"
+              className="font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              Back to Login
+            </Link>
+          </div>
         </form>
       </div>
-    </div>
 
       {/* Success Dialog */}
-      <Dialog open={showSuccessDialog} onOpenChange={setShowSuccessDialog}>
-        <DialogContent className="sm:max-w-md">
+      <Dialog open={isSuccess} onOpenChange={setIsSuccess}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-green-600">Password Reset Successful!</DialogTitle>
+            <DialogTitle className="flex items-center">
+              <Check className="h-5 w-5 text-green-600 mr-2" />
+              Password Reset Successful
+            </DialogTitle>
             <DialogDescription>
-              Your password has been successfully reset. You will receive a confirmation email with your new password details.
+              Your password has been successfully updated. You will receive a confirmation email with your new password details shortly.
             </DialogDescription>
           </DialogHeader>
-          <div className="flex justify-end space-x-2">
-            <Button onClick={handleSuccessDialogClose}>
+          <div className="flex justify-end">
+            <Button onClick={handleSuccessOk}>
               Continue to Login
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
+  );
+}
+
+// Main component with Suspense boundary
+export default function ResetPassword() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto"></div>
+          <p className="mt-2 text-sm text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <ResetPasswordForm />
+    </Suspense>
   );
 }
