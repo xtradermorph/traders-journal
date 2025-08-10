@@ -12,6 +12,7 @@ import { UserProfileProvider } from './src/components/UserProfileContext'
 import { useState } from "react";
 
 import ChatWidget from "./src/components/chat/ChatWidget";
+import CookieConsent from "./src/components/CookieConsent";
 
 import { CloudflareAnalytics } from "./components/ui/cloudflare-analytics";
 import VersionDisplay from "./src/components/VersionDisplay";
@@ -233,10 +234,13 @@ export default function RootLayout({
           >
             <ThemeSyncProvider>
               <UserProfileProvider>
-            {children}
+                {children}
                 {!isPublicPage && <ChatWidget />}
               </UserProfileProvider>
             </ThemeSyncProvider>
+            
+            {/* Cookie Consent - Show on all pages */}
+            <CookieConsent />
             
             {/* Version Display */}
             <VersionDisplay />
