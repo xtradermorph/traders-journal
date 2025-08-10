@@ -13,6 +13,8 @@ import { useState } from "react";
 
 import ChatWidget from "./src/components/chat/ChatWidget";
 import CookieConsent from "./src/components/CookieConsent";
+import CookieStatus from "./src/components/CookieStatus";
+import { initializeCookiePreferences } from "./src/lib/cookie-utils";
 
 import { CloudflareAnalytics } from "./components/ui/cloudflare-analytics";
 import VersionDisplay from "./src/components/VersionDisplay";
@@ -79,6 +81,9 @@ export default function RootLayout({
   
   // Global WebSocket error filter to reduce console noise
   useEffect(() => {
+    // Initialize cookie preferences from stored consent
+    initializeCookiePreferences();
+    
     // Store original console methods
     const originalError = console.error;
     const originalWarn = console.warn;
@@ -241,6 +246,7 @@ export default function RootLayout({
             
             {/* Cookie Consent - Show on all pages */}
             <CookieConsent />
+            <CookieStatus />
             
             {/* Version Display */}
             <VersionDisplay />

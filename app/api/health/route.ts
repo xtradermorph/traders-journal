@@ -3,20 +3,20 @@ import { createClient } from '@supabase/supabase-js';
 
 export async function GET() {
   try {
-    const supabaseUrl = process.env.SUPABASE_URL || 'https://oweimywvzmqoizsyotrt.supabase.co';
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://oweimywvzmqoizsyotrt.supabase.co';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     
     // Check if required environment variables are present
     if (!supabaseKey) {
-      console.error('SUPABASE_SERVICE_ROLE_KEY is not configured');
+      console.error('NEXT_PUBLIC_SUPABASE_ANON_KEY is not configured');
       return NextResponse.json({
         status: 'unhealthy',
         timestamp: new Date().toISOString(),
-        error: 'Database configuration missing: SUPABASE_SERVICE_ROLE_KEY not found',
+        error: 'Database configuration missing: NEXT_PUBLIC_SUPABASE_ANON_KEY not found',
         database: {
           connected: false,
           recordCount: 0,
-          error: 'Missing service role key'
+          error: 'Missing anon key'
         },
         edgeFunction: {
           status: 'not_configured'
@@ -35,21 +35,22 @@ export async function GET() {
     let dbError = null;
     
     try {
+      // Use profiles table which definitely exists
       const { count, error } = await supabase
-        .from('user_settings')
+        .from('profiles')
         .select('*', { count: 'exact', head: true });
       
       if (error) {
         console.error('Database health check error:', error);
-        // Try a different table if user_settings fails
-        const { count: profilesCount, error: profilesError } = await supabase
-          .from('profiles')
+        // Try trades table as fallback
+        const { count: tradesCount, error: tradesError } = await supabase
+          .from('trades')
           .select('*', { count: 'exact', head: true });
         
-        if (profilesError) {
-          throw profilesError;
+        if (tradesError) {
+          throw tradesError;
         }
-        recordCount = profilesCount || 0;
+        recordCount = tradesCount || 0;
       } else {
         recordCount = count || 0;
       }
@@ -64,52 +65,47 @@ export async function GET() {
     let functionStatus = 'unknown';
     let functionError = null;
     try {
-      // Only try to call edge function if we have the anon key
-      if (process.env.SUPABASE_ANON_KEY) {
-        const functionResponse = await fetch(
-          `https://oweimywvzmqoizsyotrt.functions.supabase.co/generate-reports?type=daily`,
-          { 
-            method: 'GET',
-            headers: {
-              'Authorization': `Bearer ${process.env.SUPABASE_ANON_KEY}`
-            },
-            signal: AbortSignal.timeout(5000) // 5 second timeout
-          }
-        );
-        
-        // Try to get response text for debugging
-        let responseText = '';
-        try {
-          responseText = await functionResponse.text();
-        } catch {
-          // Ignore text reading errors
+      // Use the same anon key for edge function calls
+      const functionResponse = await fetch(
+        `https://oweimywvzmqoizsyotrt.functions.supabase.co/generate-reports?type=daily`,
+        { 
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${supabaseKey}`
+          },
+          signal: AbortSignal.timeout(5000) // 5 second timeout
         }
-        
-        if (functionResponse.ok) {
-          functionStatus = 'operational';
-        } else if (functionResponse.status === 400) {
-          // 400 means the function is working but the request was invalid (which we fixed)
-          functionStatus = 'operational';
-        } else if (functionResponse.status === 401) {
-          functionStatus = 'unauthorized';
-          functionError = 'Authentication failed';
-        } else if (functionResponse.status === 403) {
-          functionStatus = 'forbidden';
-          functionError = 'Access forbidden';
-        } else if (functionResponse.status === 404) {
-          functionStatus = 'not_configured';
-          functionError = 'Function not found';
-        } else if (functionResponse.status === 500) {
-          // 500 means the function is running but had an internal error (likely no users with report preferences)
-          functionStatus = 'operational';
-          functionError = 'Function operational but no reports to process';
-        } else {
-          functionStatus = 'error';
-          functionError = `HTTP ${functionResponse.status}: ${responseText}`;
-        }
-      } else {
+      );
+      
+      // Try to get response text for debugging
+      let responseText = '';
+      try {
+        responseText = await functionResponse.text();
+      } catch {
+        // Ignore text reading errors
+      }
+      
+      if (functionResponse.ok) {
+        functionStatus = 'operational';
+      } else if (functionResponse.status === 400) {
+        // 400 means the function is working but the request was invalid (which we fixed)
+        functionStatus = 'operational';
+      } else if (functionResponse.status === 401) {
+        functionStatus = 'unauthorized';
+        functionError = 'Authentication failed';
+      } else if (functionResponse.status === 403) {
+        functionStatus = 'forbidden';
+        functionError = 'Access forbidden';
+      } else if (functionResponse.status === 404) {
         functionStatus = 'not_configured';
-        functionError = 'Missing SUPABASE_ANON_KEY';
+        functionError = 'Function not found';
+      } else if (functionResponse.status === 500) {
+        // 500 means the function is running but had an internal error (likely no users with report preferences)
+        functionStatus = 'operational';
+        functionError = 'Function operational but no reports to process';
+      } else {
+        functionStatus = 'error';
+        functionError = `HTTP ${functionResponse.status}: ${responseText}`;
       }
     } catch (e) {
       functionStatus = 'error';
@@ -119,6 +115,7 @@ export async function GET() {
     // Check scheduled jobs
     let cronStatus = 'unknown';
     try {
+      // Try to check if cron jobs function exists, but don't fail if it doesn't
       const { data: cronJobActive, error: cronError } = await supabase.rpc(
         'check_cron_jobs',
         { job_name: 'periodic-trade-reports', hours_threshold: 48 }

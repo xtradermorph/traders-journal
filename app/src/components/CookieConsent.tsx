@@ -55,20 +55,17 @@ const CookieConsent: React.FC = () => {
     updateCookieConsent(cookiePrefs);
     setIsVisible(false);
     
-    // Apply preferences
+    // Show feedback to user
     if (cookiePrefs.analytics) {
-      // Enable analytics - safely initialize gtag
-      if (typeof window !== 'undefined') {
-        (window as any).gtag = (window as any).gtag || function() { 
-          ((window as any).gtag as any).q = ((window as any).gtag as any).q || []; 
-          ((window as any).gtag as any).q.push(arguments); 
-        };
-      }
+      console.log('✅ Analytics cookies enabled');
+    } else {
+      console.log('🚫 Analytics cookies disabled');
     }
     
     if (cookiePrefs.functional) {
-      // Enable functional cookies
-      // Add any functional cookie logic here
+      console.log('✅ Functional cookies enabled');
+    } else {
+      console.log('🚫 Functional cookies disabled');
     }
   };
 
