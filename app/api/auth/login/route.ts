@@ -14,29 +14,51 @@ export async function POST(request: NextRequest) {
 
     // Verify Turnstile token if provided
     if (turnstileToken) {
+      console.log('Verifying Turnstile token...');
+      
+      // Check if secret key is available
+      if (!process.env.TURNSTILE_SECRET_KEY) {
+        console.error('TURNSTILE_SECRET_KEY is not set');
+        return NextResponse.json(
+          { error: 'Server configuration error' },
+          { status: 500 }
+        );
+      }
+
       const clientIp = request.headers.get('x-forwarded-for') || 
                       request.headers.get('x-real-ip') || 
                       'unknown';
 
       const formData = new FormData();
-      formData.append('secret', process.env.TURNSTILE_SECRET_KEY!);
+      formData.append('secret', process.env.TURNSTILE_SECRET_KEY);
       formData.append('response', turnstileToken);
       formData.append('remoteip', clientIp);
 
-      const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-        method: 'POST',
-        body: formData
-      });
+      try {
+        const turnstileResponse = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+          method: 'POST',
+          body: formData
+        });
 
-      const turnstileResult = await turnstileResponse.json();
+        const turnstileResult = await turnstileResponse.json();
+        console.log('Turnstile verification result:', turnstileResult);
 
-      if (!turnstileResult.success) {
-        console.error('Turnstile verification failed:', turnstileResult['error-codes']);
+        if (!turnstileResult.success) {
+          console.error('Turnstile verification failed:', turnstileResult['error-codes']);
+          return NextResponse.json(
+            { error: 'Captcha verification failed' },
+            { status: 400 }
+          );
+        }
+      } catch (turnstileError) {
+        console.error('Turnstile API error:', turnstileError);
         return NextResponse.json(
           { error: 'Captcha verification failed' },
           { status: 400 }
         );
       }
+    } else {
+      console.log('No Turnstile token provided, skipping verification');
     }
 
     // Create Supabase client

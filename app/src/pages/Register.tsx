@@ -63,8 +63,8 @@ const Register = () => {
   // Get Turnstile site key - use proper environment variable or fallback
   const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || "0x4AAAAAABm43D0IOh0X_ZLm";
 
-  // Turnstile is enabled for bot protection
-  const enableTurnstile = true;
+  // Turnstile is enabled for bot protection (only in production)
+  const enableTurnstile = !isDevelopment && !!process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY;
 
   // Memoize Turnstile callback functions to prevent multiple renders
   const handleTurnstileVerify = useCallback((token: string) => {
@@ -110,7 +110,7 @@ const Register = () => {
             username: data.username,
             email: data.email,
             password: data.password,
-            turnstileToken: enableTurnstile && !isDevelopment ? turnstileToken : undefined
+            turnstileToken: enableTurnstile ? turnstileToken : undefined
           }),
         });
 
@@ -151,8 +151,8 @@ const Register = () => {
       setError(null);
       setTurnstileError(null);
       
-      // Check if Turnstile token is present (only in production)
-      if (!isDevelopment && !turnstileToken) {
+      // Check if Turnstile token is present (only if enabled)
+      if (enableTurnstile && !turnstileToken) {
         setTurnstileError('Please complete the security check');
         setIsLoading(false);
         return;
@@ -381,7 +381,7 @@ const Register = () => {
                 )}
 
                 {/* Turnstile Security Check */}
-                {enableTurnstile && !isDevelopment && (
+                {enableTurnstile && (
                   <div className="space-y-2">
                     <p className="text-center text-sm text-muted-foreground">
                       Let us know you&apos;re human
