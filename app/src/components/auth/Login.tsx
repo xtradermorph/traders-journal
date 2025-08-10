@@ -193,25 +193,6 @@ const Login = () => {
 
   const handleSubmit = loginForm.handleSubmit(onSubmit);
 
-  useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          // Clear any stored credentials
-          localStorage.removeItem('rememberedCredentials');
-          
-          // Sign out to prevent automatic login
-          await supabase.auth.signOut();
-        }
-      } catch (error) {
-        // Ignore auth check errors
-      }
-    };
-
-    checkAuth();
-  }, [router]);
-  
   // Handle back button to prevent showing remembered credentials
   useEffect(() => {
     const handlePopState = () => {
