@@ -617,6 +617,11 @@ const ChatWidget = () => {
             .select("id, username, avatar_url")
             .in("id", userIds);
           
+          console.log('Profile data for group', member.group_id, ':', {
+            userIds,
+            profiles: profiles?.map(p => ({ id: p.id, username: p.username }))
+          });
+          
           const members = profiles?.map(p => ({ profile: p })) || [];
           
           // For direct chats, ensure we have both users
@@ -627,12 +632,24 @@ const ChatWidget = () => {
             }
           }
           
+          // Debug the name derivation for direct chats
+          let conversationName = group.name;
+          if (group.is_direct) {
+            const otherMember = members.find(m => m.profile.id !== currentUser.id);
+            conversationName = otherMember?.profile?.username || 'Unknown';
+            console.log('Direct chat name derivation:', {
+              group_id: group.id,
+              currentUserId: currentUser.id,
+              allMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username })),
+              otherMember: otherMember ? { id: otherMember.profile.id, username: otherMember.profile.username } : null,
+              derivedName: conversationName
+            });
+          }
+          
           return {
             group_id: group.id,
             is_direct: group.is_direct,
-            name: group.is_direct 
-              ? members.find(m => m.profile.id !== currentUser.id)?.profile?.username || 'Unknown'
-              : group.name,
+            name: conversationName,
             members,
             last_message: "No messages yet...",
             last_message_at: new Date().toISOString(),
