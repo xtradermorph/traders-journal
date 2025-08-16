@@ -63,7 +63,7 @@ export default function SettingsPage() {
   const [originalSettings, setOriginalSettings] = useState<UserSettings | null>(null);
   const [settings, setSettings] = useState<UserSettings>({
     user_id: '',
-    theme: 'system',
+    theme: 'original-dark',
     notifications_enabled: true,
     email_notifications: true,
     default_currency: 'AUD',

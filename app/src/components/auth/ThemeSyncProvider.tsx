@@ -19,7 +19,8 @@ export default function ThemeSyncProvider({ children }: { children: React.ReactN
       if (data && data.theme) {
         setTheme(data.theme);
       } else {
-        setTheme("system");
+        // Set default theme to original-dark instead of system
+        setTheme("original-dark");
       }
     };
 
@@ -29,7 +30,8 @@ export default function ThemeSyncProvider({ children }: { children: React.ReactN
         await applyUserTheme(session.user.id);
       }
       if (event === "SIGNED_OUT") {
-        setTheme("system");
+        // Set to original-dark instead of system when signed out
+        setTheme("original-dark");
       }
     });
 
@@ -38,6 +40,9 @@ export default function ThemeSyncProvider({ children }: { children: React.ReactN
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         await applyUserTheme(user.id);
+      } else {
+        // Set default theme for non-authenticated users
+        setTheme("original-dark");
       }
     })();
 
