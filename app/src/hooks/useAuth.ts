@@ -53,13 +53,23 @@ export const useAuth = () => {
 
         if (error) {
           console.warn('Auth session check error:', error.message);
-          setAuthState(prev => ({
-            ...prev,
-            isAuthenticated: false,
-            loading: false,
-            session: null,
-            user: null
-          }))
+          // Don't immediately set authentication to false for certain errors
+          // that might be temporary (like network issues or Cloudflare challenges)
+          if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
+            // For network-related errors, keep the current state and just stop loading
+            setAuthState(prev => ({
+              ...prev,
+              loading: false
+            }))
+          } else {
+            setAuthState(prev => ({
+              ...prev,
+              isAuthenticated: false,
+              loading: false,
+              session: null,
+              user: null
+            }))
+          }
           return
         }
 
