@@ -11,7 +11,7 @@ import ThemeSyncProvider from './src/components/auth/ThemeSyncProvider'
 import { UserProfileProvider } from './src/components/UserProfileContext'
 import { useState } from "react";
 
-import ChatWidget from "./src/components/chat/ChatWidget";
+// ChatWidget removed - chat functionality was removed in migration
 import CookieConsent from "./src/components/CookieConsent";
 import { initializeCookiePreferences } from "./src/lib/cookie-utils";
 
@@ -33,7 +33,7 @@ export default function RootLayout({
   const [isMobile, setIsMobile] = useState(false);
   const chatButtonRef = useRef<HTMLDivElement>(null);
   const chatDrawerRef = useRef<HTMLDivElement>(null);
-  const chatWidgetRef = useRef<HTMLDivElement>(null);
+  // ChatWidget removed - chat functionality was removed in migration
 
   // Robust device detection
   React.useEffect(() => {
@@ -67,10 +67,7 @@ export default function RootLayout({
   useEffect(() => {
     if (!isChatOpen) return;
     function handleClick(e: MouseEvent) {
-      if (!chatWidgetRef.current) return;
-      if (!chatWidgetRef.current.contains(e.target as Node)) {
-        setIsChatOpen(false);
-      }
+      // ChatWidget removed - chat functionality was removed in migration
     }
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
@@ -239,7 +236,7 @@ export default function RootLayout({
             <ThemeSyncProvider>
               <UserProfileProvider>
                 {children}
-                {!isPublicPage && <ChatWidget />}
+                {/* ChatWidget removed - chat functionality was removed in migration */}
               </UserProfileProvider>
             </ThemeSyncProvider>
             

@@ -1,0 +1,30 @@
+---
+alwaysApply: true
+---
+# External Services We use and connected to our project:
+
+## Resend
+- This service used for all email related feature and services within the project, such as: forgot password, reports, login and registering features, eamil confirmations, and trade reports that are triggered thru supabase
+
+## Netlify
+- This is our deployment service for tradersjournal.pro domain
+- It connected to GitHub, so Github commit our project updates to Netlify for deployment always
+- Netlify build dows not accept typescripts, always remember this when working on the project
+
+## Supabase
+- This is our main backend service
+- This we use for storing all users data and records for all features and settings within the authenticated pages for each users
+- Everything connected and managed thru supabase primarly.
+- We have edge functions, cronjobs, and authentication flows thru supabase
+
+## GitHub
+- Our project connected to github to upload the project the it push and commit it to Netlify automatically for deployement
+
+## Turnstile
+- This services used for user logins and sign ups to the project
+- It helps to prevent any bot attacs and general user data protection
+- It connected to supabase for authentication too, they work together
+
+## OpenAI
+- We use openAI for all AI features within the project
+- We use it for analyse trades and performance for the individual users, by using their recorded data within their profile.

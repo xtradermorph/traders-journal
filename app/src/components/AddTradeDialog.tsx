@@ -269,29 +269,40 @@ const AddTradeDialog = ({ isOpen, onClose }: AddTradeDialogProps) => {
       setSaveSuccess(false);
 
       try {
+        // Get current user
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) {
+          throw new Error('User not authenticated');
+        }
+
         // Convert form data to database format
         const rawData = {
-          ...data,
-          entryPrice: data.entryPrice || null,
-          exitPrice: data.exitPrice || null,
-          lotSize: data.lotSize || null,
+          user_id: user.id, // Add user_id to the data
+          currency_pair: data.currencyPair,
+          trade_type: data.tradeType,
+          entry_price: data.entryPrice || null,
+          exit_price: data.exitPrice || null,
+          entry_time: data.date + 'T' + data.entryTime + ':00Z',
+          exit_time: data.date + 'T' + data.exitTime + ':00Z',
+          lot_size: data.lotSize || null,
           pips: data.pips || null,
-          profitLoss: data.profitLoss ? parseFloat(data.profitLoss.replace(/[$]/g, '')) : null,
+          profit_loss: data.profitLoss ? parseFloat(data.profitLoss.replace(/[$]/g, '')) : null,
           duration: data.duration || null,
+          date: data.date,
+          notes: data.notes || null,
+          tags: data.tags ? [data.tags] : null,
+          status: 'CLOSED' // Set default status
         };
-
-        // Process the data
-        // const processedData = processTrades([rawData as any]); // This line was removed as per the edit hint
-        // const newTrade = processedData[0]; // This line was removed as per the edit hint
 
         // Insert into database
         const { error } = await supabase
           .from('trades')
-          .insert(rawData as Record<string, unknown>)
+          .insert(rawData)
           .select()
           .single();
 
         if (error) {
+          console.error('Database error:', error);
           throw error;
         }
 
@@ -316,10 +327,9 @@ const AddTradeDialog = ({ isOpen, onClose }: AddTradeDialogProps) => {
         console.error('Error adding trade:', error);
         toast({
           title: "Error",
-          description: "Failed to add trade. Please try again.",
+          description: error instanceof Error ? error.message : "Failed to add trade. Please try again.",
           variant: "destructive",
         });
-
       }
     };
 

@@ -644,62 +644,43 @@ const TradersPage = () => {
         return;
       }
 
-      // Get current user's profile information
-      const { data: currentUserProfile } = await supabase
-        .from('profiles')
-        .select('username, avatar_url')
-        .eq('id', user.id)
-        .single();
+      // Create a temporary conversation for the chat widget
+      const tempConversation = {
+        group_id: `temp_${recipientId}`,
+        name: trader.username || 'Unknown User',
+        is_direct: true,
+        members: [
+          { profile: { id: user.id, username: 'You', avatar_url: '' } },
+          { profile: { id: recipientId, username: trader.username, avatar_url: trader.avatar_url } }
+        ],
+        last_message: '',
+        last_message_at: new Date().toISOString(),
+        unread_count: 0,
+        is_pinned: false,
+        is_muted: false,
+        creator_id: user.id
+      };
 
-      // Call the DB function to get or create the chat
-      const { data, error } = await supabase.rpc('create_or_get_direct_chat', {
-        recipient_id_param: recipientId
+      // Open the chat widget with the temporary conversation
+      // This will be handled by the ChatWidget component
+      // The actual chat creation will happen when the first message is sent
+      
+      // Import and use the chat store
+      const { openChat, setActiveConversation } = await import('../src/lib/store/chatStore').then(module => module.useChatStore.getState());
+      
+      setActiveConversation(tempConversation);
+      openChat(true);
+
+      toast({
+        title: 'Chat Opened',
+        description: `Chat opened with ${trader.username}`,
       });
 
-      if (error) {
-        throw error;
-      }
-
-      if (data && data.length > 0) {
-        const groupId = data[0].group_id;
-        
-        // Create a proper conversation object with the user's name
-        const tempConversation = {
-          group_id: groupId,
-          name: trader.username, // Use the actual username instead of "Direct Message"
-          is_direct: true,
-          members: [
-            {
-              profile: {
-                id: user.id, // Current user
-                username: currentUserProfile?.username || user.email?.split('@')[0] || 'You',
-                avatar_url: currentUserProfile?.avatar_url
-              }
-            },
-            {
-              profile: {
-                id: trader.id,
-                username: trader.username,
-                avatar_url: trader.avatar_url
-              }
-            }
-          ],
-          // other fields can be added if needed
-        };
-        setActiveConversation(tempConversation);
-        openChat(true);
-      } else {
-        toast({
-          title: 'Error',
-          description: 'Could not start a conversation.',
-          variant: 'destructive',
-        });
-      }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Could not start a conversation.';
+    } catch (error) {
+      console.error('Error opening chat:', error);
       toast({
         title: 'Error',
-        description: errorMessage,
+        description: 'Failed to open chat. Please try again.',
         variant: 'destructive',
       });
     }

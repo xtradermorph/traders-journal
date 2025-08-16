@@ -27,12 +27,29 @@ export const useAuth = () => {
     if (!isClient) return
 
     let mounted = true
+    let timeoutId: NodeJS.Timeout
 
     const checkAuth = async () => {
       try {
+        // Set a timeout to prevent infinite loading
+        timeoutId = setTimeout(() => {
+          if (mounted) {
+            console.warn('Auth check timeout - forcing loading to false');
+            setAuthState(prev => ({
+              ...prev,
+              loading: false,
+              isAuthenticated: false,
+              session: null,
+              user: null
+            }));
+          }
+        }, 5000); // 5 second timeout
+
         const { data: { session }, error } = await supabase.auth.getSession()
         
         if (!mounted) return
+
+        clearTimeout(timeoutId);
 
         if (error) {
           console.warn('Auth session check error:', error.message);
@@ -55,6 +72,7 @@ export const useAuth = () => {
         }))
       } catch (error) {
         if (mounted) {
+          clearTimeout(timeoutId);
           console.warn('Auth check exception:', error);
           setAuthState(prev => ({
             ...prev,
@@ -73,6 +91,8 @@ export const useAuth = () => {
       async (event, session) => {
         if (!mounted) return
         
+        clearTimeout(timeoutId);
+        
         setAuthState(prev => ({
           ...prev,
           isAuthenticated: !!session,
@@ -85,6 +105,7 @@ export const useAuth = () => {
 
     return () => {
       mounted = false
+      clearTimeout(timeoutId);
       subscription.unsubscribe()
     }
   }, [isClient])

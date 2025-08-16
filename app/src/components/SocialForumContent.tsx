@@ -21,7 +21,7 @@ import Image from "next/image";
 import { TradeSetup } from '../types';
 import { UserProfile } from '../types/user';
 import { 
-  Users, MessageSquare, ThumbsUp, MessageCircle, Share2, 
+  Users, MessageSquare, ThumbsUp, ThumbsDown, MessageCircle, Share2, 
   Filter, TrendingUp, Globe, User, PlusCircle, AlertTriangle, Eye, EyeOff,
   X, Calendar, BarChart3, Clock, SortAsc, SortDesc, Loader2, Trash2, Send, Reply, Upload, Plus, Check
 } from "lucide-react";
@@ -56,6 +56,11 @@ interface Comment {
   updated_at: string;
   parent_id?: string;
   user?: UserProfile;
+  likes_count?: number;
+  dislikes_count?: number;
+  is_edited?: boolean;
+  edited_at?: string;
+  user_reaction?: 'like' | 'dislike' | null;
 }
 
 interface CommentWithReplies extends Comment {
@@ -108,11 +113,15 @@ const SocialForumContent = () => {
   const [expandedReplies, setExpandedReplies] = React.useState<{ [commentId: string]: boolean }>({});
   const [commentCounts, setCommentCounts] = React.useState<{ [setupId: string]: number }>({});
 
-  // Like state per trade
+  // Like and dislike state per trade
   const [likedSetups, setLikedSetups] = React.useState<{ [setupId: string]: boolean }>({});
+  const [dislikedSetups, setDislikedSetups] = React.useState<{ [setupId: string]: boolean }>({});
   const [likes, setLikes] = React.useState<{ [setupId: string]: any[] }>({});
+  const [dislikes, setDislikes] = React.useState<{ [setupId: string]: any[] }>({});
   const [likeCounts, setLikeCounts] = React.useState<{ [setupId: string]: number }>({});
+  const [dislikeCounts, setDislikeCounts] = React.useState<{ [setupId: string]: number }>({});
   const [liking, setLiking] = React.useState<{ [setupId: string]: boolean }>({});
+  const [disliking, setDisliking] = React.useState<{ [setupId: string]: boolean }>({});
   const [deletingTrade, setDeletingTrade] = React.useState<{ [setupId: string]: boolean }>({});
 
   // Share dialog state
@@ -596,21 +605,31 @@ const SocialForumContent = () => {
   }, []);
 
   // Fetch comments for a trade setup (with parent_id) - moved before useEffect to avoid temporal dead zone
-  const fetchComments = useCallback(async (setupId: string) => {
+  const fetchComments = useCallback(async (setupId: string, limit?: number) => {
     setLoadingComments((prev) => ({ ...prev, [setupId]: true }));
     try {
-      const { data, error } = await supabase
+      let query = supabase
         .from('trade_setup_comments')
         .select(`
           *,
-          user:profiles(id, username, avatar_url)
+          user:profiles(id, username, avatar_url),
+          user_reaction:trade_setup_comment_reactions(reaction_type)
         `)
         .eq('trade_setup_id', setupId)
-        .order('created_at', { ascending: true });
+        .order('created_at', { ascending: false }); // Most recent first
+
+      if (limit) {
+        query = query.limit(limit);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 
-      setComments((prev) => ({ ...prev, [setupId]: data || [] }));
+      // Reverse the data to show oldest first in the UI
+      const reversedData = (data || []).reverse();
+      setComments((prev) => ({ ...prev, [setupId]: reversedData }));
+      
       // Initialize comment count when comments are loaded
       const topLevelCount = (data || []).filter((c: any) => !c.parent_id).length;
       setCommentCounts((prev) => ({ ...prev, [setupId]: topLevelCount }));
@@ -754,7 +773,13 @@ const SocialForumContent = () => {
           const newComment = payload.new;
           // Fetch comments for the specific trade setup that got a new comment
           if (newComment.trade_setup_id) {
-            fetchComments(newComment.trade_setup_id);
+            // If comments are open, refresh with current limit, otherwise just update count
+            const currentComments = comments[newComment.trade_setup_id] || [];
+            const isOpen = openComments[newComment.trade_setup_id];
+            if (isOpen) {
+              // Refresh with current number of comments (up to 20)
+              fetchComments(newComment.trade_setup_id, Math.min(currentComments.length + 1, 20));
+            }
             // Increment comment count immediately for better UX
             setCommentCounts(prev => ({ 
               ...prev, 
@@ -766,7 +791,12 @@ const SocialForumContent = () => {
         if (payload.eventType === 'DELETE') {
           const deletedComment = payload.old;
           if (deletedComment.trade_setup_id) {
-            fetchComments(deletedComment.trade_setup_id);
+            // If comments are open, refresh with current limit
+            const isOpen = openComments[deletedComment.trade_setup_id];
+            if (isOpen) {
+              const currentComments = comments[deletedComment.trade_setup_id] || [];
+              fetchComments(deletedComment.trade_setup_id, Math.min(currentComments.length, 20));
+            }
             // Decrement comment count
             setCommentCounts(prev => ({ 
               ...prev, 
@@ -780,6 +810,35 @@ const SocialForumContent = () => {
           console.warn('Trade setup comments channel error - will retry automatically');
         } else if (status === 'TIMED_OUT') {
           console.warn('Trade setup comments channel timeout - will retry automatically');
+        } else if (status === 'CLOSED') {
+          // Don't log normal closures
+        }
+      });
+
+    // Real-time comment reactions subscription
+    const commentReactionsChannel = supabase
+      .channel('trade_setup_comment_reactions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'trade_setup_comment_reactions' }, (payload) => {
+        // Refresh comments when reactions change to show updated counts
+        if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE' || payload.eventType === 'DELETE') {
+          const commentId = (payload.new as any)?.comment_id || (payload.old as any)?.comment_id;
+          if (commentId) {
+            // Find the trade setup that contains this comment
+            const setupId = Object.keys(comments).find(key => 
+              comments[key].some((c: any) => c.id === commentId)
+            );
+            if (setupId && openComments[setupId]) {
+              const currentComments = comments[setupId] || [];
+              fetchComments(setupId, Math.min(currentComments.length, 20));
+            }
+          }
+        }
+      })
+      .subscribe((status) => {
+        if (status === 'CHANNEL_ERROR' as any) {
+          console.warn('Comment reactions channel error - will retry automatically');
+        } else if (status === 'TIMED_OUT') {
+          console.warn('Comment reactions channel timeout - will retry automatically');
         } else if (status === 'CLOSED') {
           // Don't log normal closures
         }
@@ -1102,17 +1161,55 @@ const SocialForumContent = () => {
     fetchLikes(setupId);
   };
 
-  // On mount, fetch likes for visible trades
+  // Fetch dislikes for a trade setup (on mount or after dislike/undislike)
+  const fetchDislikes = useCallback(async (setupId: string) => {
+    try {
+      const { data, error } = await supabase
+      .from('trade_setup_dislikes')
+      .select('user_id')
+      .eq('trade_setup_id', setupId);
+
+      if (error) throw error;
+
+      setDislikes((prev) => ({ ...prev, [setupId]: data || [] }));
+      setDislikeCounts((prev) => ({ ...prev, [setupId]: data?.length || 0 }));
+    } catch (error) {
+      console.error('Error fetching dislikes:', error);
+    }
+  }, []);
+
+  // Dislike/undislike handler
+  const handleDislikeTradeSetup = async (setupId: string) => {
+    setDisliking((prev) => ({ ...prev, [setupId]: true }));
+    const { data: userData } = await supabase.auth.getUser();
+    const user_id = userData?.user?.id;
+    if (!user_id) return;
+    const disliked = dislikedSetups[setupId];
+    if (disliked) {
+      // Undislike
+      await supabase
+        .from('trade_setup_dislikes')
+        .delete()
+        .eq('trade_setup_id', setupId)
+        .eq('user_id', user_id);
+    } else {
+      // Dislike
+      await supabase
+        .from('trade_setup_dislikes')
+        .insert({ trade_setup_id: setupId, user_id });
+    }
+    setDisliking((prev) => ({ ...prev, [setupId]: false }));
+    fetchDislikes(setupId);
+  };
+
+  // On mount, fetch likes and dislikes for visible trades
   useEffect(() => {
     filteredData.forEach((setup) => {
       fetchLikes(setup.id);
-      // Auto-load comments for all trade setups since they're always visible now
-      if (!comments[setup.id] && !loadingComments[setup.id]) {
-        fetchComments(setup.id);
-      }
+      fetchDislikes(setup.id);
     });
     // eslint-disable-next-line
-  }, [filteredData.length, comments, loadingComments]);
+  }, [filteredData.length]);
 
   // Safe delete trade handler
   const handleDeleteTrade = (setupId: string) => {
@@ -1364,7 +1461,8 @@ const SocialForumContent = () => {
     setOpenComments((prev) => {
       const isOpen = !prev[setupId];
       if (isOpen && !comments[setupId]) {
-        fetchComments(setupId);
+        // Load only 5 comments by default
+        fetchComments(setupId, 5);
       }
       return { ...prev, [setupId]: isOpen };
     });
@@ -1419,6 +1517,61 @@ const SocialForumContent = () => {
       setReplyInputs((prev) => ({ ...prev, [parentId]: '' }));
       setReplyingTo((prev) => ({ ...prev, [setupId]: null }));
       fetchComments(setupId);
+    }
+  };
+
+  // Handle comment reaction (like/dislike)
+  const handleCommentReaction = async (commentId: string, reactionType: 'like' | 'dislike') => {
+    if (!state.user_id) return;
+    
+    try {
+      // Check if user already has a reaction
+      const { data: existingReaction } = await supabase
+        .from('trade_setup_comment_reactions')
+        .select('id, reaction_type')
+        .eq('comment_id', commentId)
+        .eq('user_id', state.user_id)
+        .single();
+
+      if (existingReaction) {
+        if (existingReaction.reaction_type === reactionType) {
+          // Remove reaction if clicking the same type
+          await supabase
+            .from('trade_setup_comment_reactions')
+            .delete()
+            .eq('id', existingReaction.id);
+        } else {
+          // Update reaction type
+          await supabase
+            .from('trade_setup_comment_reactions')
+            .update({ reaction_type: reactionType })
+            .eq('id', existingReaction.id);
+        }
+      } else {
+        // Add new reaction
+        await supabase
+          .from('trade_setup_comment_reactions')
+          .insert({
+            comment_id: commentId,
+            user_id: state.user_id,
+            reaction_type: reactionType
+          });
+      }
+
+      // Refresh comments to show updated counts
+      const setupId = Object.keys(comments).find(key => 
+        comments[key].some((c: any) => c.id === commentId)
+      );
+      if (setupId) {
+        fetchComments(setupId, comments[setupId]?.length || 5);
+      }
+    } catch (error) {
+      console.error('Error handling comment reaction:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update reaction. Please try again.',
+        variant: 'destructive'
+      });
     }
   };
 
@@ -1486,81 +1639,110 @@ const SocialForumContent = () => {
     const replyCount = comment.replies?.length || 0;
     const isExpanded = expandedReplies[comment.id];
     const shouldCollapseReplies = replyCount > 2 && !isExpanded;
+    const userReaction = (comment.user_reaction as any)?.[0]?.reaction_type || null;
+    const likesCount = comment.likes_count || 0;
+    const dislikesCount = comment.dislikes_count || 0;
+    
+    // Calculate time ago for YouTube-style timestamp
+    const getTimeAgo = (dateString: string) => {
+      const now = new Date();
+      const commentDate = new Date(dateString);
+      const diffInSeconds = Math.floor((now.getTime() - commentDate.getTime()) / 1000);
+      
+      if (diffInSeconds < 60) return `${diffInSeconds}s`;
+      if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+      if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+      if (diffInSeconds < 2592000) return `${Math.floor(diffInSeconds / 86400)}d`;
+      if (diffInSeconds < 31536000) return `${Math.floor(diffInSeconds / 2592000)}mo`;
+      return `${Math.floor(diffInSeconds / 31536000)}y`;
+    };
     
     return (
-      <div key={comment.id} className={`${depth > 0 ? 'ml-3 border-l border-border/20 pl-2' : ''}`}>
-        <div className="flex items-start gap-1.5 py-0.5">
-          <Avatar className="h-4 w-4 flex-shrink-0 mt-0.5">
+      <div key={comment.id} className={`${depth > 0 ? 'ml-8' : ''}`}>
+        <div className="flex items-start gap-3 py-3">
+          <Avatar className="h-8 w-8 flex-shrink-0">
             <AvatarImage src={comment.user?.avatar_url} alt={comment.user?.username || 'User'} />
-            <AvatarFallback className="text-xs">
+            <AvatarFallback className="text-sm bg-gray-200 text-gray-700">
               {comment.user?.username?.charAt(0) || 'U'}
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <span className="text-xs font-medium text-foreground">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-medium text-gray-900">
                 {comment.user?.username || 'Anonymous'}
               </span>
-              <span className="text-xs text-muted-foreground">
-                {new Date(comment.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              <span className="text-sm text-gray-500">
+                {getTimeAgo(comment.created_at)}
               </span>
+              {comment.is_edited && (
+                <span className="text-sm text-gray-500">(edited)</span>
+              )}
             </div>
-            <div className="bg-background border border-border/30 rounded-md p-1.5 mb-0.5 mr-1">
-              <p className="text-xs text-foreground leading-relaxed break-words">{comment.content}</p>
+            <div className="mb-2">
+              <p className="text-sm text-gray-900 leading-relaxed break-words">{comment.content}</p>
             </div>
             
-            {/* Action buttons - compact */}
-            <div className="flex items-center justify-end gap-1 mb-0.5">
-              <TooltipProvider>
-                <Tooltip delayDuration={300}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        handleReplyClick(setupId, comment.id);
-                      }}
-                      className="h-4 w-4 p-0 hover:bg-muted"
-                    >
-                      <Reply className="h-2.5 w-2.5" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Reply to this comment</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+            {/* Action buttons - YouTube style */}
+            <div className="flex items-center gap-1">
+              {/* Like button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleCommentReaction(comment.id, 'like')}
+                className={`h-6 px-1 hover:bg-gray-200 ${userReaction === 'like' ? 'text-blue-600' : 'text-gray-600'}`}
+              >
+                <ThumbsUp className="h-3 w-3 mr-1" />
+                <span className="text-xs">{likesCount > 0 ? likesCount : ''}</span>
+              </Button>
+              
+              {/* Dislike button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleCommentReaction(comment.id, 'dislike')}
+                className={`h-6 px-1 hover:bg-gray-200 ${userReaction === 'dislike' ? 'text-red-600' : 'text-gray-600'}`}
+              >
+                <ThumbsDown className="h-3 w-3 mr-1" />
+                <span className="text-xs">{dislikesCount > 0 ? dislikesCount : ''}</span>
+              </Button>
+              
+              {/* Reply button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  handleReplyClick(setupId, comment.id);
+                }}
+                className="h-6 px-1 hover:bg-gray-200 text-gray-600"
+              >
+                <Reply className="h-3 w-3 mr-1" />
+                <span className="text-xs">Reply</span>
+              </Button>
+              
+              {/* Delete button for owner */}
               {isOwner && (
-                <TooltipProvider>
-                  <Tooltip delayDuration={300}>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteComment(setupId, comment.id)}
-                        disabled={deletingComment[comment.id]}
-                        className="h-4 w-4 p-0 text-red-600 hover:bg-red-50 hover:text-red-700"
-                      >
-                        {deletingComment[comment.id] ? (
-                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-2.5 w-2.5" />
-                        )}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>Delete this comment</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDeleteComment(setupId, comment.id)}
+                  disabled={deletingComment[comment.id]}
+                  className="h-6 px-1 text-red-600 hover:bg-red-100"
+                >
+                  {deletingComment[comment.id] ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3 w-3" />
+                  )}
+                </Button>
               )}
             </div>
             
-            {/* Reply input - compact */}
+            {/* Reply input - YouTube-style */}
+            {/* Reply input - YouTube style */}
             {isReplying && (
-              <div className="mt-1 flex gap-1 mr-1">
+              <div className="mt-3 flex gap-2">
                 <Input
                   placeholder="Write a reply..."
                   value={replyInputs[comment.id] || ''}
@@ -1574,7 +1756,7 @@ const SocialForumContent = () => {
                       }, 200);
                     }
                   }}
-                  className="h-5 text-xs flex-1"
+                  className="h-9 text-sm flex-1 border-gray-300 focus:border-blue-500"
                 />
                 <TooltipProvider>
                   <Tooltip delayDuration={300}>
@@ -1583,54 +1765,43 @@ const SocialForumContent = () => {
                         size="sm"
                         onClick={() => handleSubmitReply(setupId, comment.id)}
                         disabled={submittingComment[setupId] || !replyInputs[comment.id]?.trim()}
-                        className="h-5 px-2 text-xs"
+                        className="h-9 px-4 text-sm bg-blue-600 hover:bg-blue-700 text-white"
                       >
                         {submittingComment[setupId] ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <Loader2 className="h-4 w-4 animate-spin" />
                         ) : (
-                          <Send className="h-3 w-3" />
+                          'Reply'
                         )}
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>
-                      <p>Send reply</p>
+                      <p>Submit reply</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
               </div>
             )}
             
-            {/* Replies section with collapse logic */}
+            {/* Replies section - collapsed by default */}
             {hasReplies && (
-              <div className="mt-0.5">
+              <div className="mt-2">
                 {shouldCollapseReplies ? (
-                  // Show only first 2 replies + collapse button
-                  <>
-                    {comment.replies.slice(0, 2).map((reply: any) => renderComment(setupId, reply, depth + 1))}
+                  <div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setExpandedReplies(prev => ({ ...prev, [comment.id]: true }))}
-                      className="h-4 px-1 text-xs text-muted-foreground hover:text-foreground ml-4"
+                      className="h-8 px-2 text-blue-600 hover:bg-blue-50 text-sm font-medium"
                     >
-                      View {replyCount - 2} more replies
+                      View {replyCount} replies
                     </Button>
-                  </>
+                    {/* Show only first 2 replies when collapsed */}
+                    {comment.replies?.slice(0, 2).map((reply) => renderComment(setupId, reply, depth + 1))}
+                  </div>
                 ) : (
-                  // Show all replies + collapse button if expanded
-                  <>
-                    {comment.replies.map((reply: any) => renderComment(setupId, reply, depth + 1))}
-                    {replyCount > 2 && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setExpandedReplies(prev => ({ ...prev, [comment.id]: false }))}
-                        className="h-4 px-1 text-xs text-muted-foreground hover:text-foreground ml-4"
-                      >
-                        Show less
-                      </Button>
-                    )}
-                  </>
+                  <div>
+                    {comment.replies?.map((reply) => renderComment(setupId, reply, depth + 1))}
+                  </div>
                 )}
               </div>
             )}
@@ -1657,9 +1828,12 @@ const SocialForumContent = () => {
     const topLevelCommentCount = (comments[setup.id] || []).filter((c: any) => !c.parent_id).length;
     // Use database comments_count as fallback, then local state, then commentCounts state
     const totalCommentCount = setup.comments_count ?? commentCounts[setup.id] ?? topLevelCommentCount;
-    // Like count (from state or setup.likes_count)
+    // Like and dislike counts (from state or setup counts)
     const likeCount = likeCounts[setup.id] ?? setup.likes_count ?? 0;
+    const dislikeCount = dislikeCounts[setup.id] ?? setup.dislikes_count ?? 0;
     const liked = likedSetups[setup.id] || false;
+    const disliked = dislikedSetups[setup.id] || false;
+    const isCommentsOpen = openComments[setup.id] || false;
     
     return (
       <Card key={setup.id} className="mb-3 hover:shadow-md transition-shadow duration-200">
@@ -1681,10 +1855,10 @@ const SocialForumContent = () => {
                     <p className="text-xs text-muted-foreground">
                       {new Date(setup.created_at).toLocaleDateString()} at {new Date(setup.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </p>
-          </div>
+                  </div>
                   <div className={`w-1 h-1 rounded-full ${setup.user?.user_presence?.status === 'online' && new Date().getTime() - new Date(setup.user.user_presence.last_seen_at).getTime() < 15 * 60 * 1000 ? 'bg-green-500' : 'bg-gray-400'}`} />
-          </div>
-        </div>
+                </div>
+              </div>
               <div className="flex items-center space-x-2">
                 <Badge variant="outline" className="text-xs font-medium">
                   {setup.currency_pair || setup.pair}
@@ -1694,7 +1868,7 @@ const SocialForumContent = () => {
                 ) : (
                   <EyeOff className="h-3 w-3 text-gray-500" />
                 )}
-          </div>
+              </div>
             </div>
 
             {/* Title and Description */}
@@ -1704,68 +1878,6 @@ const SocialForumContent = () => {
                 <p className="text-xs text-muted-foreground line-clamp-2">{setup.description}</p>
               )}
             </div>
-
-            {/* Tags - Compact design */}
-            {tagList.length > 0 && (
-              <div className="flex flex-wrap gap-1 mb-2">
-                {tagList.slice(0, 2).map((tag, idx) => (
-                  <Badge 
-                    key={tag + idx} 
-                    variant="secondary" 
-                    className="text-xs px-1 py-0.5 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
-                  >
-                    #{tag}
-                  </Badge>
-                ))}
-                {tagList.length > 2 && (
-                  <Badge variant="outline" className="text-xs px-1 py-0.5">
-                    +{tagList.length - 2}
-              </Badge>
-            )}
-          </div>
-            )}
-
-            {/* Images Row - Compact */}
-            {images.length > 0 && (
-              <div className="mb-2">
-                <div className="flex gap-1 overflow-x-auto pb-1">
-                  {images.slice(0, 3).map((url: string, idx: number) => (
-                    <div 
-                      key={idx} 
-                      className="relative flex-shrink-0 cursor-pointer group"
-                      onClick={() => {
-                        const modal = document.createElement('div');
-                        modal.className = 'fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4';
-                        modal.onclick = () => modal.remove();
-                        
-                        const img = document.createElement('img');
-                        img.src = url;
-                        img.className = 'max-w-full max-h-full object-contain rounded-lg';
-                        img.alt = `Trade setup image ${idx + 1}`;
-                        
-                        modal.appendChild(img);
-                        document.body.appendChild(modal);
-                      }}
-                    >
-                      <img
-                        src={url}
-                        alt={`Trade setup image ${idx + 1}`}
-                        className="w-16 h-12 object-cover rounded border shadow-sm group-hover:shadow-md transition-shadow duration-200"
-                        onError={(e) => {
-                          e.currentTarget.style.display = 'none';
-                        }}
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded transition-colors duration-200" />
-        </div>
-                  ))}
-                  {images.length > 3 && (
-                    <div className="flex-shrink-0 w-16 h-12 bg-muted rounded border flex items-center justify-center">
-                      <span className="text-xs font-medium">+{images.length - 3}</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
 
             {/* Trade Details - Ultra compact */}
             <div className="bg-muted/30 rounded p-2 mb-2">
@@ -1823,6 +1935,26 @@ const SocialForumContent = () => {
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant={disliked ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => handleDislikeTradeSetup(setup.id)}
+                        disabled={disliking[setup.id]}
+                        className={`h-6 px-2 text-xs ${disliked ? 'bg-red-500 hover:bg-red-600 text-white' : 'hover:bg-muted'}`}
+                      >
+                        <ThumbsDown className={`h-3 w-3 ${disliked ? 'text-white' : ''}`} />
+                        {dislikeCount > 0 && <span className="ml-1 text-xs">{dislikeCount}</span>}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{disliked ? 'Remove dislike from this trade setup' : 'Dislike this trade setup'}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
                 
                 <TooltipProvider>
                   <Tooltip delayDuration={300}>
@@ -1839,6 +1971,25 @@ const SocialForumContent = () => {
                     </TooltipTrigger>
                     <TooltipContent>
                       <p>Share this trade setup with others</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleToggleComments(setup.id)}
+                        className="h-6 px-2 hover:bg-muted text-xs"
+                      >
+                        <MessageCircle className="h-3 w-3 mr-1" />
+                        <span>{totalCommentCount}</span>
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>{isCommentsOpen ? 'Hide comments' : 'Show comments'}</p>
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
@@ -1871,45 +2022,112 @@ const SocialForumContent = () => {
             </div>
           </div>
 
-          {/* Right 1/3 - Live Comments Area */}
+          {/* Right 1/3 - Images and Tags */}
           <div className="w-1/3 p-3 bg-muted/20 border-l">
-            <div className="h-full flex flex-col pr-1">
-              {/* Comments Header */}
-              <div className="flex items-center justify-between mb-3 pb-2 border-b border-border/50">
-                <h4 className="text-sm font-semibold text-foreground">Live Chat ({totalCommentCount})</h4>
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-xs text-muted-foreground font-medium">Live</span>
+            <div className="h-full flex flex-col">
+              {/* Images Section */}
+              {images.length > 0 && (
+                <div className="mb-3">
+                  <h4 className="text-xs font-semibold text-foreground mb-2">Chart Images</h4>
+                  <div className="grid grid-cols-2 gap-1">
+                    {images.slice(0, 4).map((url: string, idx: number) => (
+                      <div 
+                        key={idx} 
+                        className="relative cursor-pointer group"
+                        onClick={() => {
+                          const modal = document.createElement('div');
+                          modal.className = 'fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4';
+                          modal.onclick = () => modal.remove();
+                          
+                          const img = document.createElement('img');
+                          img.src = url;
+                          img.className = 'max-w-full max-h-full object-contain rounded-lg';
+                          img.alt = `Trade setup image ${idx + 1}`;
+                          
+                          modal.appendChild(img);
+                          document.body.appendChild(modal);
+                        }}
+                      >
+                        <img
+                          src={url}
+                          alt={`Trade setup image ${idx + 1}`}
+                          className="w-full h-16 object-cover rounded border shadow-sm group-hover:shadow-md transition-shadow duration-200"
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 rounded transition-colors duration-200" />
+                      </div>
+                    ))}
+                    {images.length > 4 && (
+                      <div className="w-full h-16 bg-muted rounded border flex items-center justify-center">
+                        <span className="text-xs font-medium">+{images.length - 4}</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
+              )}
+
+              {/* Tags Section */}
+              {tagList.length > 0 && (
+                <div className="flex-1">
+                  <h4 className="text-xs font-semibold text-foreground mb-2">Tags</h4>
+                  <div className="flex flex-wrap gap-1">
+                    {tagList.map((tag, idx) => (
+                      <Badge 
+                        key={tag + idx} 
+                        variant="secondary" 
+                        className="text-xs px-1 py-0.5 bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800"
+                      >
+                        #{tag}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Empty state if no images or tags */}
+              {images.length === 0 && tagList.length === 0 && (
+                <div className="flex-1 flex items-center justify-center">
+                  <div className="text-center">
+                    <Upload className="h-8 w-8 text-muted-foreground mx-auto mb-1" />
+                    <p className="text-xs text-muted-foreground">No images or tags</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Collapsible Comments Section */}
+        {isCommentsOpen && (
+          <div className="border-t border-border/50 bg-muted/10">
+            <div className="p-3">
+              {/* Comments Header */}
+              <div className="flex items-center justify-between mb-3">
+                <h4 className="text-sm font-semibold text-foreground">Comments ({totalCommentCount})</h4>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleToggleComments(setup.id)}
+                  className="h-6 px-2 text-xs"
+                >
+                  <X className="h-3 w-3" />
+                </Button>
               </div>
 
-              {/* Comments List - Fixed height, scrollable with proper spacing */}
-              <div 
-                className="flex-1 overflow-y-auto mb-1"
-                style={{ 
-                  maxHeight: 'calc(100vh - 450px)', 
-                  minHeight: '200px',
-                  paddingRight: '12px',
-                  marginRight: '-4px'
-                }}
-                ref={(el) => {
-                  // Auto-scroll to bottom when new comments arrive
-                  if (el && comments[setup.id]?.length > 0) {
-                    setTimeout(() => {
-                      el.scrollTop = el.scrollHeight;
-                    }, 100);
-                  }
-                }}
-              >
+              {/* Comments List - Limited to 20 comments max */}
+              <div className="max-h-80 overflow-y-auto mb-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 {loadingComments[setup.id] ? (
                   <div className="flex items-center justify-center py-4">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
-                  <div className="space-y-0">
-                    {buildCommentTree(comments[setup.id] || []).map((comment) => 
-                      renderComment(setup.id, comment, 0)
-                    )}
+                  <div className="space-y-2">
+                    {buildCommentTree(comments[setup.id] || [])
+                      .slice(0, 20) // Maximum 20 comments
+                      .map((comment) => renderComment(setup.id, comment, 0))
+                    }
                     {comments[setup.id]?.length === 0 && (
                       <div className="text-center py-4">
                         <MessageCircle className="h-6 w-6 text-muted-foreground mx-auto mb-1" />
@@ -1921,48 +2139,65 @@ const SocialForumContent = () => {
                         </p>
                       </div>
                     )}
+                    {totalCommentCount > 5 && comments[setup.id]?.length < totalCommentCount && comments[setup.id]?.length < 20 && (
+                      <div className="text-center py-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => fetchComments(setup.id, Math.min(comments[setup.id]?.length + 5, 20))}
+                          className="h-6 px-2 text-xs"
+                        >
+                          Load More Comments
+                        </Button>
+                      </div>
+                    )}
+                    {comments[setup.id]?.length >= 20 && totalCommentCount > 20 && (
+                      <div className="text-center py-2">
+                        <p className="text-xs text-muted-foreground">
+                          Showing latest 20 comments. Maximum limit reached.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
 
-              {/* Comment Input - Always visible with better styling */}
-              <div className="border-t border-border/50 pt-1 pr-1">
-                <div className="flex gap-1">
-                  <Input
-                    placeholder="Type your message..."
-                    value={commentInputs[setup.id] || ''}
-                    onChange={(e) => handleCommentInputChange(setup.id, e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment(setup.id)}
-                    className="h-5 text-xs flex-1"
-                  />
-                  <TooltipProvider>
-                    <Tooltip delayDuration={300}>
-                      <TooltipTrigger asChild>
-                        <Button
-                          size="sm"
-                          onClick={() => handleSubmitComment(setup.id)}
-                          disabled={submittingComment[setup.id] || !commentInputs[setup.id]?.trim()}
-                          className="h-5 px-1 text-xs"
-                        >
-                          {submittingComment[setup.id] ? (
-                            <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                          ) : (
-                            <Send className="h-2.5 w-2.5" />
-                          )}
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Send comment</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
+              {/* Comment Input - YouTube style */}
+              <div className="flex gap-3 mt-4">
+                <Input
+                  placeholder="Write a comment..."
+                  value={commentInputs[setup.id] || ''}
+                  onChange={(e) => handleCommentInputChange(setup.id, e.target.value)}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSubmitComment(setup.id)}
+                  className="h-10 text-sm flex-1 border-gray-300 focus:border-blue-500"
+                />
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="sm"
+                        onClick={() => handleSubmitComment(setup.id)}
+                        disabled={submittingComment[setup.id] || !commentInputs[setup.id]?.trim()}
+                        className="h-10 px-4 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        {submittingComment[setup.id] ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          'Comment'
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Post comment</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               </div>
             </div>
           </div>
-        </div>
-    </Card>
-  );
+        )}
+      </Card>
+    );
   };
 
   const renderEmptyForum = (forumName: string | undefined, createAction: () => void) => (

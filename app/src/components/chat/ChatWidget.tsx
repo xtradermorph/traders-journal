@@ -468,6 +468,68 @@ const ChatWidget = () => {
     }, 0);
   }, [conversations]);
 
+  // Improved loading state management
+  useEffect(() => {
+    if (!currentUser && !loading) {
+      // If no user and not loading, set loading to false after a short delay
+      const timeout = setTimeout(() => {
+        setIsLoading(false);
+      }, 1000);
+      return () => clearTimeout(timeout);
+    }
+
+    if (currentUser && !loading) {
+      // If we have a user and not loading, fetch conversations
+      fetchConversations();
+    }
+  }, [currentUser, loading]);
+
+  // Defensive: always set isLoading to false after fetchConversations
+  useEffect(() => {
+    if (!isLoading && !loading) return;
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+    }, 3000); // fallback after 3s
+    return () => clearTimeout(timeout);
+  }, [isLoading, loading]);
+
+  // Spinner bug: add loading timeout fallback
+  useEffect(() => {
+    if (isLoading) {
+      const timeout = setTimeout(() => {
+        setIsLoading(false);
+        setLoadError('Loading timed out. Please try again.');
+      }, 8000);
+      setLoadingTimeout(timeout);
+    } else if (loadingTimeout) {
+      clearTimeout(loadingTimeout);
+      setLoadingTimeout(null);
+    }
+    return () => {
+      if (loadingTimeout) clearTimeout(loadingTimeout);
+    };
+  }, [isLoading]);
+
+  // Early return if no authenticated user - don't show any chat widget
+  if (!currentUser) {
+    return null;
+  }
+
+  // Early return if still loading
+  if (loading) {
+    return null;
+  }
+
+  // Early return if there's a hard error (after 5 seconds of no user)
+  if (hardError) {
+    return null;
+  }
+
+  // Early return if there's a load error
+  if (loadError) {
+    return null;
+  }
+
   // Fetch friends for the current user
   const fetchFriends = useCallback(async () => {
     if (!currentUser?.id) return;
@@ -492,6 +554,7 @@ const ChatWidget = () => {
     fetchFriends();
   }, [fetchFriends]);
 
+  // Handle hard error timeout
   useEffect(() => {
     if (currentUser) {
       setHardError(false);
@@ -938,6 +1001,7 @@ const ChatWidget = () => {
       });
       if (error || !data || data.length === 0) {
         toast({ title: 'Error', description: 'Failed to create chat', variant: 'destructive' });
+        setIsSendingMessage(false);
         return;
       }
       actualGroupId = data[0].group_id;
@@ -968,26 +1032,42 @@ const ChatWidget = () => {
       status: 'sending' as const,
     };
     setOptimisticMessages((prev) => [...prev, optimisticMsg]);
-    const { error } = await supabase.from("chat_messages").insert({
-      group_id: actualGroupId,
-      sender_id: currentUser.id,
-      content: content,
-    });
-    if (error) {
-      setOptimisticMessages((prev) => prev.map(m => m.id === optimisticId ? { ...m, status: 'failed' } : m));
-      setIsSendingMessage(false);
-    } else {
-      // Mark optimistic message as sent successfully
-      setOptimisticMessages((prev) => prev.map(m => m.id === optimisticId ? { ...m, status: 'sent' } : m));
-      
-      // Refresh conversations to update last message and unread count immediately
-      fetchConversations();
-      
-      // Keep optimistic message visible and let real-time listener handle the replacement
-      // The optimistic message will be removed when the real message comes through the real-time listener
-    }
     
-    setIsSendingMessage(false);
+    try {
+      const { error } = await supabase.from("chat_messages").insert({
+        group_id: actualGroupId,
+        sender_id: currentUser.id,
+        content: content
+      });
+      
+      if (error) {
+        throw error;
+      }
+      
+      // Remove optimistic message and add real message
+      setOptimisticMessages((prev) => prev.filter(msg => msg.id !== optimisticId));
+      
+      // Refresh messages
+      await fetchMessages(actualGroupId);
+      
+    } catch (error) {
+      console.error('Error sending message:', error);
+      // Mark optimistic message as failed
+      setOptimisticMessages((prev) => 
+        prev.map(msg => 
+          msg.id === optimisticId 
+            ? { ...msg, status: 'failed' as const }
+            : msg
+        )
+      );
+      toast({ 
+        title: 'Error', 
+        description: 'Failed to send message', 
+        variant: 'destructive' 
+      });
+    } finally {
+      setIsSendingMessage(false);
+    }
   };
 
 
@@ -1117,52 +1197,6 @@ const ChatWidget = () => {
       setIsLoading(false);
     }
   }, [currentUser, loading]);
-
-  // Defensive: always set isLoading to false after fetchConversations
-  useEffect(() => {
-    if (!isLoading && !loading) return;
-    const timeout = setTimeout(() => {
-      setIsLoading(false);
-    }, 3000); // fallback after 3s
-    return () => clearTimeout(timeout);
-  }, [isLoading, loading]);
-
-  // Spinner bug: add loading timeout fallback
-  useEffect(() => {
-    if (isLoading) {
-      const timeout = setTimeout(() => {
-        setIsLoading(false);
-        setLoadError('Loading timed out. Please try again.');
-      }, 8000);
-      setLoadingTimeout(timeout);
-    } else if (loadingTimeout) {
-      clearTimeout(loadingTimeout);
-      setLoadingTimeout(null);
-    }
-    return () => {
-      if (loadingTimeout) clearTimeout(loadingTimeout);
-    };
-  }, [isLoading]);
-
-  // Early return if no authenticated user - don't show any chat widget
-  if (!currentUser) {
-    return null;
-  }
-
-  // Early return if still loading
-  if (loading) {
-    return null;
-  }
-
-  // Early return if there's a hard error (after 5 seconds of no user)
-  if (hardError) {
-    return null;
-  }
-
-  // Early return if there's a load error
-  if (loadError) {
-    return null;
-  }
 
   // 1. Implement robust handleDelete and handleLeave functions
   const handleDelete = async (groupId: string) => {

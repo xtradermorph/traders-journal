@@ -16,8 +16,8 @@ export async function POST(request: NextRequest) {
     // Create Supabase client with cookie support
     const supabase = createRouteHandlerClient({ cookies });
 
-    // Register with Supabase
-    const { data, error } = await supabase.auth.signUp({
+    // Prepare registration options - only include captchaToken if provided
+    const signUpOptions: any = {
       email: email.toLowerCase().trim(),
       password: password,
       options: {
@@ -25,9 +25,16 @@ export async function POST(request: NextRequest) {
           username: username
         },
         emailRedirectTo: `${request.headers.get('origin')}/login`,
-        captchaToken: turnstileToken // Pass Turnstile token to Supabase
       }
-    });
+    };
+
+    // Only add captchaToken if it's provided (development bypass)
+    if (turnstileToken) {
+      signUpOptions.options.captchaToken = turnstileToken;
+    }
+
+    // Register with Supabase
+    const { data, error } = await supabase.auth.signUp(signUpOptions);
 
     if (error) {
       let errorMessage = 'Registration failed';

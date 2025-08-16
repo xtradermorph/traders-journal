@@ -557,7 +557,7 @@ const timezoneData = [
       ]
     },
     {
-      "value": "GMT Standard Time",
+      "value": "GMT Standard Time (Dublin)",
       "abbr": "GDT",
       "offset": 1,
       "isdst": true,

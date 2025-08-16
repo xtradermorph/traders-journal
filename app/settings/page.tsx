@@ -16,6 +16,7 @@ import { useToast } from '../src/hooks/use-toast';
 import { Save, Monitor, AlertCircle, Check, Sparkles } from 'lucide-react';
 import { LoadingPage } from '../components/ui/loading-spinner';
 import { useAuth } from '../src/hooks/useAuth';
+import TimezoneSelector from '../src/components/TimezoneSelector.jsx';
 
 // Types
 interface UserSettings {
@@ -66,7 +67,7 @@ export default function SettingsPage() {
     notifications_enabled: true,
     email_notifications: true,
     default_currency: 'AUD',
-    timezone: null,
+    timezone: 'UTC',
     pips_or_percentage: 'pips',
     chart_timeframe: '1D',
     share_statistics: true,
@@ -114,7 +115,7 @@ export default function SettingsPage() {
         const userSettings = data[0];
         const loadedSettings = {
           ...userSettings,
-          timezone: userSettings.timezone || null,
+          timezone: userSettings.timezone || 'UTC',
           email_project_updates: userSettings.email_project_updates ?? false,
           recent_trades_count: userSettings.recent_trades_count ?? 5,
           performance_view: userSettings.performance_view || 'total',
@@ -303,6 +304,13 @@ export default function SettingsPage() {
                               <SelectItem value="original-dark">Original</SelectItem>
                             </SelectContent>
                           </Select>
+                        </div>
+                        <div className="space-y-2">
+                          <TimezoneSelector
+                            value={settings.timezone || 'UTC'}
+                            onValueChange={(value) => updateSetting('timezone', value)}
+                            placeholder="Select timezone"
+                          />
                         </div>
                       </div>
 
