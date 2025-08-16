@@ -988,13 +988,75 @@ const ChatWidget = () => {
       // Refresh conversations to include the new chat and update active conversation
       await fetchConversations();
       
-      // Find the newly created conversation and set it as active
-      const newConversation = conversations.find(conv => conv.group_id === actualGroupId);
+      // Get the updated conversations state and find the newly created conversation
+      const updatedConversations = await (async () => {
+        // Fetch conversations again to get the latest state
+        const { data: groupMembers } = await supabase
+          .from("chat_group_members")
+          .select("group_id, last_read_at, is_pinned, is_muted")
+          .eq("user_id", currentUser.id);
+        
+        if (!groupMembers || groupMembers.length === 0) return [];
+        
+        const groupIds = groupMembers.map(m => m.group_id);
+        const { data: groups } = await supabase
+          .from("chat_groups")
+          .select("id, name, is_direct, creator_id, avatar_url")
+          .in("id", groupIds);
+        
+        const processedConversations = await Promise.all(
+          groupMembers.map(async (member) => {
+            const group = groups?.find(g => g.id === member.group_id);
+            if (!group) return null;
+            
+            const { data: groupMembersData } = await supabase
+              .from("chat_group_members")
+              .select("user_id")
+              .eq("group_id", member.group_id);
+            
+            const userIds = groupMembersData?.map(m => m.user_id) || [];
+            const { data: profiles } = await supabase
+              .from("profiles")
+              .select("id, username, avatar_url")
+              .in("id", userIds);
+            
+            const members = profiles?.map(p => ({ profile: p })) || [];
+            
+            if (group.is_direct && members.length < 2 && publicUsers) {
+              const missingUser = publicUsers.find(u => !members.some(m => m.profile.id === u.id));
+              if (missingUser) {
+                members.push({ profile: missingUser });
+              }
+            }
+            
+            return {
+              group_id: group.id,
+              is_direct: group.is_direct,
+              name: group.is_direct 
+                ? members.find(m => m.profile.id !== currentUser.id)?.profile?.username || 'Unknown'
+                : group.name,
+              members,
+              last_message: "No messages yet...",
+              last_message_at: new Date().toISOString(),
+              unread_count: 0,
+              is_pinned: !!member.is_pinned,
+              is_muted: !!member.is_muted,
+              creator_id: group.creator_id,
+              avatar_url: group.avatar_url
+            };
+          })
+        );
+        
+        return processedConversations.filter(Boolean) as Conversation[];
+      })();
+      
+      const newConversation = updatedConversations.find(conv => conv.group_id === actualGroupId);
       if (newConversation) {
         setActiveConversation(newConversation);
         console.log('Set active conversation to:', newConversation);
       } else {
         console.warn('Could not find newly created conversation with group_id:', actualGroupId);
+        console.log('Available conversations:', updatedConversations.map(c => ({ group_id: c.group_id, name: c.name })));
       }
     }
     
