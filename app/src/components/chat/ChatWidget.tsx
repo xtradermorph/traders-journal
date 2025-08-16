@@ -618,7 +618,7 @@ const ChatWidget = () => {
             .in("id", userIds);
           
           console.log('Profile data for group', member.group_id, ':', {
-            userIds,
+            userIds: userIds,
             profiles: profiles?.map(p => ({ id: p.id, username: p.username }))
           });
           
@@ -627,6 +627,13 @@ const ChatWidget = () => {
             groupMembersData: groupMembersData?.map(m => m.user_id),
             profiles: profiles?.map(p => ({ id: p.id, username: p.username })),
             constructedMembers: profiles?.map(p => ({ profile: p }))
+          });
+          
+          // Debug the exact values to see what's happening
+          console.log('EXACT VALUES for group', member.group_id, ':', {
+            userIds: JSON.stringify(userIds),
+            profiles: JSON.stringify(profiles?.map(p => ({ id: p.id, username: p.username }))),
+            groupMembersData: JSON.stringify(groupMembersData?.map(m => m.user_id))
           });
           
           const members = profiles?.map(p => ({ profile: p })) || [];
@@ -652,20 +659,28 @@ const ChatWidget = () => {
             const otherMember = members.find(m => m.profile.id !== currentUser.id);
             conversationName = otherMember?.profile?.username || 'Unknown';
             
-            console.log('Direct chat name derivation result:', {
-              group_id: group.id,
-              currentUserId: currentUser.id,
-              currentUserUsername: currentUser.username,
-              allMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username })),
-              otherMember: otherMember ? { id: otherMember.profile.id, username: otherMember.profile.username } : null,
-              derivedName: conversationName,
-              comparison: members.map(m => ({
-                memberId: m.profile.id,
-                currentUserId: currentUser.id,
-                isEqual: m.profile.id === currentUser.id,
-                username: m.profile.username
-              }))
-            });
+                         console.log('Direct chat name derivation result:', {
+               group_id: group.id,
+               currentUserId: currentUser.id,
+               currentUserUsername: currentUser.username,
+               allMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username })),
+               otherMember: otherMember ? { id: otherMember.profile.id, username: otherMember.profile.username } : null,
+               derivedName: conversationName,
+               comparison: members.map(m => ({
+                 memberId: m.profile.id,
+                 currentUserId: currentUser.id,
+                 isEqual: m.profile.id === currentUser.id,
+                 username: m.profile.username
+               }))
+             });
+             
+             // Debug the exact comparison values
+             console.log('EXACT COMPARISON for group', group.id, ':', {
+               currentUserId: JSON.stringify(currentUser.id),
+               allMembers: JSON.stringify(members.map(m => ({ id: m.profile.id, username: m.profile.username }))),
+               otherMember: JSON.stringify(otherMember ? { id: otherMember.profile.id, username: otherMember.profile.username } : null),
+               derivedName: JSON.stringify(conversationName)
+             });
           }
           
           return {
