@@ -1136,10 +1136,10 @@ const ChatWidget = () => {
     return null;
   }
 
-  // Early return if there's a load error
-  if (loadError) {
-    return null;
-  }
+  // Don't return null on load error - show widget with fallback state
+  // if (loadError) {
+  //   return null;
+  // }
 
   // 1. Implement robust handleDelete and handleLeave functions
   const handleDelete = async (groupId: string) => {
@@ -2118,6 +2118,12 @@ const ChatWidget = () => {
             {totalUnreadCount + pendingInvitations.length > 99 ? '99+' : totalUnreadCount + pendingInvitations.length}
           </span>
         )}
+        {/* Error indicator */}
+        {loadError && (
+          <span className="absolute -top-2 -left-2 bg-yellow-500 text-white text-xs rounded-full min-w-[20px] h-5 flex items-center justify-center px-1 font-semibold shadow-lg">
+            !
+          </span>
+        )}
       </button>
 
       {/* Chat Drawer */}
@@ -2305,6 +2311,14 @@ const ChatWidget = () => {
               </TooltipProvider>
             </div>
           )}
+          {/* Database Error Message */}
+          {loadError && !activeConversation && (
+            <div className="px-4 py-2 bg-yellow-100 dark:bg-yellow-900/20 border-l-4 border-yellow-500 text-yellow-800 dark:text-yellow-200 text-xs">
+              <div className="font-semibold">Database Connection Issue</div>
+              <div>Chat features may be limited. Please try refreshing the page.</div>
+            </div>
+          )}
+          
           {/* Main content area with collapsible sections */}
           {!activeConversation && (
             <TooltipProvider>
