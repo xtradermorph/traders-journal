@@ -234,7 +234,7 @@ export default function RootLayout({
             <ThemeSyncProvider>
               <UserProfileProvider>
                 {children}
-                <ChatWidget />
+                {!isPublicPage && <ChatWidget />}
               </UserProfileProvider>
             </ThemeSyncProvider>
             
