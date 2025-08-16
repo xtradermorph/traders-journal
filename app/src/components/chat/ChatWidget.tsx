@@ -1174,10 +1174,7 @@ const ChatWidget = () => {
       setGroupName("");
       setSelectedUserIds([]);
       
-      // Force refresh conversations immediately
-      await fetchConversations();
-      
-      // Also set the newly created group as active conversation
+      // Create the new conversation object
       const newConversation = {
         group_id: group.id,
         is_direct: false,
@@ -1191,7 +1188,61 @@ const ChatWidget = () => {
         creator_id: group.creator_id,
         avatar_url: group.avatar_url
       };
+      
+      // Add the new group to conversations immediately
+      setConversations(prev => [newConversation, ...prev]);
+      
+      // Set as active conversation
       setActiveConversation(newConversation);
+      
+      // Also refresh conversations in background to ensure everything is synced
+      // Create a direct refresh function that doesn't depend on publicUsersLoaded
+      const refreshConversationsDirectly = async () => {
+        try {
+          if (!currentUser) return;
+          
+          const { data: groupMembers } = await supabase
+            .from("chat_group_members")
+            .select("group_id, last_read_at, is_pinned, is_muted")
+            .eq("user_id", currentUser.id);
+          
+          if (groupMembers && groupMembers.length > 0) {
+            const groupIds = groupMembers.map(m => m.group_id);
+            const { data: groups } = await supabase
+              .from("chat_groups")
+              .select("id, name, is_direct, creator_id, avatar_url")
+              .in("id", groupIds);
+            
+            if (groups) {
+              const updatedConversations = groupMembers.map(member => {
+                const group = groups.find(g => g.id === member.group_id);
+                if (!group) return null;
+                
+                return {
+                  group_id: group.id,
+                  is_direct: group.is_direct,
+                  name: group.name,
+                  members: [],
+                  last_message: "No messages yet...",
+                  last_message_at: new Date().toISOString(),
+                  unread_count: 0,
+                  is_pinned: !!member.is_pinned,
+                  is_muted: !!member.is_muted,
+                  creator_id: group.creator_id,
+                  avatar_url: group.avatar_url
+                };
+              }).filter(Boolean);
+              
+              setConversations(updatedConversations);
+            }
+          }
+        } catch (error) {
+          console.error('Error refreshing conversations:', error);
+        }
+      };
+      
+      // Refresh in background
+      setTimeout(refreshConversationsDirectly, 100);
       
       toast({ title: 'Group Created', description: `Group "${group.name}" created successfully!`, variant: 'default' });
     } catch (e: any) {
