@@ -932,14 +932,40 @@ const ChatWidget = () => {
     // If it's a temporary conversation, create the actual chat first
     if (isTempConversation) {
       const recipientId = (activeConversation.group_id as string).replace('temp_', '');
+      
+      // Debug logging
+      console.log('Creating direct chat:', {
+        recipientId,
+        currentUserId: currentUser.id,
+        tempGroupId: activeConversation.group_id,
+        conversationName: activeConversation.name
+      });
+      
       const { data, error } = await supabase.rpc('create_or_get_direct_chat', {
         recipient_id_param: recipientId
       });
-      if (error || !data || data.length === 0) {
+      
+      if (error) {
+        console.error('Error creating direct chat:', error);
         toast({ title: 'Error', description: 'Failed to create chat', variant: 'destructive' });
+        setIsSendingMessage(false);
         return;
       }
+      
+      if (!data || data.length === 0) {
+        console.error('No data returned from create_or_get_direct_chat');
+        toast({ title: 'Error', description: 'Failed to create chat', variant: 'destructive' });
+        setIsSendingMessage(false);
+        return;
+      }
+      
       actualGroupId = data[0].group_id;
+      
+      console.log('Direct chat created/found:', {
+        actualGroupId,
+        recipientId,
+        returnedData: data
+      });
       
       // Clear the temporary conversation
       setTempConversation(null);
@@ -951,6 +977,9 @@ const ChatWidget = () => {
       const newConversation = conversations.find(conv => conv.group_id === actualGroupId);
       if (newConversation) {
         setActiveConversation(newConversation);
+        console.log('Set active conversation to:', newConversation);
+      } else {
+        console.warn('Could not find newly created conversation with group_id:', actualGroupId);
       }
     }
     
@@ -967,12 +996,20 @@ const ChatWidget = () => {
       status: 'sending' as const,
     };
     setOptimisticMessages((prev) => [...prev, optimisticMsg]);
+    
+    console.log('Sending message to group:', {
+      groupId: actualGroupId,
+      content: content,
+      senderId: currentUser.id
+    });
+    
     const { error } = await supabase.from("chat_messages").insert({
       group_id: actualGroupId,
       sender_id: currentUser.id,
       content: content,
     });
     if (error) {
+      console.error('Error sending message:', error);
       setOptimisticMessages((prev) => prev.map(m => m.id === optimisticId ? { ...m, status: 'failed' } : m));
       setIsSendingMessage(false);
     } else {
