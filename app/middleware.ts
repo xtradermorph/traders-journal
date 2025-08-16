@@ -21,6 +21,17 @@ export async function middleware(request: NextRequest) {
     // If there's an auth error or timeout, don't redirect - let the client handle it
     if (error) {
       console.warn('Middleware auth error:', error.message);
+      // For specific auth errors, we might want to redirect
+      if (error.message.includes('JWT expired') || 
+          error.message.includes('Invalid JWT') ||
+          error.message.includes('invalid_token')) {
+        // Only redirect for actual auth failures, not network issues
+        if (isProtectedRoute) {
+          const loginUrl = new URL('/login', request.url)
+          loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
+          return NextResponse.redirect(loginUrl)
+        }
+      }
       // Continue without redirecting to allow the client to handle the error
       return res;
     }

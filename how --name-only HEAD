@@ -1,0 +1,5 @@
+[33mc5d969e[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix critical authentication issues: prevent false redirects and improve session stability
+[33mad610c5[m Fix authentication redirect issue when closing ShareTradeDialog
+[33m922034e[m Fix major production issues: AddTrade/EditTrade dialogs, chat widget, friends functionality, and database setup
+[33m98fc786[m Fix ChatWidget visibility with database errors - Remove early return on loadError to keep widget visible - Add error indicator on chat button - Add error message in chat drawer - Widget now shows even with database relationship issues
+[33m2c9b92c[m Fix ChatWidget visibility and landing page header - Only show ChatWidget on authenticated pages - Restore landing page header by using Layout component

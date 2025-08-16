@@ -83,10 +83,23 @@ export const useAuth = () => {
           console.warn('Auth session check error:', error.message);
           // For any error, just stop loading but preserve current auth state
           // This prevents false logouts due to temporary network issues
-          setAuthState(prev => ({
-            ...prev,
-            loading: false
-          }))
+          // Only reset auth state for specific errors that indicate actual auth failure
+          if (error.message.includes('JWT expired') || 
+              error.message.includes('Invalid JWT') ||
+              error.message.includes('invalid_token')) {
+            setAuthState(prev => ({
+              ...prev,
+              isAuthenticated: false,
+              loading: false,
+              session: null,
+              user: null
+            }))
+          } else {
+            setAuthState(prev => ({
+              ...prev,
+              loading: false
+            }))
+          }
           return
         }
 
@@ -134,6 +147,31 @@ export const useAuth = () => {
         clearTimeout(timeoutId);
         
         console.log('Auth state change:', event, session?.user?.id);
+        
+        // Handle specific auth events
+        if (event === 'TOKEN_REFRESHED' && session) {
+          // Token was refreshed successfully, update session
+          setAuthState(prev => ({
+            ...prev,
+            isAuthenticated: true,
+            loading: false,
+            session: session,
+            user: session.user
+          }))
+          return
+        }
+        
+        if (event === 'SIGNED_OUT') {
+          // User explicitly signed out
+          setAuthState(prev => ({
+            ...prev,
+            isAuthenticated: false,
+            loading: false,
+            session: null,
+            user: null
+          }))
+          return
+        }
         
         // Only update state if there's an actual change
         setAuthState(prev => {
