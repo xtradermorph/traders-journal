@@ -6,15 +6,10 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import { Toaster } from "./components/ui/toaster";
 import { TooltipProvider } from "./components/ui/tooltip";
-import NotFound from "./pages/not-found";
-import LandingPage from "./pages/LandingPage";
-import Login from "./pages/Login";
-import Register from "./pages/Register";
-import Dashboard from "./pages/Dashboard";
-import Layout from "./components/Layout";
 import LoadingSpinner from "./components/LoadingSpinner";
 import { useEffect, useState } from "react";
 import { checkAuth } from "./lib/supabase";
+import Layout from "./components/Layout";
 
 function AuthenticatedRoute({ component: Component, ...rest }: { component: React.ComponentType<Record<string, unknown>>, [key: string]: unknown }) {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -50,41 +45,6 @@ function AuthenticatedRoute({ component: Component, ...rest }: { component: Reac
   }
 
   return isAuthenticated ? <Component {...rest} /> : null;
-}
-
-function Router() {
-  const pathname = usePathname();
-  const [isClient, setIsClient] = useState(false);
-
-  useEffect(() => {
-    setIsClient(true);
-  }, []);
-
-  if (!isClient) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <LoadingSpinner size="lg" text="Loading..." />
-      </div>
-    );
-  }
-
-  // Simulate Switch/Route behavior with Next.js routing
-  if (pathname === "/") return <LandingPage />;
-  if (pathname === "/login") return <Login />;
-  if (pathname === "/register") return <Register />;
-  
-  // All authenticated routes should use the AuthenticatedRoute wrapper
-  if (pathname === "/dashboard") return <AuthenticatedRoute component={Dashboard} />;
-  if (pathname.startsWith("/traders")) return <AuthenticatedRoute component={() => <div className="min-h-screen" />} />;
-  if (pathname.startsWith("/trade-records")) return <AuthenticatedRoute component={() => <div className="min-h-screen" />} />;
-  if (pathname.startsWith("/social-forum")) return <AuthenticatedRoute component={() => <div className="min-h-screen" />} />;
-  if (pathname.startsWith("/profile")) return <AuthenticatedRoute component={() => <div className="min-h-screen" />} />;
-  if (pathname.startsWith("/settings")) return <AuthenticatedRoute component={() => <div className="min-h-screen" />} />;
-  if (pathname.startsWith("/admin")) return <AuthenticatedRoute component={() => <div className="min-h-screen" />} />;
-  if (pathname.startsWith("/support")) return <AuthenticatedRoute component={() => <div className="min-h-screen" />} />;
-  
-  // If we reach here, no route matched, so return NotFound
-  return <NotFound />;
 }
 
 function App() {
@@ -131,7 +91,10 @@ function App() {
         <TooltipProvider>
           <Toaster />
           <Layout pathname={pathname}> {/* Pass pathname as a prop */}
-            <Router />
+            {/* Let Next.js handle the routing - this component just provides the layout */}
+            <div className="min-h-screen">
+              {/* The actual page content will be rendered by Next.js */}
+            </div>
           </Layout>
         </TooltipProvider>
       </ThemeProvider>

@@ -11,7 +11,7 @@ import ThemeSyncProvider from './src/components/auth/ThemeSyncProvider'
 import { UserProfileProvider } from './src/components/UserProfileContext'
 import { useState } from "react";
 
-// ChatWidget removed - chat functionality was removed in migration
+import ChatWidget from "./src/components/chat/ChatWidget";
 import CookieConsent from "./src/components/CookieConsent";
 import { initializeCookiePreferences } from "./src/lib/cookie-utils";
 
@@ -33,7 +33,6 @@ export default function RootLayout({
   const [isMobile, setIsMobile] = useState(false);
   const chatButtonRef = useRef<HTMLDivElement>(null);
   const chatDrawerRef = useRef<HTMLDivElement>(null);
-  // ChatWidget removed - chat functionality was removed in migration
 
   // Robust device detection
   React.useEffect(() => {
@@ -236,7 +235,7 @@ export default function RootLayout({
             <ThemeSyncProvider>
               <UserProfileProvider>
                 {children}
-                {/* ChatWidget removed - chat functionality was removed in migration */}
+                <ChatWidget />
               </UserProfileProvider>
             </ThemeSyncProvider>
             

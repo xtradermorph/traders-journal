@@ -387,6 +387,14 @@ const ChatWidget = () => {
     resetChat
   } = useChatStore();
   
+  // Debug logging
+  console.log('ChatWidget render:', { 
+    currentUser: !!currentUser, 
+    loading, 
+    isChatOpen,
+    hasActiveConversation: !!activeConversation 
+  });
+  
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [groupChats, setGroupChats] = useState<Conversation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -512,21 +520,25 @@ const ChatWidget = () => {
 
   // Early return if no authenticated user - don't show any chat widget
   if (!currentUser) {
+    console.log('ChatWidget: No current user, returning null');
     return null;
   }
 
   // Early return if still loading
   if (loading) {
+    console.log('ChatWidget: Still loading, returning null');
     return null;
   }
 
   // Early return if there's a hard error (after 5 seconds of no user)
   if (hardError) {
+    console.log('ChatWidget: Hard error, returning null');
     return null;
   }
 
   // Early return if there's a load error
   if (loadError) {
+    console.log('ChatWidget: Load error, returning null');
     return null;
   }
 
@@ -1866,7 +1878,7 @@ const ChatWidget = () => {
     { emoji: "🇧🇴", color: "#4CAF50" },
     { emoji: "🇧🇦", color: "#2196F3" },
     { emoji: "🇧🇼", color: "#4CAF50" },
-    { emoji: "🇧🇷", color: "#4CAF50" },
+    { emoji: "🇧��", color: "#4CAF50" },
     { emoji: "🇮🇴", color: "#2196F3" },
     { emoji: "🇻🇬", color: "#2196F3" },
     { emoji: "🇧🇳", color: "#F44336" },
