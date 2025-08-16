@@ -741,8 +741,8 @@ const ChatWidget = () => {
         name: conv.name,
         is_direct: conv.is_direct,
         members: conv.members?.map(m => ({ id: m.profile.id, username: m.profile.username }))
-      })));
-
+        })));
+      
       setConversations(validConversations);
       setIsLoading(false);
     } catch (error) {
@@ -1042,13 +1042,7 @@ const ChatWidget = () => {
     if (isTempConversation) {
       const recipientId = (activeConversation.group_id as string).replace('temp_', '');
       
-      // Debug logging
-      console.log('Creating direct chat:', {
-        recipientId,
-        currentUserId: currentUser.id,
-        tempGroupId: activeConversation.group_id,
-        conversationName: activeConversation.name
-      });
+
       
       const { data, error } = await supabase.rpc('create_or_get_direct_chat', {
         recipient_id_param: recipientId
@@ -1070,11 +1064,7 @@ const ChatWidget = () => {
       
       actualGroupId = data[0].group_id;
       
-      console.log('Direct chat created/found:', {
-        actualGroupId,
-        recipientId,
-        returnedData: data
-      });
+
       
       // Clear the temporary conversation
       setTempConversation(null);
@@ -1147,10 +1137,10 @@ const ChatWidget = () => {
       const newConversation = updatedConversations.find(conv => conv.group_id === actualGroupId);
       if (newConversation) {
         setActiveConversation(newConversation);
-        console.log('Set active conversation to:', newConversation);
+  
       } else {
         console.warn('Could not find newly created conversation with group_id:', actualGroupId);
-        console.log('Available conversations:', updatedConversations.map(c => ({ group_id: c.group_id, name: c.name })));
+  
       }
     }
     
@@ -1168,11 +1158,7 @@ const ChatWidget = () => {
     };
     setOptimisticMessages((prev) => [...prev, optimisticMsg]);
     
-    console.log('Sending message to group:', {
-      groupId: actualGroupId,
-      content: content,
-      senderId: currentUser.id
-    });
+
     
     const { error } = await supabase.from("chat_messages").insert({
       group_id: actualGroupId,
@@ -1250,11 +1236,7 @@ const ChatWidget = () => {
         .from("chat_group_members")
         .insert(memberIds.map(user_id => ({ group_id: group.id, user_id })));
       if (memberError) throw memberError;
-      console.log('Group created successfully:', {
-        groupId: group.id,
-        groupName: group.name,
-        memberIds: memberIds
-      });
+
       
       setShowGroupModal(false);
       setGroupName("");
@@ -1417,7 +1399,7 @@ const ChatWidget = () => {
   };
   // 2. Ensure handlePin and handleMute always reflect backend state
   const handlePin = async (groupId: string, pin: boolean) => {
-    console.log('Pin handler called for', groupId, 'pin:', pin);
+
     // Optimistically update UI
     setConversations(prev => {
       const updated = prev.map(c => c.group_id === groupId ? { ...c, is_pinned: pin } : c);
@@ -2272,11 +2254,8 @@ const ChatWidget = () => {
   // Handle saving group edit (both name and avatar)
   const handleSaveGroupEdit = async () => {
     if (!editingGroupId || !currentUser) {
-      console.log('Missing editingGroupId or currentUser:', { editingGroupId, currentUser: !!currentUser });
       return;
     }
-    
-    console.log('Saving group edit:', { editingGroupId, editingGroupName, editingGroupAvatar });
     
     setEditingGroupLoading(true);
     setEditingGroupAvatarLoading(true);
@@ -2294,7 +2273,7 @@ const ChatWidget = () => {
         updates.avatar_url = editingGroupAvatar;
       }
       
-      console.log('Updates to apply:', updates);
+
       
       // Only update if there are changes
       if (Object.keys(updates).length > 0) {
@@ -2308,22 +2287,18 @@ const ChatWidget = () => {
           throw error;
         }
         
-        console.log('Group updated successfully');
-      } else {
-        console.log('No changes to apply');
+        setShowGroupEditModal(false);
+        setEditingGroupId(null);
+        setEditingGroupName("");
+        setEditingGroupAvatar("");
+        fetchConversations();
+        
+        toast({ 
+          title: 'Group Updated', 
+          description: 'Group settings have been updated successfully!', 
+          variant: 'default' 
+        });
       }
-      
-      setShowGroupEditModal(false);
-      setEditingGroupId(null);
-      setEditingGroupName("");
-      setEditingGroupAvatar("");
-      fetchConversations();
-      
-      toast({ 
-        title: 'Group Updated', 
-        description: 'Group settings have been updated successfully!', 
-        variant: 'default' 
-      });
     } catch (error: any) {
       console.error('Error saving group edit:', error);
       toast({ 

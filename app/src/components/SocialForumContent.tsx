@@ -57,7 +57,6 @@ interface Comment {
   parent_id?: string;
   user?: UserProfile;
   likes_count?: number;
-  dislikes_count?: number;
   is_edited?: boolean;
   edited_at?: string;
   user_reaction?: 'like' | 'dislike' | null;
@@ -444,10 +443,7 @@ const SocialForumContent = () => {
 
   // Consolidated fetch function with better error handling
   const fetchTradeSetups = useCallback(async (userId: string) => {
-    console.log('fetchTradeSetups called with user_id:', userId);
-    
     try {
-      console.log('Starting to fetch trade setups...');
       setState(prev => ({ ...prev, isLoading: true }));
 
       const communityQuery = supabase
@@ -481,18 +477,11 @@ const SocialForumContent = () => {
         .order('created_at', { ascending: false })
         .limit(10);
 
-      console.log('Executing queries...');
       const [communityResult, mySetupsResult, trendingResult] = await Promise.all([
         communityQuery,
         mySetupsQuery,
         trendingQuery
       ]);
-
-      console.log('Query results:', {
-        communityResult,
-        mySetupsResult,
-        trendingResult
-      });
 
       if (communityResult.error) throw communityResult.error;
       if (mySetupsResult.error) throw mySetupsResult.error;
@@ -520,13 +509,7 @@ const SocialForumContent = () => {
       
       setCommentCounts(prev => ({ ...prev, ...initialCommentCounts }));
       
-      console.log('Fetched data:', {
-        communitySetups: communityResult.data || [],
-        mySetups: mySetupsResult.data || [],
-        trendingSetups: trendingResult.data || [],
-      });
-      
-      console.log('Initialized comment counts:', initialCommentCounts);
+
     } catch (error) {
       console.error('Error fetching trade setups:', error);
       toast({
@@ -646,15 +629,12 @@ const SocialForumContent = () => {
     console.log('SocialForumContent initialization useEffect called');
     
     const initializeComponent = async () => {
-      console.log('initializeComponent function called');
       try {
         // Get current user
         const { data: userData, error } = await supabase.auth.getUser();
-        console.log('Auth result:', { userData, error });
         
         // Also check session directly
         const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
-        console.log('Session check:', { sessionData, sessionError });
         
         if (error) {
           console.error('Error fetching user:', error);
@@ -662,21 +642,16 @@ const SocialForumContent = () => {
         }
 
         const userId = userData?.user?.id;
-        console.log('User ID:', userId);
         
         let finalUserId = userId;
         
         if (!userId) {
-          console.log('No user ID found - user may not be authenticated');
           // Try to refresh the session
           const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
-          console.log('Session refresh result:', { refreshData, refreshError });
           
           if (refreshData?.user?.id) {
-            console.log('Session refreshed, new user ID:', refreshData.user.id);
             finalUserId = refreshData.user.id;
           } else {
-            console.log('Session refresh failed, redirecting to login');
             // Redirect to login if no user is found
             window.location.href = '/login';
             return;
@@ -687,8 +662,6 @@ const SocialForumContent = () => {
         const url = new URL(window.location.href);
         const tabParam = url.searchParams.get('tab');
         const forumParam = url.searchParams.get('forum');
-        
-        console.log('URL parameters:', { tabParam, forumParam });
         
         setState(prev => ({
           ...prev,
@@ -704,22 +677,10 @@ const SocialForumContent = () => {
             : prev.selectedForum,
           isInitialized: true,
         }));
-        
-        console.log('Set state with:', {
-          activeTab: (tabParam && ['community', 'my-setups', 'trending'].includes(tabParam)) 
-            ? tabParam as 'community' | 'my-setups' | 'trending' 
-            : 'default',
-          activeForumTab: (forumParam && ['gbp_usd', 'eur_usd', 'usd_jpy', 'other'].includes(forumParam)) 
-            ? forumParam 
-            : 'default'
-        });
 
         // Fetch data if user is authenticated
         if (finalUserId) {
-          console.log('User authenticated, calling fetchTradeSetups...');
           await fetchTradeSetups(finalUserId);
-        } else {
-          console.log('No user ID, not calling fetchTradeSetups');
         }
       } catch (error) {
         console.error('Error initializing component:', error);
@@ -1272,12 +1233,9 @@ const SocialForumContent = () => {
 
   // Auto-search when searchQuery changes
   useEffect(() => {
-    console.log('searchQuery changed to:', searchQuery);
     if (searchQuery.trim()) {
-      console.log('Auto-triggering search for:', searchQuery);
       searchUsers(searchQuery);
-      } else {
-      console.log('Clearing search results');
+    } else {
       setSearchResults([]);
     }
   }, [searchQuery]);
@@ -1642,7 +1600,7 @@ const SocialForumContent = () => {
     const shouldCollapseReplies = replyCount > 2 && !isExpanded;
     const userReaction = (comment.user_reaction as any)?.[0]?.reaction_type || null;
     const likesCount = comment.likes_count || 0;
-    const dislikesCount = comment.dislikes_count || 0;
+    const dislikesCount = 0; // dislikes_count not available in current schema
     
     // Calculate time ago for YouTube-style timestamp
     const getTimeAgo = (dateString: string) => {
@@ -1831,7 +1789,7 @@ const SocialForumContent = () => {
     const totalCommentCount = setup.comments_count ?? commentCounts[setup.id] ?? topLevelCommentCount;
     // Like and dislike counts (from state or setup counts)
     const likeCount = likeCounts[setup.id] ?? setup.likes_count ?? 0;
-    const dislikeCount = dislikeCounts[setup.id] ?? setup.dislikes_count ?? 0;
+    const dislikeCount = dislikeCounts[setup.id] ?? 0;
     const liked = likedSetups[setup.id] || false;
     const disliked = dislikedSetups[setup.id] || false;
     const isCommentsOpen = openComments[setup.id] || false;

@@ -286,7 +286,7 @@ const TradersPage = () => {
   const fetchTraders = useCallback(async () => {
     try {
       setLoading(true);
-      console.log('Starting fetchTraders...');
+
       
       // Get current user to exclude from results
       const { data: { user } } = await supabase.auth.getUser();
@@ -305,7 +305,7 @@ const TradersPage = () => {
         query = query.neq('id', currentUserId);
       }
 
-      console.log('Query built, executing...');
+
 
       // Apply search filter if provided
       if (debouncedSearchQuery) {
@@ -390,9 +390,7 @@ const TradersPage = () => {
       // Apply pagination
       query = query.range(offset, offset + tradersPerPage - 1);
 
-      console.log('Executing query...');
       const { data, error } = await query;
-      console.log('Query result:', { data: data?.length, error });
 
       if (error) {
         console.error('Error fetching traders:', error);
@@ -406,7 +404,6 @@ const TradersPage = () => {
         return;
       }
 
-      console.log('Processing data...');
       // Filter out traders without usernames and transform data
       let filteredTraders = (data || [])
         .filter(trader => trader.username)
@@ -414,12 +411,9 @@ const TradersPage = () => {
           ...trader,
           user_presence: null
         }));
-
-      console.log('Setting traders:', filteredTraders.length);
       setTraders(filteredTraders);
 
       // Calculate total pages - use a simple approach
-      console.log('Getting count...');
       try {
         let countQuery = supabase
           .from('profiles')
@@ -442,7 +436,6 @@ const TradersPage = () => {
         // Use a simple pagination approach
         const totalCount = count || 0;
         setTotalPages(Math.ceil(totalCount / tradersPerPage));
-        console.log('Count query successful:', count);
       } catch (countError) {
         console.error('Count query error:', countError);
         // Fallback to a simple pagination
