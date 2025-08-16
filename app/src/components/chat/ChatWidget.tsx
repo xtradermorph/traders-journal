@@ -639,18 +639,29 @@ const ChatWidget = () => {
           const members = profiles?.map(p => ({ profile: p })) || [];
           
           // For direct chats, ensure we have both users
-          if (group.is_direct && members.length < 2 && publicUsers) {
-            console.log('Filling missing members for direct chat:', {
+          if (group.is_direct && members.length < 2) {
+            console.log('Missing members detected for direct chat:', {
               group_id: group.id,
               currentMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username })),
-              publicUsers: publicUsers.map(u => ({ id: u.id, username: u.username })),
-              groupMembersData: groupMembersData?.map(m => m.user_id)
+              groupMembersData: groupMembersData?.map(m => m.user_id),
+              expectedUserIds: userIds
             });
             
-            const missingUser = publicUsers.find(u => !members.some(m => m.profile.id === u.id));
-            if (missingUser) {
-              console.log('Adding missing user:', { id: missingUser.id, username: missingUser.username });
-              members.push({ profile: missingUser });
+            // Fetch the missing profiles directly from the database
+            const missingUserIds = userIds.filter(id => !members.some(m => m.profile.id === id));
+            if (missingUserIds.length > 0) {
+              console.log('Fetching missing profiles for user IDs:', missingUserIds);
+              const { data: missingProfiles } = await supabase
+                .from("profiles")
+                .select("id, username, avatar_url")
+                .in("id", missingUserIds);
+              
+              if (missingProfiles) {
+                missingProfiles.forEach(profile => {
+                  members.push({ profile });
+                });
+                console.log('Added missing profiles:', missingProfiles.map(p => ({ id: p.id, username: p.username })));
+              }
             }
           }
           
@@ -958,7 +969,7 @@ const ChatWidget = () => {
     };
   }, [activeConversation, fetchMessages, supabase]);
 
-  // Fetch all users except current user for both Public Users and Invite Users
+  // Fetch only public users for both Public Users and Invite Users
   useEffect(() => {
     if (!currentUser?.id) return;
     const fetchUsers = async () => {
@@ -966,6 +977,7 @@ const ChatWidget = () => {
         .from("profiles")
         .select("id, username, avatar_url")
         .neq("id", currentUser.id)
+        .eq("public_profile", true)
         .order("username", { ascending: true });
       if (!error && data) {
         setPublicUsers(data);
