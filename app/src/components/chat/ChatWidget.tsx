@@ -551,34 +551,38 @@ const ChatWidget = () => {
         setIsLoading(false);
         return;
       }
-      // Fetch group memberships with last_read_at, is_pinned, is_muted, and group creator_id
+      
+      // Step 1: Get user's group memberships (simple query)
       const { data: groupMembers, error } = await supabase
         .from("chat_group_members")
-        .select(
-          `
-          group_id,
-          last_read_at,
-          is_pinned,
-          is_muted,
-          chat_groups (
-            id,
-            name,
-            is_direct,
-            creator_id,
-            avatar_url
-          )
-        `
-        )
+        .select("group_id, last_read_at, is_pinned, is_muted")
         .eq("user_id", currentUser.id);
 
       if (error) {
         throw error;
       }
 
-      // For each group, fetch unread count
+      if (!groupMembers || groupMembers.length === 0) {
+        setConversations([]);
+        setIsLoading(false);
+        return;
+      }
+
+      // Step 2: Get group details for each group (separate queries to avoid joins)
+      const groupIds = groupMembers.map(m => m.group_id);
+      const { data: groups, error: groupsError } = await supabase
+        .from("chat_groups")
+        .select("id, name, is_direct, creator_id, avatar_url")
+        .in("id", groupIds);
+
+      if (groupsError) {
+        throw groupsError;
+      }
+
+      // Step 3: Get unread counts (simple queries)
       const unreadCounts: Record<string, number> = {};
       await Promise.all(
-        (groupMembers as any[]).map(async (member) => {
+        groupMembers.map(async (member) => {
           const groupId = member.group_id;
           const lastReadAt = member.last_read_at;
           let query = supabase
@@ -594,35 +598,29 @@ const ChatWidget = () => {
         })
       );
 
-      // Fetch members for each group separately to avoid RLS recursion
-      const processedConversations = (await Promise.all(
-        (groupMembers as any[]).map(async ({ chat_groups, group_id, last_read_at, is_pinned, is_muted, avatar_url }) => {
-          if (!chat_groups) return null;
+      // Step 4: Get members for each group (separate queries)
+      const processedConversations = await Promise.all(
+        groupMembers.map(async (member) => {
+          const group = groups?.find(g => g.id === member.group_id);
+          if (!group) return null;
           
-          // Fetch members for this group separately
+          // Get members for this specific group
           const { data: groupMembersData } = await supabase
             .from("chat_group_members")
-            .select(`
-              user_id,
-              profiles ( id, username, avatar_url )
-            `)
-            .eq("group_id", group_id);
+            .select("user_id")
+            .eq("group_id", member.group_id);
           
-          // Deduplicate members by user_id to prevent repeated users
-          const uniqueMembers = (groupMembersData || [])
-            .filter((m: any) => m.profiles) // Filter out any null profiles
-            .reduce((acc: any[], m: any) => {
-              // Check if we already have this user_id
-              const exists = acc.some(existing => existing.profile.id === m.profiles.id);
-              if (!exists) {
-                acc.push({ profile: m.profiles });
-              }
-              return acc;
-            }, []);
+          // Get profiles for these users
+          const userIds = groupMembersData?.map(m => m.user_id) || [];
+          const { data: profiles } = await supabase
+            .from("profiles")
+            .select("id, username, avatar_url")
+            .in("id", userIds);
           
-          let members = uniqueMembers;
+          const members = profiles?.map(p => ({ profile: p })) || [];
           
-          if (chat_groups.is_direct && members.length < 2 && publicUsers) {
+          // For direct chats, ensure we have both users
+          if (group.is_direct && members.length < 2 && publicUsers) {
             const missingUser = publicUsers.find(u => !members.some(m => m.profile.id === u.id));
             if (missingUser) {
               members.push({ profile: missingUser });
@@ -630,42 +628,37 @@ const ChatWidget = () => {
           }
           
           return {
-            group_id: chat_groups.id,
-            is_direct: chat_groups.is_direct,
-            name: chat_groups.is_direct 
+            group_id: group.id,
+            is_direct: group.is_direct,
+            name: group.is_direct 
               ? members.find(m => m.profile.id !== currentUser.id)?.profile?.username || 'Unknown'
-              : chat_groups.name,
+              : group.name,
             members,
             last_message: "No messages yet...",
             last_message_at: new Date().toISOString(),
-            unread_count: unreadCounts[group_id] || 0,
-            is_pinned: !!is_pinned,
-            is_muted: !!is_muted,
-            creator_id: chat_groups.creator_id,
-            avatar_url: chat_groups.avatar_url,
+            unread_count: unreadCounts[member.group_id] || 0,
+            is_pinned: !!member.is_pinned,
+            is_muted: !!member.is_muted,
+            creator_id: group.creator_id,
+            avatar_url: group.avatar_url
           };
         })
-      )).filter(Boolean) as Conversation[];
-      
-      const validConversations = processedConversations.filter((c): c is Conversation => c !== null);
-      const uniqueConversations = Array.from(new Map(validConversations.map(c => [c.group_id, c])).values());
-      
-      // Debug: Log conversations with avatars
-      const conversationsWithAvatars = uniqueConversations.filter(c => c.avatar_url);
-      if (conversationsWithAvatars.length > 0) {
-        console.log('Conversations with avatars:', conversationsWithAvatars.map(c => ({
-          name: c.name,
-          avatar_url: c.avatar_url,
-          is_direct: c.is_direct
-        })));
-      }
-      
-      setConversations(uniqueConversations);
+      );
+
+      // Filter out null conversations and sort
+      const validConversations = processedConversations.filter(Boolean) as Conversation[];
+      validConversations.sort((a, b) => {
+        if (a.is_pinned && !b.is_pinned) return -1;
+        if (!a.is_pinned && b.is_pinned) return 1;
+        return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
+      });
+
+      setConversations(validConversations);
       setIsLoading(false);
     } catch (error) {
+      console.error("Error fetching conversations:", error);
+      setLoadError(error instanceof Error ? error.message : "Failed to load conversations");
       setIsLoading(false);
-      setLoadError('Failed to load conversations.');
-      console.error('Error fetching conversations:', error);
     }
   }, [currentUser, publicUsers, publicUsersLoaded]);
 
@@ -678,18 +671,47 @@ const ChatWidget = () => {
   const fetchPendingInvitations = useCallback(async () => {
     if (!currentUser) return;
     try {
-      const { data, error } = await supabase
+      // Step 1: Get invitations (simple query)
+      const { data: invitations, error } = await supabase
         .from('chat_group_invitations')
-        .select(`
-          *,
-          chat_groups!inner(name, creator_id),
-          profiles!inviter_id(username, avatar_url)
-        `)
+        .select('*')
         .eq('invitee_id', currentUser.id)
         .eq('status', 'pending');
       
       if (error) throw error;
-      setPendingInvitations(data || []);
+      
+      if (!invitations || invitations.length === 0) {
+        setPendingInvitations([]);
+        return;
+      }
+      
+      // Step 2: Get group details for these invitations
+      const groupIds = invitations.map(inv => inv.group_id);
+      const { data: groups } = await supabase
+        .from('chat_groups')
+        .select('id, name, creator_id')
+        .in('id', groupIds);
+      
+      // Step 3: Get inviter profiles
+      const inviterIds = invitations.map(inv => inv.inviter_id);
+      const { data: profiles } = await supabase
+        .from('profiles')
+        .select('id, username, avatar_url')
+        .in('id', inviterIds);
+      
+      // Step 4: Combine the data
+      const enrichedInvitations = invitations.map(inv => {
+        const group = groups?.find(g => g.id === inv.group_id);
+        const inviter = profiles?.find(p => p.id === inv.inviter_id);
+        
+        return {
+          ...inv,
+          chat_groups: group ? { name: group.name, creator_id: group.creator_id } : null,
+          profiles: inviter ? { username: inviter.username, avatar_url: inviter.avatar_url } : null
+        };
+      });
+      
+      setPendingInvitations(enrichedInvitations);
     } catch (error) {
       console.error('Error fetching invitations:', error);
     }
