@@ -42,6 +42,8 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
   const [friends, setFriends] = useState<User[]>([]);
   const [hasFriends, setHasFriends] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
+  const [isValidatingUsername, setIsValidatingUsername] = useState(false);
+  const [usernameValidationResult, setUsernameValidationResult] = useState<User | null>(null);
 
   // Fetch user's friends
   const fetchFriends = useCallback(async () => {
@@ -152,7 +154,52 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
     } finally {
       setIsSearching(false);
     }
-  }, [shareType, friends, toast]);
+  }, [shareType, friends]);
+
+  // Validate username for the "Enter Username" section
+  const validateUsername = useCallback(async (username: string) => {
+    if (!username.trim()) {
+      setUsernameValidationResult(null);
+      return;
+    }
+
+    setIsValidatingUsername(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('User not authenticated');
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, first_name, last_name, avatar_url')
+        .eq('username', username.trim())
+        .neq('id', user.id)
+        .single();
+
+      if (error) {
+        if (error.code === 'PGRST116') {
+          // No user found
+          setUsernameValidationResult(null);
+        } else {
+          throw error;
+        }
+      } else {
+        // User found
+        setUsernameValidationResult({
+          id: data.id,
+          username: data.username,
+          first_name: data.first_name,
+          last_name: data.last_name,
+          avatar_url: data.avatar_url,
+          is_friend: friends.some(friend => friend.id === data.id)
+        });
+      }
+    } catch (error) {
+      console.error('Error validating username:', error);
+      setUsernameValidationResult(null);
+    } finally {
+      setIsValidatingUsername(false);
+    }
+  }, [friends]);
 
   // Load data when dialog opens
   useEffect(() => {
@@ -179,6 +226,19 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
     }
   }, [searchQuery]);
 
+  // Validate username when recipientUsername changes
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      if (shareType === 'username' && recipientUsername.trim()) {
+        validateUsername(recipientUsername);
+      } else {
+        setUsernameValidationResult(null);
+      }
+    }, 500); // 500ms delay to avoid too many requests
+
+    return () => clearTimeout(timeoutId);
+  }, [recipientUsername, shareType, validateUsername]);
+
   // Share trade mutation
   const shareTradeMutation = useMutation({
     mutationFn: async () => {
@@ -187,7 +247,11 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
       let targetUsername = '';
 
       if (shareType === 'username') {
-        targetUsername = recipientUsername.trim();
+        if (usernameValidationResult) {
+          targetUsername = usernameValidationResult.username;
+        } else {
+          targetUsername = recipientUsername.trim();
+        }
       } else if (shareType === 'friend') {
         const selectedFriend = friends.find(f => f.id === selectedFriendId);
         if (!selectedFriend) throw new Error('Selected friend not found');
@@ -264,6 +328,7 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
     setSelectedFriendId('');
     setSearchQuery('');
     setSearchResults([]);
+    setUsernameValidationResult(null);
   };
 
   const handleClose = () => {
@@ -387,6 +452,37 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
                 value={recipientUsername}
                 onChange={(e) => setRecipientUsername(e.target.value)}
               />
+              
+              {isValidatingUsername && (
+                <div className="text-sm text-muted-foreground">Validating username...</div>
+              )}
+              
+              {usernameValidationResult && (
+                <div className="space-y-2">
+                  <Label>User Found</Label>
+                  <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage src={usernameValidationResult.avatar_url || undefined} alt={usernameValidationResult.username} />
+                      <AvatarFallback>{usernameValidationResult.username.substring(0, 2).toUpperCase()}</AvatarFallback>
+                    </Avatar>
+                    <div className="flex flex-col">
+                      <span className="font-medium text-green-800 dark:text-green-200">{usernameValidationResult.username}</span>
+                      {usernameValidationResult.first_name && usernameValidationResult.last_name && (
+                        <span className="text-xs text-green-600 dark:text-green-300">
+                          {usernameValidationResult.first_name} {usernameValidationResult.last_name}
+                        </span>
+                      )}
+                    </div>
+                    {usernameValidationResult.is_friend && (
+                      <Badge variant="secondary" className="text-xs">Friend</Badge>
+                    )}
+                  </div>
+                </div>
+              )}
+              
+              {recipientUsername && !isValidatingUsername && !usernameValidationResult && (
+                <div className="text-sm text-red-600 dark:text-red-400">No user found with this username</div>
+              )}
             </div>
           )}
 
@@ -490,7 +586,7 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
             onClick={handleShare}
             disabled={
               shareTradeMutation.isPending || 
-              (shareType === 'username' && !recipientUsername.trim()) ||
+              (shareType === 'username' && !recipientUsername.trim() && !usernameValidationResult) ||
               (shareType === 'friend' && !hasFriends) ||
               ((shareType === 'friend' || shareType === 'search') && !selectedFriendId)
             }

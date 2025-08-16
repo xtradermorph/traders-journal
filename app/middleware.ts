@@ -7,10 +7,18 @@ export async function middleware(request: NextRequest) {
   const supabase = createMiddlewareClient({ req: request, res })
   
   try {
-    // Get current session
-    const { data: { session }, error } = await supabase.auth.getSession()
+    // Get current session with a timeout
+    const sessionPromise = supabase.auth.getSession()
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Session check timeout')), 3000)
+    )
     
-    // If there's an auth error, don't redirect immediately - let the client handle it
+    const { data: { session }, error } = await Promise.race([
+      sessionPromise,
+      timeoutPromise
+    ]) as any
+    
+    // If there's an auth error or timeout, don't redirect - let the client handle it
     if (error) {
       console.warn('Middleware auth error:', error.message);
       // Continue without redirecting to allow the client to handle the error
@@ -30,21 +38,35 @@ export async function middleware(request: NextRequest) {
       '/support'
     ]
     
+    // Skip middleware for login page to prevent redirect loops
+    if (request.nextUrl.pathname === '/login') {
+      return res
+    }
+    
     // Check if the current path is a protected route
     const isProtectedRoute = protectedRoutes.some(route => 
       request.nextUrl.pathname.startsWith(route)
     )
     
-    // If accessing a protected route without authentication, redirect to login
-    if (isProtectedRoute && !session) {
+    // Only redirect if we're certain there's no session AND we're on a protected route
+    // This prevents false redirects during auth state transitions
+    if (isProtectedRoute && session === null && !session) {
+      // Add a small delay to allow auth state to stabilize
+      // This prevents rapid redirects during auth state changes
       const loginUrl = new URL('/login', request.url)
       // Add the current URL as a redirect parameter
       loginUrl.searchParams.set('redirect', request.nextUrl.pathname)
-      return NextResponse.redirect(loginUrl)
+      
+      // Set a cookie to indicate this was a middleware redirect
+      const response = NextResponse.redirect(loginUrl)
+      response.cookies.set('auth-redirect', 'true', { 
+        maxAge: 60, // 1 minute
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production'
+      })
+      
+      return response
     }
-    
-    // Remove automatic redirect to ensure users must go through full authentication flow
-    // This ensures Turnstile security check is always required
     
     return res
   } catch (error) {
@@ -63,7 +85,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public folder
+     * - _next/webpack-hmr (hot reload)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|public).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|public|_next/webpack-hmr).*)',
   ],
 }

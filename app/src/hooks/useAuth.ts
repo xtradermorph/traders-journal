@@ -17,6 +17,7 @@ export const useAuth = () => {
     session: null,
     user: null
   })
+  const [lastSessionCheck, setLastSessionCheck] = useState<number>(0)
   const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
@@ -28,19 +29,46 @@ export const useAuth = () => {
 
     let mounted = true
     let timeoutId: NodeJS.Timeout
+    
+    // Try to restore session from localStorage if available
+    const restoreSession = () => {
+      try {
+        const storedSession = localStorage.getItem('supabase.auth.token')
+        if (storedSession) {
+          const parsed = JSON.parse(storedSession)
+          if (parsed && parsed.access_token) {
+            // We have a stored session, set loading to false but keep checking
+            setAuthState(prev => ({
+              ...prev,
+              loading: false
+            }))
+          }
+        }
+      } catch (error) {
+        console.warn('Error restoring session from storage:', error)
+      }
+    }
+    
+    // Restore session immediately
+    restoreSession()
 
     const checkAuth = async () => {
       try {
+        // Prevent too frequent session checks
+        const now = Date.now()
+        if (now - lastSessionCheck < 1000) {
+          return // Skip if checked less than 1 second ago
+        }
+        setLastSessionCheck(now)
+
         // Set a timeout to prevent infinite loading
         timeoutId = setTimeout(() => {
           if (mounted) {
-            console.warn('Auth check timeout - forcing loading to false');
+            console.warn('Auth check timeout - keeping current state');
             setAuthState(prev => ({
               ...prev,
-              loading: false,
-              isAuthenticated: false,
-              session: null,
-              user: null
+              loading: false
+              // Don't reset authentication state on timeout
             }));
           }
         }, 5000); // 5 second timeout
@@ -53,43 +81,45 @@ export const useAuth = () => {
 
         if (error) {
           console.warn('Auth session check error:', error.message);
-          // Don't immediately set authentication to false for certain errors
-          // that might be temporary (like network issues or Cloudflare challenges)
-          if (error.message.includes('fetch') || error.message.includes('network') || error.message.includes('timeout')) {
-            // For network-related errors, keep the current state and just stop loading
-            setAuthState(prev => ({
-              ...prev,
-              loading: false
-            }))
-          } else {
-            setAuthState(prev => ({
-              ...prev,
-              isAuthenticated: false,
-              loading: false,
-              session: null,
-              user: null
-            }))
-          }
+          // For any error, just stop loading but preserve current auth state
+          // This prevents false logouts due to temporary network issues
+          setAuthState(prev => ({
+            ...prev,
+            loading: false
+          }))
           return
         }
 
-        setAuthState(prev => ({
-          ...prev,
-          isAuthenticated: !!session,
-          loading: false,
-          session: session,
-          user: session?.user ?? null
-        }))
+        // Only update state if there's an actual change
+        setAuthState(prev => {
+          const newIsAuthenticated = !!session
+          const newUser = session?.user ?? null
+          
+          // If authentication state hasn't changed, just update loading
+          if (prev.isAuthenticated === newIsAuthenticated && 
+              prev.user?.id === newUser?.id) {
+            return {
+              ...prev,
+              loading: false
+            }
+          }
+          
+          return {
+            ...prev,
+            isAuthenticated: newIsAuthenticated,
+            loading: false,
+            session: session,
+            user: newUser
+          }
+        })
       } catch (error) {
         if (mounted) {
           clearTimeout(timeoutId);
           console.warn('Auth check exception:', error);
+          // On exception, just stop loading but preserve current state
           setAuthState(prev => ({
             ...prev,
-            isAuthenticated: false,
-            loading: false,
-            session: null,
-            user: null
+            loading: false
           }))
         }
       }
@@ -103,13 +133,30 @@ export const useAuth = () => {
         
         clearTimeout(timeoutId);
         
-        setAuthState(prev => ({
-          ...prev,
-          isAuthenticated: !!session,
-          loading: false,
-          session: session,
-          user: session?.user ?? null
-        }))
+        console.log('Auth state change:', event, session?.user?.id);
+        
+        // Only update state if there's an actual change
+        setAuthState(prev => {
+          const newIsAuthenticated = !!session
+          const newUser = session?.user ?? null
+          
+          // If authentication state hasn't changed, just update loading
+          if (prev.isAuthenticated === newIsAuthenticated && 
+              prev.user?.id === newUser?.id) {
+            return {
+              ...prev,
+              loading: false
+            }
+          }
+          
+          return {
+            ...prev,
+            isAuthenticated: newIsAuthenticated,
+            loading: false,
+            session: session,
+            user: newUser
+          }
+        })
       }
     )
 
