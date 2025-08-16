@@ -645,6 +645,14 @@ const ChatWidget = () => {
         })
       );
 
+      // Add debugging for conversation names
+      console.log('Processed conversations:', processedConversations.map(conv => ({
+        group_id: conv?.group_id,
+        name: conv?.name,
+        is_direct: conv?.is_direct,
+        members: conv?.members?.map(m => ({ id: m.profile.id, username: m.profile.username }))
+      })));
+
       // Filter out null conversations and sort
       const validConversations = processedConversations.filter(Boolean) as Conversation[];
       validConversations.sort((a, b) => {
@@ -652,6 +660,13 @@ const ChatWidget = () => {
         if (!a.is_pinned && b.is_pinned) return 1;
         return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
       });
+
+      console.log('Final conversations:', validConversations.map(conv => ({
+        group_id: conv.group_id,
+        name: conv.name,
+        is_direct: conv.is_direct,
+        members: conv.members?.map(m => ({ id: m.profile.id, username: m.profile.username }))
+      })));
 
       setConversations(validConversations);
       setIsLoading(false);
