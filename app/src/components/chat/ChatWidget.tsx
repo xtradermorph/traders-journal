@@ -397,6 +397,8 @@ const ChatWidget = () => {
   const [publicOpen, setPublicOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [publicUsers, setPublicUsers] = useState<Profile[]>([]);
+  const [groupCreationUsers, setGroupCreationUsers] = useState<Profile[]>([]);
+  const [groupCreationUsersLoaded, setGroupCreationUsersLoaded] = useState(false);
 
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [groupName, setGroupName] = useState("");
@@ -969,10 +971,10 @@ const ChatWidget = () => {
     };
   }, [activeConversation, fetchMessages, supabase]);
 
-  // Fetch only public users for both Public Users and Invite Users
+  // Fetch public users for display in chat widget
   useEffect(() => {
     if (!currentUser?.id) return;
-    const fetchUsers = async () => {
+    const fetchPublicUsers = async () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, avatar_url")
@@ -984,7 +986,25 @@ const ChatWidget = () => {
         setPublicUsersLoaded(true);
       }
     };
-    fetchUsers();
+    fetchPublicUsers();
+  }, [currentUser]);
+
+  // Fetch users for group creation (only public users for privacy)
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    const fetchGroupCreationUsers = async () => {
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id, username, avatar_url")
+        .neq("id", currentUser.id)
+        .eq("public_profile", true)
+        .order("username", { ascending: true });
+      if (!error && data) {
+        setGroupCreationUsers(data);
+        setGroupCreationUsersLoaded(true);
+      }
+    };
+    fetchGroupCreationUsers();
   }, [currentUser]);
 
   // Separate group chats from direct chats
@@ -1230,10 +1250,19 @@ const ChatWidget = () => {
         .from("chat_group_members")
         .insert(memberIds.map(user_id => ({ group_id: group.id, user_id })));
       if (memberError) throw memberError;
+      console.log('Group created successfully:', {
+        groupId: group.id,
+        groupName: group.name,
+        memberIds: memberIds
+      });
+      
       setShowGroupModal(false);
       setGroupName("");
       setSelectedUserIds([]);
-      fetchConversations();
+      
+      // Refresh conversations and wait for it to complete
+      await fetchConversations();
+      
       toast({ title: 'Group Created', description: `Group "${group.name}" created successfully!`, variant: 'default' });
     } catch (e: any) {
       setGroupNameError(e?.message || 'Failed to create group');
@@ -3019,10 +3048,10 @@ const ChatWidget = () => {
             <div>
               <div className="mb-1 font-medium text-sm text-white">Invite Users</div>
               <div className="max-h-40 overflow-y-auto border border-purple-700 rounded p-2 bg-slate-800">
-                {publicUsers.length === 0 ? (
+                {groupCreationUsers.length === 0 ? (
                   <div className="text-gray-400 text-center py-2">No users found.</div>
                 ) : (
-                  publicUsers.map(user => (
+                  groupCreationUsers.map(user => (
                     <label key={user.id} className="flex items-center gap-2 py-1 cursor-pointer hover:bg-slate-700 rounded px-1">
                       <input
                         type="checkbox"
