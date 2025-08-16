@@ -170,19 +170,20 @@ const FriendsContent = () => {
         const { data: friendsData, error: friendsError } = await supabase
           .from('trader_friends')
           .select(`
-            friend:friend_id(
-              id,
-              username,
-              avatar_url,
-              profession
-            )
+            user1:user1_id(id, username, avatar_url, profession),
+            user2:user2_id(id, username, avatar_url, profession)
           `)
-          .eq('user_id', session.user.id) as { data: FriendData[] | null, error: unknown };
+          .or(`user1_id.eq.${session.user.id},user2_id.eq.${session.user.id}`)
+          .eq('status', 'ACCEPTED') as { data: FriendData[] | null, error: unknown };
 
         if (friendsError) throw friendsError;
 
         // Fetch online status for each friend
-        const friendIds = friendsData?.map(f => f.friend.id) || [];
+        const friendIds = friendsData?.map(f => {
+          // Determine which user is the friend (not the current user)
+          return f.user1?.id === session.user.id ? f.user2?.id : f.user1?.id;
+        }).filter(Boolean) || [];
+        
         const { data: presenceData } = await supabase
           .from('user_presence')
           .select('*')
@@ -190,11 +191,13 @@ const FriendsContent = () => {
 
         // Combine friend data with online status
         const friendsWithStatus: Friend[] = (friendsData || []).map(f => {
-          const presence = (presenceData || []).find(p => p.user_id === f.friend.id);
+          // Determine which user is the friend (not the current user)
+          const friend = f.user1?.id === session.user.id ? f.user2 : f.user1;
+          const presence = (presenceData || []).find(p => p.user_id === friend?.id);
           const lastActive = presence?.last_seen_at ? new Date(presence.last_seen_at).getTime() : 0;
           const isOnline = presence?.status === 'ONLINE' && (Date.now() - lastActive < 15 * 60 * 1000);
           return {
-            ...f.friend,
+            ...friend,
             online_status: isOnline,
             last_seen: presence?.last_seen_at
           };
@@ -246,12 +249,11 @@ const FriendsContent = () => {
     if (!session?.user?.id) return;
 
     try {
-      // Remove both friendship records (bidirectional)
+      // Remove the friendship record
       const { error } = await supabase
         .from('trader_friends')
         .delete()
-        .or(`user_id.eq.${session.user.id},friend_id.eq.${session.user.id}`)
-        .or(`user_id.eq.${friendId},friend_id.eq.${friendId}`);
+        .or(`and(user1_id.eq.${session.user.id},user2_id.eq.${friendId}),and(user1_id.eq.${friendId},user2_id.eq.${session.user.id})`);
 
       if (error) throw error;
 

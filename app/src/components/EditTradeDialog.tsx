@@ -103,6 +103,8 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
   const [customLotSizeValue, setCustomLotSizeValue] = useState('');
   const [customLotSizeError, setCustomLotSizeError] = useState('');
   const [notesCharCount, setNotesCharCount] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
 
 
   const form = useForm<TradeFormValues>({
@@ -318,24 +320,6 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
         throw new Error(`Database error: ${error.message}`);
       }
 
-      // Invalidate and refetch trades
-      queryClient.invalidateQueries({ queryKey: ['trades'] });
-      queryClient.invalidateQueries({ queryKey: ['stats'] });
-
-      // Show success message
-      setSaveSuccess(true);
-      toast({
-        title: "Success",
-        description: "Trade updated successfully!",
-      });
-
-      // Close dialog after a short delay
-      setTimeout(() => {
-        onClose();
-        setSaveSuccess(false);
-        // setIsSubmitting(false); // This line was not in the new_code, so it's removed.
-      }, 1500);
-
       return updateData;
     },
     onSuccess: () => {
@@ -369,6 +353,7 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
       }
     },
     onError: (error: Error) => {
+      setIsSubmitting(false);
       toast({
         id: 'trade-update-error',
         title: 'Error Updating Trade',
@@ -382,21 +367,8 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
     setIsSubmitting(true);
     setSaveSuccess(false);
 
-    try {
-
-
-      // Submit the form
-      updateTradeMutation.mutate(data);
-
-    } catch (error) {
-      console.error('Error updating trade:', error);
-      toast({
-        title: "Error",
-        description: "Failed to update trade. Please try again.",
-        variant: "destructive",
-      });
-      setIsSubmitting(false);
-    }
+    // Submit the form
+    updateTradeMutation.mutate(data);
   };
 
   if (!trade) return null;
@@ -972,14 +944,14 @@ const EditTradeDialog = ({ isOpen, onClose, trade, onTradeUpdated }: EditTradeDi
               </Button>
               <Button
                 type="submit"
-                disabled={form.formState.isSubmitting || isTagInvalid || !form.formState.isValid}
+                disabled={isSubmitting || isTagInvalid || !form.formState.isValid}
                 className={`${
                   form.formState.isValid && !isTagInvalid
                     ? "bg-gradient-to-r from-green-500 to-emerald-500 hover:from-green-600 hover:to-emerald-600 text-white shadow-[0_8px_24px_rgba(34,197,94,0.3)]"
                     : "bg-slate-300 text-slate-500 cursor-not-allowed"
                 } backdrop-blur-sm border border-green-400/20`}
               >
-                {form.formState.isSubmitting ? (
+                {isSubmitting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   "Update Trade"

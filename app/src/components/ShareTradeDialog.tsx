@@ -52,22 +52,24 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
       const { data, error } = await supabase
         .from('trader_friends')
         .select(`
-          friend:friend_id(
-            id,
-            username,
-            avatar_url
-          )
+          user1:user1_id(id, username, avatar_url),
+          user2:user2_id(id, username, avatar_url)
         `)
-        .eq('user_id', user.id);
+        .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`)
+        .eq('status', 'ACCEPTED');
 
       if (error) throw error;
 
-      const friendsList: User[] = (data || []).map((item: any) => ({
-        id: item.friend.id,
-        username: item.friend.username,
-        avatar_url: item.friend.avatar_url,
-        is_friend: true
-      }));
+      const friendsList: User[] = (data || []).map((item: any) => {
+        // Determine which user is the friend (not the current user)
+        const friend = item.user1?.id === user.id ? item.user2 : item.user1;
+        return {
+          id: friend.id,
+          username: friend.username,
+          avatar_url: friend.avatar_url,
+          is_friend: true
+        };
+      });
       
       setFriends(friendsList);
       setHasFriends(friendsList.length > 0);
