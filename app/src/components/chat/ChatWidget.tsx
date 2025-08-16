@@ -622,6 +622,13 @@ const ChatWidget = () => {
             profiles: profiles?.map(p => ({ id: p.id, username: p.username }))
           });
           
+          // Debug the members array construction
+          console.log('Members array for group', member.group_id, ':', {
+            groupMembersData: groupMembersData?.map(m => m.user_id),
+            profiles: profiles?.map(p => ({ id: p.id, username: p.username })),
+            constructedMembers: profiles?.map(p => ({ profile: p }))
+          });
+          
           const members = profiles?.map(p => ({ profile: p })) || [];
           
           // For direct chats, ensure we have both users
@@ -635,14 +642,29 @@ const ChatWidget = () => {
           // Debug the name derivation for direct chats
           let conversationName = group.name;
           if (group.is_direct) {
-            const otherMember = members.find(m => m.profile.id !== currentUser.id);
-            conversationName = otherMember?.profile?.username || 'Unknown';
-            console.log('Direct chat name derivation:', {
+            console.log('Starting name derivation for direct chat:', {
               group_id: group.id,
               currentUserId: currentUser.id,
+              currentUserUsername: currentUser.username,
+              allMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username }))
+            });
+            
+            const otherMember = members.find(m => m.profile.id !== currentUser.id);
+            conversationName = otherMember?.profile?.username || 'Unknown';
+            
+            console.log('Direct chat name derivation result:', {
+              group_id: group.id,
+              currentUserId: currentUser.id,
+              currentUserUsername: currentUser.username,
               allMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username })),
               otherMember: otherMember ? { id: otherMember.profile.id, username: otherMember.profile.username } : null,
-              derivedName: conversationName
+              derivedName: conversationName,
+              comparison: members.map(m => ({
+                memberId: m.profile.id,
+                currentUserId: currentUser.id,
+                isEqual: m.profile.id === currentUser.id,
+                username: m.profile.username
+              }))
             });
           }
           
