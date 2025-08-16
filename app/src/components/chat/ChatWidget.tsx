@@ -1144,6 +1144,8 @@ const ChatWidget = () => {
     setGroupName(value);
     if (value.length > 20) {
       setGroupNameError('Group name must be 20 characters or less');
+    } else if (value.length < 3) {
+      setGroupNameError('Group name must be at least 3 characters');
     } else {
       setGroupNameError(null);
     }
@@ -1151,11 +1153,42 @@ const ChatWidget = () => {
 
   // Group creation handler
   const handleCreateGroup = async () => {
-    if (!groupName.trim() || !currentUser || groupName.length > 20) return;
+    if (!groupName.trim() || !currentUser || groupName.length < 3 || groupName.length > 20) return;
     setCreatingGroup(true);
     setGroupNameError(null);
     try {
-      // 1. Create group
+      // 1. Check if group name already exists
+      const { data: existingGroups, error: checkError } = await supabase
+        .from("chat_groups")
+        .select("id, name")
+        .eq("name", groupName.trim())
+        .eq("is_direct", false);
+      
+      if (checkError) throw checkError;
+      
+      if (existingGroups && existingGroups.length > 0) {
+        setGroupNameError(`A group named "${groupName.trim()}" already exists. Please choose a different name.`);
+        toast({ 
+          title: 'Group Name Exists', 
+          description: `A group with this name already exists. Please choose a different name.`, 
+          variant: 'destructive' 
+        });
+        return;
+      }
+      
+      // Check for valid group name (no special characters, no only spaces)
+      const trimmedName = groupName.trim();
+      if (!/^[a-zA-Z0-9\s\-_]+$/.test(trimmedName)) {
+        setGroupNameError('Group name can only contain letters, numbers, spaces, hyphens, and underscores.');
+        toast({ 
+          title: 'Invalid Group Name', 
+          description: 'Group name can only contain letters, numbers, spaces, hyphens, and underscores.', 
+          variant: 'destructive' 
+        });
+        return;
+      }
+      
+      // 2. Create group
       const { data: group, error: groupError } = await supabase
         .from("chat_groups")
         .insert({ name: groupName.trim(), is_direct: false, creator_id: currentUser.id })
