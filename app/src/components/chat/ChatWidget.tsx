@@ -640,8 +640,16 @@ const ChatWidget = () => {
           
           // For direct chats, ensure we have both users
           if (group.is_direct && members.length < 2 && publicUsers) {
+            console.log('Filling missing members for direct chat:', {
+              group_id: group.id,
+              currentMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username })),
+              publicUsers: publicUsers.map(u => ({ id: u.id, username: u.username })),
+              groupMembersData: groupMembersData?.map(m => m.user_id)
+            });
+            
             const missingUser = publicUsers.find(u => !members.some(m => m.profile.id === u.id));
             if (missingUser) {
+              console.log('Adding missing user:', { id: missingUser.id, username: missingUser.username });
               members.push({ profile: missingUser });
             }
           }
