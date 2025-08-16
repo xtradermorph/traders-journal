@@ -79,6 +79,25 @@ export default function RootLayout({
     // Initialize cookie preferences from stored consent
     initializeCookiePreferences();
     
+    // Handle global promise rejections
+    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
+      const message = event.reason?.message || event.reason?.toString() || '';
+      
+      // Suppress the enabledFeatures error
+      if (message.includes('enabledFeatures is undefined') ||
+          message.includes('args.site.enabledFeatures') ||
+          message.includes('can\'t access property "includes"') ||
+          message.includes('TypeError: can\'t access property "includes"')) {
+        event.preventDefault();
+        return;
+      }
+      
+      // Log other unhandled rejections
+      console.warn('Unhandled promise rejection:', event.reason);
+    };
+    
+    window.addEventListener('unhandledrejection', handleUnhandledRejection);
+    
     // Store original console methods
     const originalError = console.error;
     const originalWarn = console.warn;
@@ -97,18 +116,13 @@ export default function RootLayout({
           message.includes('onmozfullscreenchange is deprecated') ||
           message.includes('onmozfullscreenerror is deprecated') ||
           message.includes('WEBGL_debug_renderer_info is deprecated') ||
-          message.includes('This page is in Quirks Mode') ||
-          message.includes('Layout was forced before the page was fully loaded') ||
-          message.includes('The character encoding of a framed document was not declared') ||
-          message.includes('Request for the Private Access Token challenge') ||
-          message.includes('Partitioned cookie or storage access was provided') ||
-          message.includes('The resource at') && message.includes('preloaded with link preload was not used') ||
-          message.includes('GET') && message.includes('favicon.ico') && message.includes('404')) {
-        // Suppress these non-critical errors
-        return;
+          message.includes('enabledFeatures is undefined') ||
+          message.includes('args.site.enabledFeatures') ||
+          message.includes('can\'t access property "includes"') ||
+          message.includes('TypeError: can\'t access property "includes"')) {
+        return; // Suppress these errors
       }
       
-      // Let through important errors
       originalError.apply(console, args);
     };
 
@@ -152,22 +166,7 @@ export default function RootLayout({
       // Let other errors through for debugging
     };
 
-    const handleUnhandledRejection = (event: PromiseRejectionEvent) => {
-      // Only prevent default for specific known issues
-      if (event.reason && typeof event.reason.message === 'string') {
-        const message = event.reason.message;
-        if (message.includes('WebSocket connection') && 
-            (message.includes('was interrupted') || 
-             message.includes('establish a connection'))) {
-          event.preventDefault();
-          return;
-        }
-      }
-      // Let other rejections through for debugging
-    };
-
     window.addEventListener('error', handleError, true);
-    window.addEventListener('unhandledrejection', handleUnhandledRejection);
     
     return () => {
       console.error = originalError;
