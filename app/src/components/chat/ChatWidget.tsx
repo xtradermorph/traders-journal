@@ -619,35 +619,12 @@ const ChatWidget = () => {
             .select("id, username, avatar_url")
             .in("id", userIds);
           
-          console.log('Profile data for group', member.group_id, ':', {
-            userIds: userIds,
-            profiles: profiles?.map(p => ({ id: p.id, username: p.username }))
-          });
-          
-          // Debug the members array construction
-          console.log('Members array for group', member.group_id, ':', {
-            groupMembersData: groupMembersData?.map(m => m.user_id),
-            profiles: profiles?.map(p => ({ id: p.id, username: p.username })),
-            constructedMembers: profiles?.map(p => ({ profile: p }))
-          });
-          
-          // Debug the exact values to see what's happening
-          console.log('EXACT VALUES for group', member.group_id, ':', {
-            userIds: JSON.stringify(userIds),
-            profiles: JSON.stringify(profiles?.map(p => ({ id: p.id, username: p.username }))),
-            groupMembersData: JSON.stringify(groupMembersData?.map(m => m.user_id))
-          });
+
           
           const members = profiles?.map(p => ({ profile: p })) || [];
           
           // For direct chats, ensure we have both users
           if (group.is_direct && members.length < 2) {
-            console.log('Missing members detected for direct chat:', {
-              group_id: group.id,
-              currentMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username })),
-              groupMembersData: groupMembersData?.map(m => m.user_id),
-              expectedUserIds: userIds
-            });
             
             // Fetch the missing profiles directly from the database
             const missingUserIds = userIds.filter(id => !members.some(m => m.profile.id === id));
@@ -670,38 +647,8 @@ const ChatWidget = () => {
           // Debug the name derivation for direct chats
           let conversationName = group.name;
           if (group.is_direct) {
-            console.log('Starting name derivation for direct chat:', {
-              group_id: group.id,
-              currentUserId: currentUser.id,
-              currentUserUsername: currentUser.username,
-              allMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username }))
-            });
-            
             const otherMember = members.find(m => m.profile.id !== currentUser.id);
             conversationName = otherMember?.profile?.username || 'Unknown';
-            
-                         console.log('Direct chat name derivation result:', {
-               group_id: group.id,
-               currentUserId: currentUser.id,
-               currentUserUsername: currentUser.username,
-               allMembers: members.map(m => ({ id: m.profile.id, username: m.profile.username })),
-               otherMember: otherMember ? { id: otherMember.profile.id, username: otherMember.profile.username } : null,
-               derivedName: conversationName,
-               comparison: members.map(m => ({
-                 memberId: m.profile.id,
-                 currentUserId: currentUser.id,
-                 isEqual: m.profile.id === currentUser.id,
-                 username: m.profile.username
-               }))
-             });
-             
-             // Debug the exact comparison values
-             console.log('EXACT COMPARISON for group', group.id, ':', {
-               currentUserId: JSON.stringify(currentUser.id),
-               allMembers: JSON.stringify(members.map(m => ({ id: m.profile.id, username: m.profile.username }))),
-               otherMember: JSON.stringify(otherMember ? { id: otherMember.profile.id, username: otherMember.profile.username } : null),
-               derivedName: JSON.stringify(conversationName)
-             });
           }
           
           return {
@@ -720,14 +667,6 @@ const ChatWidget = () => {
         })
       );
 
-      // Add debugging for conversation names
-      console.log('Processed conversations:', processedConversations.map(conv => ({
-        group_id: conv?.group_id,
-        name: conv?.name,
-        is_direct: conv?.is_direct,
-        members: conv?.members?.map(m => ({ id: m.profile.id, username: m.profile.username }))
-      })));
-
       // Filter out null conversations and sort
       const validConversations = processedConversations.filter(Boolean) as Conversation[];
       validConversations.sort((a, b) => {
@@ -735,13 +674,6 @@ const ChatWidget = () => {
         if (!a.is_pinned && b.is_pinned) return 1;
         return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
       });
-
-      console.log('Final conversations:', validConversations.map(conv => ({
-        group_id: conv.group_id,
-        name: conv.name,
-        is_direct: conv.is_direct,
-        members: conv.members?.map(m => ({ id: m.profile.id, username: m.profile.username }))
-        })));
       
       setConversations(validConversations);
       setIsLoading(false);
@@ -1242,8 +1174,24 @@ const ChatWidget = () => {
       setGroupName("");
       setSelectedUserIds([]);
       
-      // Refresh conversations and wait for it to complete
+      // Force refresh conversations immediately
       await fetchConversations();
+      
+      // Also set the newly created group as active conversation
+      const newConversation = {
+        group_id: group.id,
+        is_direct: false,
+        name: group.name,
+        members: [],
+        last_message: "No messages yet...",
+        last_message_at: new Date().toISOString(),
+        unread_count: 0,
+        is_pinned: false,
+        is_muted: false,
+        creator_id: group.creator_id,
+        avatar_url: group.avatar_url
+      };
+      setActiveConversation(newConversation);
       
       toast({ title: 'Group Created', description: `Group "${group.name}" created successfully!`, variant: 'default' });
     } catch (e: any) {
