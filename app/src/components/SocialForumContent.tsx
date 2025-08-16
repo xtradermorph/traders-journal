@@ -556,7 +556,7 @@ const SocialForumContent = () => {
 
       let searchQuery;
       if (exactMatch) {
-        // Use exact username matching for private profiles
+        // Private tab: Search by exact username for ALL users (both public and private)
         searchQuery = supabase
           .from('profiles')
           .select('id, username, first_name, last_name, avatar_url')
@@ -564,11 +564,12 @@ const SocialForumContent = () => {
           .neq('id', user.id) // Exclude current user
           .limit(10);
       } else {
-        // Use partial matching for public profiles
+        // Public Users tab: Search by username, first_name, or last_name, but only for public users
         searchQuery = supabase
           .from('profiles')
           .select('id, username, first_name, last_name, avatar_url')
           .or(`username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+          .eq('public_profile', true) // Only public users
           .neq('id', user.id) // Exclude current user
           .limit(10);
       }

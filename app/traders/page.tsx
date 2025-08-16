@@ -296,8 +296,9 @@ const TradersPage = () => {
       
       let query = supabase
         .from('profiles')
-        .select('id, username, avatar_url, created_at, win_rate, performance_rank')
-        .not('username', 'is', null);
+        .select('id, username, avatar_url, created_at, win_rate, performance_rank, public_profile')
+        .not('username', 'is', null)
+        .eq('public_profile', true);
 
       // Exclude current user from results
       if (currentUserId) {
@@ -308,7 +309,58 @@ const TradersPage = () => {
 
       // Apply search filter if provided
       if (debouncedSearchQuery) {
-        query = query.ilike('username', `%${debouncedSearchQuery}%`);
+        // First, check if there's an exact username match (for private profiles)
+        const exactMatchQuery = supabase
+          .from('profiles')
+          .select('id, username, avatar_url, created_at, win_rate, performance_rank, public_profile')
+          .eq('username', debouncedSearchQuery.trim())
+          .not('username', 'is', null);
+        
+        if (currentUserId) {
+          exactMatchQuery.neq('id', currentUserId);
+        }
+        
+        const { data: exactMatchData } = await exactMatchQuery;
+        
+        if (exactMatchData && exactMatchData.length > 0) {
+          // If exact match found, include it regardless of privacy setting
+          // Also include public profiles that match the search term
+          const publicMatchesQuery = supabase
+            .from('profiles')
+            .select('id, username, avatar_url, created_at, win_rate, performance_rank, public_profile')
+            .not('username', 'is', null)
+            .eq('public_profile', true)
+            .or(`username.ilike.%${debouncedSearchQuery}%,first_name.ilike.%${debouncedSearchQuery}%,last_name.ilike.%${debouncedSearchQuery}%`);
+          
+          if (currentUserId) {
+            publicMatchesQuery.neq('id', currentUserId);
+          }
+          
+          const { data: publicMatchesData } = await publicMatchesQuery;
+          
+          // Combine exact match with public matches, removing duplicates
+          const allMatches = [...exactMatchData];
+          if (publicMatchesData) {
+            publicMatchesData.forEach(publicMatch => {
+              if (!allMatches.find(match => match.id === publicMatch.id)) {
+                allMatches.push(publicMatch);
+              }
+            });
+          }
+          
+          // Set the results directly
+          setTraders(allMatches.map(trader => ({
+            ...trader,
+            user_presence: null
+          })));
+          
+          // Calculate total pages for combined results
+          setTotalPages(Math.ceil(allMatches.length / tradersPerPage));
+          return;
+        } else {
+          // No exact match found, search only public profiles with partial matching
+          query = query.or(`username.ilike.%${debouncedSearchQuery}%,first_name.ilike.%${debouncedSearchQuery}%,last_name.ilike.%${debouncedSearchQuery}%`);
+        }
       }
 
       // Apply sorting
@@ -360,8 +412,7 @@ const TradersPage = () => {
         .filter(trader => trader.username)
         .map(trader => ({
           ...trader,
-          user_presence: null,
-          public_profile: true // Assume all are public for now
+          user_presence: null
         }));
 
       console.log('Setting traders:', filteredTraders.length);
@@ -373,11 +424,17 @@ const TradersPage = () => {
         let countQuery = supabase
           .from('profiles')
           .select('id', { count: 'exact', head: true })
-          .not('username', 'is', null);
+          .not('username', 'is', null)
+          .eq('public_profile', true);
         
         // Exclude current user from count
         if (currentUserId) {
           countQuery = countQuery.neq('id', currentUserId);
+        }
+        
+        // Apply search filter to count query if provided
+        if (debouncedSearchQuery) {
+          countQuery = countQuery.or(`username.ilike.%${debouncedSearchQuery}%,first_name.ilike.%${debouncedSearchQuery}%,last_name.ilike.%${debouncedSearchQuery}%`);
         }
         
         const { count } = await countQuery;
@@ -706,7 +763,7 @@ const TradersPage = () => {
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                     <Input
-                      placeholder="Search traders by username..."
+                      placeholder="Search by username, first name, or last name... (exact username shows private profiles)"
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="pl-10 pr-10 text-sm sm:text-base"
@@ -735,6 +792,9 @@ const TradersPage = () => {
                       <SelectItem value="win_rate_low">Win Rate (Low to High)</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  💡 Tip: Enter an exact username to find private profiles, or search by name for public profiles only
                 </div>
               </div>
 

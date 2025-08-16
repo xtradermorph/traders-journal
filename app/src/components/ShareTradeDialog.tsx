@@ -101,19 +101,21 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
       // For private profile search, require exact username match
       let searchQuery;
       if (shareType === 'search') {
-        // Use exact username matching for better privacy
+        // Use exact username matching for better privacy - only public users
         searchQuery = supabase
           .from('profiles')
           .select('id, username, first_name, last_name, avatar_url')
           .eq('username', query.trim()) // Exact match only
+          .eq('public_profile', true) // Only public users
           .neq('id', user.id) // Exclude current user
           .limit(10);
       } else {
-        // For other share types, use partial matching
+        // For other share types, use partial matching - only public users
         searchQuery = supabase
           .from('profiles')
           .select('id, username, first_name, last_name, avatar_url')
           .or(`username.ilike.%${query}%,first_name.ilike.%${query}%,last_name.ilike.%${query}%`)
+          .eq('public_profile', true) // Only public users
           .neq('id', user.id) // Exclude current user
           .limit(10);
       }
@@ -172,6 +174,7 @@ const ShareTradeDialog = ({ isOpen, onClose, trade }: ShareTradeDialogProps) => 
         .from('profiles')
         .select('id, username, first_name, last_name, avatar_url')
         .eq('username', username.trim())
+        .eq('public_profile', true) // Only public users
         .neq('id', user.id)
         .single();
 

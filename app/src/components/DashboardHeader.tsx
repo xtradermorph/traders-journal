@@ -380,11 +380,12 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
       
       // Get followed traders
       
-      // Get all traders except current user using our utility
+      // Get all public traders except current user
       const { data, error } = await supabase
         .from('profiles')
         .select('*, user_presence(status, last_seen_at)')
         .neq('id', session.session.user.id)
+        .eq('public_profile', true)
         .order('username', { ascending: true });
       
       // If direct query fails, try a different approach
