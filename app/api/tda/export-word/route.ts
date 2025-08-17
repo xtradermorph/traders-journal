@@ -152,7 +152,7 @@ function prepareWordData(data: WordData) {
     };
   });
 
-  // Prepare AI analysis data
+  // Prepare AI analysis data with backward compatibility
   const aiAnalysis = {
     probability: analysis.overall_probability || 0,
     recommendation: analysis.trade_recommendation || 'NEUTRAL',
@@ -160,6 +160,7 @@ function prepareWordData(data: WordData) {
     riskLevel: analysis.risk_level || 'MEDIUM',
     summary: analysis.ai_summary || 'No AI analysis available',
     reasoning: analysis.ai_reasoning || 'No AI reasoning available',
+    // New Alpha Vantage fields with fallbacks for old analyses
     riskRewardRatio: analysis.risk_reward_ratio || 0,
     entryStrategy: analysis.entry_strategy || '',
     exitStrategy: analysis.exit_strategy || '',
@@ -315,8 +316,8 @@ function generateTextDocument(data: any): string {
     }
   }
   
-  // Alpha Vantage Data
-  if (data.alphaVantageData) {
+  // Alpha Vantage Data (only show if data exists)
+  if (data.alphaVantageData && data.alphaVantageData.trim() !== '') {
     document += `ALPHA VANTAGE MARKET DATA\n`;
     document += `=========================\n`;
     document += data.alphaVantageData;
@@ -547,28 +548,36 @@ function generateTechnicalAnalysisSection(aiAnalysis: any, timeframeData: any[])
 }
 
 function generateAlphaVantageDataSection(aiAnalysis: any): string {
-  let section = 'Alpha Vantage Market Data:\n\n';
+  let section = '';
+  let hasData = false;
 
-  if (aiAnalysis.marketVolatility) {
+  if (aiAnalysis.marketVolatility && aiAnalysis.marketVolatility.trim() !== '') {
     section += `• Market Volatility: ${aiAnalysis.marketVolatility}\n`;
+    hasData = true;
   }
-  if (aiAnalysis.supportResistance) {
+  if (aiAnalysis.supportResistance && aiAnalysis.supportResistance.trim() !== '') {
     section += `• Support/Resistance: ${aiAnalysis.supportResistance}\n`;
+    hasData = true;
   }
-  if (aiAnalysis.riskRewardRatio) {
+  if (aiAnalysis.riskRewardRatio && aiAnalysis.riskRewardRatio > 0) {
     section += `• Risk-Reward Ratio: ${aiAnalysis.riskRewardRatio}:1\n`;
+    hasData = true;
   }
-  if (aiAnalysis.entryStrategy) {
+  if (aiAnalysis.entryStrategy && aiAnalysis.entryStrategy.trim() !== '') {
     section += `• Entry Strategy: ${aiAnalysis.entryStrategy}\n`;
+    hasData = true;
   }
-  if (aiAnalysis.exitStrategy) {
+  if (aiAnalysis.exitStrategy && aiAnalysis.exitStrategy.trim() !== '') {
     section += `• Exit Strategy: ${aiAnalysis.exitStrategy}\n`;
+    hasData = true;
   }
-  if (aiAnalysis.positionSizing) {
+  if (aiAnalysis.positionSizing && aiAnalysis.positionSizing.trim() !== '') {
     section += `• Position Sizing: ${aiAnalysis.positionSizing}\n`;
+    hasData = true;
   }
 
-  return section;
+  // Only return the section if we have actual data
+  return hasData ? section : '';
 }
 
 function generateScreenshotsSummary(timeframeData: any[]): string {

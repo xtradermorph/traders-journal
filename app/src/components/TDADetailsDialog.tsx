@@ -637,6 +637,61 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                       </div>
                     )}
                   </div>
+
+                  {/* Alpha Vantage Enhanced Data */}
+                  {(data.analysis?.risk_reward_ratio || data.analysis?.market_volatility || data.analysis?.support_resistance) && (
+                    <div className="space-y-3">
+                      <h4 className="font-medium text-slate-800 mb-2">Alpha Vantage Market Data</h4>
+                      
+                      {data.analysis?.risk_reward_ratio && (
+                        <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
+                          <p className="text-xs text-slate-600 mb-1">Risk-Reward Ratio</p>
+                          <p className="text-sm font-semibold text-slate-800">{data.analysis.risk_reward_ratio}:1</p>
+                        </div>
+                      )}
+                      
+                      {data.analysis?.market_volatility && (
+                        <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
+                          <p className="text-xs text-slate-600 mb-1">Market Volatility</p>
+                          <Badge className={
+                            data.analysis.market_volatility === 'HIGH' ? 'bg-red-100 text-red-700 border-red-200' :
+                            data.analysis.market_volatility === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                            'bg-green-100 text-green-700 border-green-200'
+                          }>
+                            {data.analysis.market_volatility}
+                          </Badge>
+                        </div>
+                      )}
+                      
+                      {data.analysis?.support_resistance && (
+                        <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
+                          <p className="text-xs text-slate-600 mb-1">Support/Resistance</p>
+                          <p className="text-sm text-slate-700">{data.analysis.support_resistance}</p>
+                        </div>
+                      )}
+                      
+                      {data.analysis?.entry_strategy && (
+                        <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
+                          <p className="text-xs text-slate-600 mb-1">Entry Strategy</p>
+                          <p className="text-sm text-slate-700">{data.analysis.entry_strategy}</p>
+                        </div>
+                      )}
+                      
+                      {data.analysis?.exit_strategy && (
+                        <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
+                          <p className="text-xs text-slate-600 mb-1">Exit Strategy</p>
+                          <p className="text-sm text-slate-700">{data.analysis.exit_strategy}</p>
+                        </div>
+                      )}
+                      
+                      {data.analysis?.position_sizing && (
+                        <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
+                          <p className="text-xs text-slate-600 mb-1">Position Sizing</p>
+                          <p className="text-sm text-slate-700">{data.analysis.position_sizing}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
