@@ -591,7 +591,7 @@ const ChatWidget = () => {
             .from("chat_messages")
             .select("id", { count: "exact", head: true })
             .eq("group_id", groupId)
-            .not("sender_id", "eq", currentUser.id);
+            .neq("sender_id", currentUser.id);
           if (lastReadAt) {
             query = query.gt("created_at", lastReadAt);
           }
@@ -906,37 +906,63 @@ const ChatWidget = () => {
   // Fetch public users for display in chat widget
   useEffect(() => {
     if (!currentUser?.id) return;
-    const fetchPublicUsers = async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .not("id", "eq", currentUser.id)
-        .eq("public_profile", true)
-        .order("username", { ascending: true });
-      if (!error && data) {
-        setPublicUsers(data);
-        setPublicUsersLoaded(true);
+    
+    // Add a small delay to ensure authentication is complete
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, username, avatar_url")
+          .neq("id", currentUser.id)
+          .eq("public_profile", true)
+          .order("username", { ascending: true });
+        
+        if (error) {
+          console.error("Error fetching public users:", error);
+          return;
+        }
+        
+        if (data) {
+          setPublicUsers(data);
+          setPublicUsersLoaded(true);
+        }
+      } catch (error) {
+        console.error("Error in fetchPublicUsers:", error);
       }
-    };
-    fetchPublicUsers();
+    }, 1000); // 1 second delay
+    
+    return () => clearTimeout(timer);
   }, [currentUser]);
 
   // Fetch users for group creation (only public users for privacy)
   useEffect(() => {
     if (!currentUser?.id) return;
-    const fetchGroupCreationUsers = async () => {
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, username, avatar_url")
-        .not("id", "eq", currentUser.id)
-        .eq("public_profile", true)
-        .order("username", { ascending: true });
-      if (!error && data) {
-        setGroupCreationUsers(data);
-        setGroupCreationUsersLoaded(true);
+    
+    // Add a small delay to ensure authentication is complete
+    const timer = setTimeout(async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("id, username, avatar_url")
+          .neq("id", currentUser.id)
+          .eq("public_profile", true)
+          .order("username", { ascending: true });
+        
+        if (error) {
+          console.error("Error fetching group creation users:", error);
+          return;
+        }
+        
+        if (data) {
+          setGroupCreationUsers(data);
+          setGroupCreationUsersLoaded(true);
+        }
+      } catch (error) {
+        console.error("Error in fetchGroupCreationUsers:", error);
       }
-    };
-    fetchGroupCreationUsers();
+    }, 1000); // 1 second delay
+    
+    return () => clearTimeout(timer);
   }, [currentUser]);
 
   // Separate group chats from direct chats
