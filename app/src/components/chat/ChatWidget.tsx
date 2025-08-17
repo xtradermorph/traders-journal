@@ -591,7 +591,7 @@ const ChatWidget = () => {
             .from("chat_messages")
             .select("id", { count: "exact", head: true })
             .eq("group_id", groupId)
-            .neq("sender_id", currentUser.id);
+            .not("sender_id", "eq", currentUser.id);
           if (lastReadAt) {
             query = query.gt("created_at", lastReadAt);
           }
@@ -910,7 +910,7 @@ const ChatWidget = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, avatar_url")
-        .neq("id", currentUser.id)
+        .not("id", "eq", currentUser.id)
         .eq("public_profile", true)
         .order("username", { ascending: true });
       if (!error && data) {
@@ -928,7 +928,7 @@ const ChatWidget = () => {
       const { data, error } = await supabase
         .from("profiles")
         .select("id, username, avatar_url")
-        .neq("id", currentUser.id)
+        .not("id", "eq", currentUser.id)
         .eq("public_profile", true)
         .order("username", { ascending: true });
       if (!error && data) {
