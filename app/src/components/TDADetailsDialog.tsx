@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, TrendingUp, User, Download, X, ImageIcon, Bell, Brain, ChevronDown, ChevronUp } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
-import { downloadTDAAsWord } from '@/lib/tdaWordExport';
+
 import { TopDownAnalysis, TDAQuestion, TDAAnswer, TDATimeframeAnalysis, TDAAnnouncement, TDAScreenshot } from '@/types/tda';
 import { 
   Dialog as ScreenshotDialog, 
@@ -65,7 +65,41 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
     
     setIsDownloading(true);
     try {
-      await downloadTDAAsWord({ ...data, analystName: 'Unknown' }, "TopDownAnalysis.docx");
+      // Get selected timeframes from the questions
+      const selectedTimeframes = data.questions
+        .map(q => q.timeframe)
+        .filter((value, index, self) => self.indexOf(value) === index);
+
+      // Call the API route to generate and download the Word document
+      const response = await fetch('/api/tda/export-word', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          analysis_id: analysisId,
+          selected_timeframes: selectedTimeframes
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to export Word document');
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TDA_${data.analysis.currency_pair}_${new Date(data.analysis.analysis_date).toISOString().split('T')[0]}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
       toast({
         title: "Success",
         description: "Analysis downloaded successfully",
@@ -74,7 +108,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
       console.error('Download error:', error);
       toast({
         title: "Error",
-        description: "Failed to download analysis",
+        description: error instanceof Error ? error.message : "Failed to download analysis",
         variant: "destructive"
       });
     } finally {

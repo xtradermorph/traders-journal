@@ -13,7 +13,7 @@ import { PageHeader } from '../src/components/PageHeader';
 import { Input } from '../src/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../src/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "../src/components/ui/alert-dialog";
-import { downloadTDAAsWord, TDADocumentData } from '../src/lib/tdaWordExport';
+
 import { useUserProfile } from '../src/components/UserProfileContext';
 import TopDownAnalysisDialog from '../src/components/TopDownAnalysisDialog';
 import DashboardFooter from '../src/components/DashboardFooter';
@@ -139,28 +139,38 @@ export default function TopDownAnalysisPage() {
     
     setIsDownloading(true);
     try {
-      // Fetch the full analysis data for download
-      const response = await fetch(`/api/tda?id=${analysis.id}`);
-      if (!response.ok) throw new Error('Failed to fetch analysis data');
-      const data = await response.json();
-      
-      const analystName = profile.first_name && profile.last_name ? 
-        `${profile.first_name} ${profile.last_name}` : 
-        profile.username || 'User';
+      // Get selected timeframes from the analysis
+      const selectedTimeframes = getSelectedTimeframes(analysis);
 
-      const documentData: TDADocumentData = {
-        analysis: data.analysis,
-        timeframe_analyses: data.timeframe_analyses || [],
-        answers: data.answers || [],
-        questions: data.questions || [],
-        screenshots: data.screenshots || [],
-        announcements: data.announcements || [],
-        analystName,
-      };
+      // Call the API route to generate and download the Word document
+      const response = await fetch('/api/tda/export-word', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          analysis_id: analysis.id,
+          selected_timeframes: selectedTimeframes
+        })
+      });
 
-      const fileName = `TDA_${analysis.currency_pair}_${format(new Date(analysis.analysis_date || analysis.created_at), 'yyyy-MM-dd')}.docx`;
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to export Word document');
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
       
-      await downloadTDAAsWord(documentData, fileName);
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TDA_${analysis.currency_pair}_${format(new Date(analysis.analysis_date || analysis.created_at), 'yyyy-MM-dd')}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
       
       toast({
         title: "Download Successful",
@@ -170,7 +180,7 @@ export default function TopDownAnalysisPage() {
       console.error('Download error:', error);
       toast({
         title: "Download Failed",
-        description: "Failed to download TDA report. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to download TDA report. Please try again.",
         variant: "destructive",
       });
     } finally {

@@ -15,9 +15,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { analysis_id, answers, timeframe_analyses } = body;
+    const { analysis_id, answers, timeframe_analyses, selected_timeframes } = body;
 
-    if (!analysis_id || !answers || !timeframe_analyses) {
+    if (!analysis_id || !answers || !timeframe_analyses || !selected_timeframes) {
       return NextResponse.json({ error: 'Missing required data' }, { status: 400 });
     }
 
@@ -44,8 +44,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    // Generate AI analysis
-    const aiResponse = await generateAIAnalysis(answers, timeframe_analyses, questions, analysis.currency_pair);
+    // Generate AI analysis with only selected timeframes
+    const aiResponse = await generateAIAnalysis(answers, timeframe_analyses, questions, analysis.currency_pair, selected_timeframes);
 
     // Update analysis with AI results
     const { error: updateError } = await supabase
@@ -68,14 +68,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to update analysis' }, { status: 500 });
     }
 
-    // Update timeframe analyses with AI breakdown
-    const allTimeframes: TimeframeType[] = ['M10', 'M15', 'M30', 'H1', 'H2', 'H4', 'H8', 'W1', 'MN1', 'DAILY'];
-    
-    for (const timeframe of allTimeframes) {
+    // Update timeframe analyses with AI breakdown - ONLY for selected timeframes
+    for (const timeframe of selected_timeframes) {
       const breakdown = aiResponse.timeframe_breakdown[timeframe];
       const existingTimeframe = timeframe_analyses.find((t: Record<string, unknown>) => t.timeframe === timeframe);
       
-      if (existingTimeframe) {
+      if (existingTimeframe && breakdown) {
         await supabase
           .from('tda_timeframe_analyses')
           .update({
@@ -122,35 +120,63 @@ async function generateAIAnalysis(
   answers: Record<string, unknown>[],
   timeframeAnalyses: Record<string, unknown>[],
   questions: Record<string, unknown>[],
-  currencyPair: string
+  currencyPair: string,
+  selectedTimeframes: TimeframeType[]
 ): Promise<AIAnalysisResponse> {
   // Use OpenAI for real AI analysis
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     // Fallback to algorithm if no API key
     console.warn("No OpenAI API key found, using algorithm fallback");
-    return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair);
+    return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair, selectedTimeframes);
   }
 
   try {
-    // Prepare data for OpenAI
+    // Get current market data for the currency pair
+    const marketData = await fetchMarketData(currencyPair);
+    
+    // Prepare data for OpenAI - only include selected timeframes
     const analysisData = {
       currencyPair,
+      selectedTimeframes,
+      marketData,
       answers: answers.map(a => ({
         question: questions.find(q => q.id === a.question_id)?.question_text || 'Unknown',
         answer: a.answer_text || a.answer_value,
         timeframe: questions.find(q => q.id === a.question_id)?.timeframe || 'Unknown'
-      })),
-      timeframeAnalyses: timeframeAnalyses.map(t => ({
-        timeframe: t.timeframe,
-        analysis: t.analysis_data
-      }))
+      })).filter(a => selectedTimeframes.includes(a.timeframe as TimeframeType)),
+      timeframeAnalyses: timeframeAnalyses
+        .filter(t => selectedTimeframes.includes(t.timeframe as TimeframeType))
+        .map(t => ({
+          timeframe: t.timeframe,
+          analysis: t.analysis_data
+        }))
     };
 
-    const prompt = `You are a professional forex trading analyst performing a top-down analysis for ${currencyPair}.
+    const prompt = `You are a professional forex trading analyst performing a comprehensive top-down analysis for ${currencyPair}.
 
-Analysis Data:
+ANALYSIS CONTEXT:
+- Currency Pair: ${currencyPair}
+- Selected Timeframes: ${selectedTimeframes.join(', ')}
+- Analysis Date: ${new Date().toISOString().split('T')[0]}
+
+USER ANALYSIS DATA:
 ${JSON.stringify(analysisData, null, 2)}
+
+ALPHA VANTAGE MARKET DATA:
+${JSON.stringify(marketData, null, 2)}
+
+TASK: Provide a comprehensive trading analysis based on the user's timeframe analysis and real-time Alpha Vantage market data.
+
+ANALYSIS REQUIREMENTS:
+1. Technical Analysis: Analyze user's technical assessment across selected timeframes
+2. Market Sentiment: Evaluate current market sentiment based on user answers and Alpha Vantage news sentiment
+3. Technical Indicators: Incorporate RSI, MACD, and Moving Average data from Alpha Vantage
+4. Risk-Reward Assessment: Calculate potential risk-reward ratios using market volatility data
+5. Entry/Exit Strategy: Provide specific entry and exit recommendations with price levels
+6. Risk Management: Suggest position sizing and stop-loss levels based on market conditions
+7. Market Volatility: Consider current volatility levels for position sizing recommendations
+8. Support/Resistance: Use technical analysis to identify key levels
 
 Please provide a JSON response with the following structure:
 {
@@ -158,28 +184,36 @@ Please provide a JSON response with the following structure:
   "trade_recommendation": "LONG" | "SHORT" | "NEUTRAL" | "AVOID",
   "confidence_level": number (0-100),
   "risk_level": "LOW" | "MEDIUM" | "HIGH",
-  "ai_summary": "concise summary of the analysis",
-  "ai_reasoning": "detailed reasoning for the recommendation",
+  "ai_summary": "executive summary with key insights and actionable recommendations",
+  "ai_reasoning": "detailed reasoning including technical analysis, market sentiment, and risk assessment",
+  "risk_reward_ratio": number (e.g., 1.5, 2.0, etc.),
+  "entry_strategy": "specific entry recommendations with price levels",
+  "exit_strategy": "specific exit recommendations with profit targets and stop losses",
+  "position_sizing": "recommended position size based on risk assessment and volatility",
+  "market_sentiment": "overall market sentiment analysis from Alpha Vantage news",
+  "technical_indicators": "analysis of RSI, MACD, and other technical indicators",
+  "market_volatility": "current market volatility assessment",
+  "support_resistance": "key support and resistance levels identified",
   "timeframe_breakdown": {
-    "M10": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
-    "M15": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
-    "M30": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
-    "H1": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
-    "H2": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
-    "H4": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
-    "H8": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
-    "W1": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
-    "MN1": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"},
-    "DAILY": {"probability": number, "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL", "strength": number, "reasoning": "string"}
+    ${selectedTimeframes.map(tf => `"${tf}": {
+      "probability": number,
+      "sentiment": "BULLISH"|"BEARISH"|"NEUTRAL",
+      "strength": number,
+      "reasoning": "detailed reasoning for this timeframe",
+      "key_levels": "support/resistance levels identified",
+      "technical_analysis": "technical analysis summary incorporating Alpha Vantage data"
+    }`).join(',\n    ')}
   }
 }
 
-Analyze the data considering:
-- Technical analysis across timeframes
-- Market sentiment and momentum
-- Risk-reward ratios
-- Market conditions and volatility
-- Support and resistance levels
+IMPORTANT ANALYSIS GUIDELINES:
+- Only analyze the timeframes that the user selected: ${selectedTimeframes.join(', ')}
+- Incorporate Alpha Vantage technical indicators (RSI, MACD, Moving Averages) in your analysis
+- Consider market sentiment from recent news and economic events
+- Factor in current market volatility for position sizing recommendations
+- Use real-time exchange rates and bid/ask spreads for accurate price analysis
+- Provide specific price levels for entry, stop-loss, and take-profit based on technical analysis
+- Consider market conditions (volatility, trend strength) for risk assessment
 
 Respond only with valid JSON.`;
 
@@ -190,13 +224,13 @@ Respond only with valid JSON.`;
         "Authorization": `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: "gpt-3.5-turbo",
+        model: "gpt-4",
         messages: [
-          { role: "system", content: "You are a helpful forex trading analyst. Respond only with valid JSON." },
+          { role: "system", content: "You are an expert forex trading analyst with deep knowledge of technical analysis, market sentiment, and risk management. Provide comprehensive, actionable trading analysis based on user input and market data. Respond only with valid JSON." },
           { role: "user", content: prompt },
         ],
-        max_tokens: 1500,
-        temperature: 0.3,
+        max_tokens: 2000,
+        temperature: 0.2,
       }),
     });
 
@@ -204,7 +238,7 @@ Respond only with valid JSON.`;
       const err = await openaiRes.json();
       console.error("OpenAI API error:", err);
       // Fallback to algorithm
-      return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair);
+      return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair, selectedTimeframes);
     }
 
     const openaiData = await openaiRes.json();
@@ -216,52 +250,262 @@ Respond only with valid JSON.`;
     } catch (parseError) {
       console.error("Failed to parse OpenAI response:", parseError);
       // Fallback to algorithm
-      return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair);
+      return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair, selectedTimeframes);
     }
   } catch (error) {
     console.error("OpenAI analysis error:", error);
     // Fallback to algorithm
-    return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair);
+    return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair, selectedTimeframes);
   }
 }
 
-// Fallback algorithm analysis (original implementation)
+// Fetch market data from Alpha Vantage API
+async function fetchMarketData(currencyPair: string) {
+  const ALPHA_VANTAGE_API_KEY = 'UYIBL618VPL93Z0X';
+  const baseCurrency = currencyPair.substring(0, 3);
+  const quoteCurrency = currencyPair.substring(3, 6);
+  
+  try {
+    // Fetch multiple data points from Alpha Vantage
+    const [forexData, technicalData, sentimentData] = await Promise.allSettled([
+      // Real-time forex data
+      fetch(`https://www.alphavantage.co/query?function=CURRENCY_EXCHANGE_RATE&from_currency=${baseCurrency}&to_currency=${quoteCurrency}&apikey=${ALPHA_VANTAGE_API_KEY}`),
+      
+      // Technical indicators (RSI, MACD, Moving Averages)
+      fetch(`https://www.alphavantage.co/query?function=TECHNICAL_INDICATORS&symbol=${baseCurrency}${quoteCurrency}&interval=daily&time_period=14&series_type=close&apikey=${ALPHA_VANTAGE_API_KEY}`),
+      
+      // Market sentiment (News and Sentiment)
+      fetch(`https://www.alphavantage.co/query?function=NEWS_SENTIMENT&tickers=${baseCurrency}${quoteCurrency}&apikey=${ALPHA_VANTAGE_API_KEY}`)
+    ]);
+
+    const marketData: any = {
+      currency_pair: currencyPair,
+      base_currency: baseCurrency,
+      quote_currency: quoteCurrency,
+      timestamp: new Date().toISOString(),
+      source: 'Alpha Vantage',
+      data_points: {}
+    };
+
+    // Process forex data
+    if (forexData.status === 'fulfilled' && forexData.value.ok) {
+      const forexResult = await forexData.value.json();
+      if (forexResult['Realtime Currency Exchange Rate']) {
+        const rate = forexResult['Realtime Currency Exchange Rate'];
+        marketData.data_points.forex = {
+          exchange_rate: rate['5. Exchange Rate'],
+          last_refreshed: rate['6. Last Refreshed'],
+          time_zone: rate['7. Time Zone'],
+          bid_price: rate['8. Bid Price'],
+          ask_price: rate['9. Ask Price']
+        };
+      }
+    }
+
+    // Process technical indicators
+    if (technicalData.status === 'fulfilled' && technicalData.value.ok) {
+      const technicalResult = await technicalData.value.json();
+      
+      // RSI
+      if (technicalResult['Technical Analysis: RSI']) {
+        const rsiData = technicalResult['Technical Analysis: RSI'];
+        const latestRSI = Object.values(rsiData)[0] as any;
+        marketData.data_points.rsi = {
+          value: latestRSI?.RSI,
+          interpretation: getRSIInterpretation(parseFloat(latestRSI?.RSI || '50'))
+        };
+      }
+      
+      // MACD
+      if (technicalResult['Technical Analysis: MACD']) {
+        const macdData = technicalResult['Technical Analysis: MACD'];
+        const latestMACD = Object.values(macdData)[0] as any;
+        marketData.data_points.macd = {
+          macd: latestMACD?.MACD,
+          macd_signal: latestMACD?.MACD_Signal,
+          macd_hist: latestMACD?.MACD_Hist,
+          interpretation: getMACDInterpretation(latestMACD?.MACD_Hist)
+        };
+      }
+      
+      // Moving Averages
+      if (technicalResult['Technical Analysis: SMA']) {
+        const smaData = technicalResult['Technical Analysis: SMA'];
+        const latestSMA = Object.values(smaData)[0] as any;
+        marketData.data_points.sma = {
+          value: latestSMA?.SMA,
+          trend: getMovingAverageTrend(latestSMA?.SMA)
+        };
+      }
+    }
+
+    // Process market sentiment
+    if (sentimentData.status === 'fulfilled' && sentimentData.value.ok) {
+      const sentimentResult = await sentimentData.value.json();
+      if (sentimentResult.feed && sentimentResult.feed.length > 0) {
+        const recentNews = sentimentResult.feed.slice(0, 5);
+        const overallSentiment = calculateOverallSentiment(recentNews);
+        
+        marketData.data_points.sentiment = {
+          overall_sentiment: overallSentiment,
+          news_count: recentNews.length,
+          recent_news: recentNews.map((news: any) => ({
+            title: news.title,
+            summary: news.summary,
+            sentiment_score: news.overall_sentiment_score,
+            sentiment_label: news.overall_sentiment_label,
+            time_published: news.time_published
+          }))
+        };
+      }
+    }
+
+    // Add market volatility and trend analysis
+    marketData.data_points.market_analysis = {
+      volatility: calculateVolatility(marketData.data_points),
+      trend_strength: calculateTrendStrength(marketData.data_points),
+      support_resistance: estimateSupportResistance(marketData.data_points),
+      market_condition: getMarketCondition(marketData.data_points)
+    };
+
+    return marketData;
+
+  } catch (error) {
+    console.warn('Failed to fetch Alpha Vantage data:', error);
+    
+    // Fallback to basic market data
+    return {
+      currency_pair: currencyPair,
+      base_currency: baseCurrency,
+      quote_currency: quoteCurrency,
+      timestamp: new Date().toISOString(),
+      source: 'Fallback',
+      note: 'Alpha Vantage data unavailable, using default values',
+      data_points: {
+        forex: {
+          exchange_rate: '1.0000',
+          last_refreshed: new Date().toISOString(),
+          time_zone: 'UTC'
+        },
+        market_analysis: {
+          volatility: 'MEDIUM',
+          trend_strength: 'NEUTRAL',
+          market_condition: 'NORMAL'
+        }
+      }
+    };
+  }
+}
+
+// Helper functions for technical analysis
+function getRSIInterpretation(rsi: number): string {
+  if (rsi >= 70) return 'OVERBOUGHT - Potential reversal to downside';
+  if (rsi <= 30) return 'OVERSOLD - Potential reversal to upside';
+  if (rsi > 50) return 'BULLISH - Momentum favors upside';
+  return 'BEARISH - Momentum favors downside';
+}
+
+function getMACDInterpretation(histogram: string): string {
+  const hist = parseFloat(histogram || '0');
+  if (hist > 0) return 'BULLISH - MACD above signal line';
+  if (hist < 0) return 'BEARISH - MACD below signal line';
+  return 'NEUTRAL - MACD at signal line';
+}
+
+function getMovingAverageTrend(sma: string): string {
+  // This would need historical data for proper trend calculation
+  // For now, return neutral
+  return 'NEUTRAL';
+}
+
+function calculateOverallSentiment(news: any[]): string {
+  if (!news || news.length === 0) return 'NEUTRAL';
+  
+  const sentimentScores = news.map(item => {
+    const score = parseFloat(item.overall_sentiment_score || '0');
+    if (score > 0.1) return 'POSITIVE';
+    if (score < -0.1) return 'NEGATIVE';
+    return 'NEUTRAL';
+  });
+  
+  const positiveCount = sentimentScores.filter(s => s === 'POSITIVE').length;
+  const negativeCount = sentimentScores.filter(s => s === 'NEGATIVE').length;
+  
+  if (positiveCount > negativeCount) return 'BULLISH';
+  if (negativeCount > positiveCount) return 'BEARISH';
+  return 'NEUTRAL';
+}
+
+function calculateVolatility(dataPoints: any): string {
+  // Simple volatility calculation based on available data
+  if (dataPoints.rsi && dataPoints.macd) {
+    const rsi = parseFloat(dataPoints.rsi.value || '50');
+    const macdHist = parseFloat(dataPoints.macd.macd_hist || '0');
+    
+    if (Math.abs(rsi - 50) > 20 || Math.abs(macdHist) > 0.01) {
+      return 'HIGH';
+    }
+  }
+  return 'MEDIUM';
+}
+
+function calculateTrendStrength(dataPoints: any): string {
+  if (dataPoints.rsi && dataPoints.macd) {
+    const rsi = parseFloat(dataPoints.rsi.value || '50');
+    const macdHist = parseFloat(dataPoints.macd.macd_hist || '0');
+    
+    if ((rsi > 60 && macdHist > 0) || (rsi < 40 && macdHist < 0)) {
+      return 'STRONG';
+    }
+  }
+  return 'WEAK';
+}
+
+function estimateSupportResistance(dataPoints: any): any {
+  // This would need historical price data for accurate levels
+  // For now, provide estimated levels based on current data
+  return {
+    support_levels: ['Estimated support based on current analysis'],
+    resistance_levels: ['Estimated resistance based on current analysis'],
+    note: 'Levels are estimates based on available technical data'
+  };
+}
+
+function getMarketCondition(dataPoints: any): string {
+  if (dataPoints.sentiment && dataPoints.sentiment.overall_sentiment === 'BULLISH') {
+    return 'BULLISH';
+  }
+  if (dataPoints.sentiment && dataPoints.sentiment.overall_sentiment === 'BEARISH') {
+    return 'BEARISH';
+  }
+  return 'NEUTRAL';
+}
+
+// Fallback algorithm analysis (updated to only use selected timeframes)
 function generateAlgorithmAnalysis(
   answers: Record<string, unknown>[],
   timeframeAnalyses: Record<string, unknown>[],
   questions: Record<string, unknown>[],
-  currencyPair: string
+  currencyPair: string,
+  selectedTimeframes: TimeframeType[]
 ): AIAnalysisResponse {
   
-  // Initialize all timeframes with default values
-  const timeframeScores: Record<TimeframeType, number> = {
-    M10: 0, M15: 0, M30: 0,
-    H1: 0, H2: 0, H4: 0, H8: 0,
-    W1: 0, MN1: 0, DAILY: 0
-  };
+  // Initialize only selected timeframes with default values
+  const timeframeScores: Record<TimeframeType, number> = {} as Record<TimeframeType, number>;
+  const timeframeSentiments: Record<TimeframeType, 'BULLISH' | 'BEARISH' | 'NEUTRAL'> = {} as Record<TimeframeType, 'BULLISH' | 'BEARISH' | 'NEUTRAL'>;
+  const timeframeStrengths: Record<TimeframeType, number> = {} as Record<TimeframeType, number>;
+  const timeframeReasonings: Record<TimeframeType, string> = {} as Record<TimeframeType, string>;
 
-  const timeframeSentiments: Record<TimeframeType, 'BULLISH' | 'BEARISH' | 'NEUTRAL'> = {
-    M10: 'NEUTRAL', M15: 'NEUTRAL', M30: 'NEUTRAL',
-    H1: 'NEUTRAL', H2: 'NEUTRAL', H4: 'NEUTRAL', H8: 'NEUTRAL',
-    W1: 'NEUTRAL', MN1: 'NEUTRAL', DAILY: 'NEUTRAL'
-  };
+  // Initialize only selected timeframes
+  selectedTimeframes.forEach(timeframe => {
+    timeframeScores[timeframe] = 50;
+    timeframeSentiments[timeframe] = 'NEUTRAL';
+    timeframeStrengths[timeframe] = 0;
+    timeframeReasonings[timeframe] = '';
+  });
 
-  const timeframeStrengths: Record<TimeframeType, number> = {
-    M10: 0, M15: 0, M30: 0,
-    H1: 0, H2: 0, H4: 0, H8: 0,
-    W1: 0, MN1: 0, DAILY: 0
-  };
-
-  const timeframeReasonings: Record<TimeframeType, string> = {
-    M10: '', M15: '', M30: '',
-    H1: '', H2: '', H4: '', H8: '',
-    W1: '', MN1: '', DAILY: ''
-  };
-
-  // Analyze each timeframe
-  const allTimeframes: TimeframeType[] = ['M10', 'M15', 'M30', 'H1', 'H2', 'H4', 'H8', 'W1', 'MN1', 'DAILY'];
-  
-  for (const timeframe of allTimeframes) {
+  // Analyze each selected timeframe
+  for (const timeframe of selectedTimeframes) {
     const timeframeAnswers = answers.filter(a => {
       const question = questions.find(q => q.id === a.question_id);
       return question?.timeframe === timeframe;
@@ -274,15 +518,22 @@ function generateAlgorithmAnalysis(
     timeframeReasonings[timeframe] = analysis.reasoning;
   }
 
-  // Calculate overall probability using weighted average
-  // Prioritize larger timeframes: Daily (40%), Weekly (25%), 4H (20%), 1H (10%), 15M (5%)
-  const overallProbability = Math.round(
-    (timeframeScores.DAILY * 0.4 + 
-     timeframeScores.W1 * 0.25 + 
-     timeframeScores.H4 * 0.2 + 
-     timeframeScores.H1 * 0.1 + 
-     timeframeScores.M15 * 0.05) * 100
-  ) / 100;
+  // Calculate overall probability using weighted average based on selected timeframes
+  const timeframeWeights: Record<TimeframeType, number> = {
+    DAILY: 0.4, W1: 0.25, H4: 0.2, H1: 0.1, M15: 0.05,
+    H8: 0.15, H2: 0.15, M30: 0.08, M10: 0.03, MN1: 0.3
+  };
+
+  let totalWeight = 0;
+  let weightedSum = 0;
+
+  selectedTimeframes.forEach(timeframe => {
+    const weight = timeframeWeights[timeframe] || 0.1;
+    totalWeight += weight;
+    weightedSum += timeframeScores[timeframe] * weight;
+  });
+
+  const overallProbability = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 100) / 100 : 50;
 
   // Determine trade recommendation
   let tradeRecommendation: 'LONG' | 'SHORT' | 'NEUTRAL' | 'AVOID';
@@ -307,9 +558,20 @@ function generateAlgorithmAnalysis(
     riskLevel = 'HIGH';
   }
 
-  // Generate AI summary and reasoning
-  const aiSummary = generateSummary(currencyPair, overallProbability, tradeRecommendation, timeframeSentiments);
-  const aiReasoning = generateReasoning(timeframeScores, timeframeSentiments, timeframeReasonings);
+  // Generate enhanced AI summary and reasoning
+  const aiSummary = generateEnhancedSummary(currencyPair, overallProbability, tradeRecommendation, timeframeSentiments, selectedTimeframes);
+  const aiReasoning = generateEnhancedReasoning(timeframeScores, timeframeSentiments, timeframeReasonings, selectedTimeframes);
+
+  // Build timeframe breakdown only for selected timeframes
+  const timeframeBreakdown: Record<TimeframeType, any> = {} as Record<TimeframeType, any>;
+  selectedTimeframes.forEach(timeframe => {
+    timeframeBreakdown[timeframe] = {
+      probability: timeframeScores[timeframe],
+      sentiment: timeframeSentiments[timeframe],
+      strength: timeframeStrengths[timeframe],
+      reasoning: timeframeReasonings[timeframe]
+    };
+  });
 
   return {
     overall_probability: overallProbability,
@@ -318,68 +580,13 @@ function generateAlgorithmAnalysis(
     risk_level: riskLevel,
     ai_summary: aiSummary,
     ai_reasoning: aiReasoning,
-    timeframe_breakdown: {
-      M10: {
-        probability: timeframeScores.M10,
-        sentiment: timeframeSentiments.M10,
-        strength: timeframeStrengths.M10,
-        reasoning: timeframeReasonings.M10
-      },
-      M15: {
-        probability: timeframeScores.M15,
-        sentiment: timeframeSentiments.M15,
-        strength: timeframeStrengths.M15,
-        reasoning: timeframeReasonings.M15
-      },
-      M30: {
-        probability: timeframeScores.M30,
-        sentiment: timeframeSentiments.M30,
-        strength: timeframeStrengths.M30,
-        reasoning: timeframeReasonings.M30
-      },
-      H1: {
-        probability: timeframeScores.H1,
-        sentiment: timeframeSentiments.H1,
-        strength: timeframeStrengths.H1,
-        reasoning: timeframeReasonings.H1
-      },
-      H2: {
-        probability: timeframeScores.H2,
-        sentiment: timeframeSentiments.H2,
-        strength: timeframeStrengths.H2,
-        reasoning: timeframeReasonings.H2
-      },
-      H4: {
-        probability: timeframeScores.H4,
-        sentiment: timeframeSentiments.H4,
-        strength: timeframeStrengths.H4,
-        reasoning: timeframeReasonings.H4
-      },
-      H8: {
-        probability: timeframeScores.H8,
-        sentiment: timeframeSentiments.H8,
-        strength: timeframeStrengths.H8,
-        reasoning: timeframeReasonings.H8
-      },
-      W1: {
-        probability: timeframeScores.W1,
-        sentiment: timeframeSentiments.W1,
-        strength: timeframeStrengths.W1,
-        reasoning: timeframeReasonings.W1
-      },
-      MN1: {
-        probability: timeframeScores.MN1,
-        sentiment: timeframeSentiments.MN1,
-        strength: timeframeStrengths.MN1,
-        reasoning: timeframeReasonings.MN1
-      },
-      DAILY: {
-        probability: timeframeScores.DAILY,
-        sentiment: timeframeSentiments.DAILY,
-        strength: timeframeStrengths.DAILY,
-        reasoning: timeframeReasonings.DAILY
-      }
-    }
+    risk_reward_ratio: calculateRiskRewardRatio(overallProbability, riskLevel),
+    entry_strategy: generateEntryStrategy(tradeRecommendation, timeframeScores, selectedTimeframes),
+    exit_strategy: generateExitStrategy(tradeRecommendation, timeframeScores, selectedTimeframes),
+    position_sizing: generatePositionSizing(riskLevel, overallProbability),
+    market_sentiment: generateMarketSentiment(timeframeSentiments, selectedTimeframes),
+    technical_indicators: generateTechnicalIndicators(answers, questions, selectedTimeframes),
+    timeframe_breakdown: timeframeBreakdown
   };
 }
 
@@ -508,4 +715,143 @@ function generateReasoning(
          `1H timeframe (${scores.H1.toFixed(1)}% probability, ${sentiments.H1.toLowerCase()}) - ${reasonings.H1}. ` +
          `15M timeframe (${scores.M15.toFixed(1)}% probability, ${sentiments.M15.toLowerCase()}) - ${reasonings.M15}. ` +
          `The weighted analysis prioritizes larger timeframes for trend direction and smaller timeframes for entry timing.`;
+} 
+
+function generateEnhancedSummary(
+  currencyPair: string,
+  probability: number,
+  recommendation: string,
+  sentiments: Record<TimeframeType, string>,
+  selectedTimeframes: TimeframeType[]
+): string {
+  const sentimentText = recommendation === 'LONG' ? 'bullish' : 
+                       recommendation === 'SHORT' ? 'bearish' : 'neutral';
+
+  const timeframeSentimentsText = selectedTimeframes.map(tf => `${tf.toLowerCase()}: ${sentiments[tf].toLowerCase()}`).join(', ');
+
+  return `Top Down Analysis for ${currencyPair} shows a ${probability.toFixed(1)}% probability of a ${sentimentText} move. ` +
+         `Key timeframes: ${timeframeSentimentsText}. ` +
+         `Recommendation: ${recommendation === 'AVOID' ? 'Avoid trading at this time' : `Consider ${recommendation.toLowerCase()} position`}.`;
+}
+
+function generateEnhancedReasoning(
+  scores: Record<TimeframeType, number>,
+  sentiments: Record<TimeframeType, string>,
+  reasonings: Record<TimeframeType, string>,
+  selectedTimeframes: TimeframeType[]
+): string {
+  const timeframeBreakdownText = selectedTimeframes.map(tf => `${tf.toLowerCase()}: ${reasonings[tf]}`).join('; ');
+
+  return `Analysis breakdown: ${timeframeBreakdownText}. ` +
+         `The weighted analysis prioritizes larger timeframes for trend direction and smaller timeframes for entry timing.`;
+}
+
+function calculateRiskRewardRatio(probability: number, riskLevel: string): number {
+  if (riskLevel === 'LOW') return 1.5;
+  if (riskLevel === 'MEDIUM') return 2.0;
+  if (riskLevel === 'HIGH') return 3.0;
+  return 1.0; // Default
+}
+
+function generateEntryStrategy(
+  recommendation: string,
+  scores: Record<TimeframeType, number>,
+  selectedTimeframes: TimeframeType[]
+): string {
+  const timeframeScoresText = selectedTimeframes.map(tf => `${tf.toLowerCase()}: ${scores[tf].toFixed(1)}%`).join(', ');
+
+  if (recommendation === 'AVOID') {
+    return 'Avoid trading at this time due to high risk and low probability.';
+  }
+
+  const primaryTimeframe = selectedTimeframes.find(tf => scores[tf] > 60);
+  if (primaryTimeframe) {
+    return `Entry strategy for ${primaryTimeframe.toLowerCase()}: ${recommendation.toLowerCase()} position. ` +
+           `Expect a ${recommendation.toLowerCase()} move with a potential reward of ${calculateRiskRewardRatio(scores[primaryTimeframe], 'MEDIUM')}x risk. ` +
+           `Key levels: Support and resistance levels identified from analysis.`;
+  }
+
+  return `Entry strategy: ${recommendation.toLowerCase()} position. ` +
+         `Expect a ${recommendation.toLowerCase()} move. ` +
+         `Key levels: Support and resistance levels identified from analysis.`;
+}
+
+function generateExitStrategy(
+  recommendation: string,
+  scores: Record<TimeframeType, number>,
+  selectedTimeframes: TimeframeType[]
+): string {
+  const timeframeScoresText = selectedTimeframes.map(tf => `${tf.toLowerCase()}: ${scores[tf].toFixed(1)}%`).join(', ');
+
+  if (recommendation === 'AVOID') {
+    return 'No specific exit strategy for AVOID recommendation.';
+  }
+
+  const primaryTimeframe = selectedTimeframes.find(tf => scores[tf] > 60);
+  if (primaryTimeframe) {
+    return `Exit strategy for ${primaryTimeframe.toLowerCase()}: ` +
+           `Take profit at ${calculateRiskRewardRatio(scores[primaryTimeframe], 'MEDIUM')}x risk. ` +
+           `Stop loss at support/resistance levels.`;
+  }
+
+  return `Exit strategy: ` +
+         `Take profit at ${calculateRiskRewardRatio(scores.DAILY || 50, 'MEDIUM')}x risk. ` +
+         `Stop loss at support/resistance levels.`;
+}
+
+function generatePositionSizing(riskLevel: string, probability: number): string {
+  if (riskLevel === 'LOW') {
+    return `Position sizing: Risk 1% of account per trade.`;
+  }
+  if (riskLevel === 'MEDIUM') {
+    return `Position sizing: Risk 0.5% of account per trade.`;
+  }
+  if (riskLevel === 'HIGH') {
+    return `Position sizing: Risk 0.2% of account per trade.`;
+  }
+  return `Position sizing: Risk 1% of account per trade.`; // Default
+}
+
+function generateMarketSentiment(
+  sentiments: Record<TimeframeType, string>,
+  selectedTimeframes: TimeframeType[]
+): string {
+  const timeframeSentimentsText = selectedTimeframes.map(tf => `${tf.toLowerCase()}: ${sentiments[tf].toLowerCase()}`).join(', ');
+
+  return `Overall market sentiment: ${timeframeSentimentsText}. ` +
+         `The analysis prioritizes larger timeframes for trend direction and smaller timeframes for entry timing.`;
+}
+
+function generateTechnicalIndicators(
+  answers: Record<string, unknown>[],
+  questions: Record<string, unknown>[],
+  selectedTimeframes: TimeframeType[]
+): string {
+  const technicalIndicators: string[] = [];
+  const uniqueIndicators = new Set<string>();
+
+  answers.forEach(answer => {
+    const question = questions.find(q => q.id === answer.question_id);
+    if (!question) return;
+
+    if (question.question_type === 'MULTIPLE_CHOICE' && answer.answer_value === 'Bullish') {
+      uniqueIndicators.add('Bullish momentum');
+    } else if (question.question_type === 'MULTIPLE_CHOICE' && answer.answer_value === 'Bearish') {
+      uniqueIndicators.add('Bearish momentum');
+    } else if (question.question_type === 'RATING' && parseInt(String(answer.answer_value)) >= 4) {
+      uniqueIndicators.add('High confidence');
+    } else if (question.question_type === 'BOOLEAN' && (answer.answer_value === true || answer.answer_value === 'true' || answer.answer_value === 'yes')) {
+      uniqueIndicators.add('Positive confirmation');
+    } else if (question.question_type === 'TEXT' && (String(answer.answer_value).toLowerCase().includes('bullish') || String(answer.answer_value).toLowerCase().includes('strong') || String(answer.answer_value).toLowerCase().includes('support'))) {
+      uniqueIndicators.add('Positive text analysis');
+    } else if (question.question_type === 'TEXT' && (String(answer.answer_value).toLowerCase().includes('bearish') || String(answer.answer_value).toLowerCase().includes('weak') || String(answer.answer_value).toLowerCase().includes('resistance'))) {
+      uniqueIndicators.add('Negative text analysis');
+    }
+  });
+
+  if (uniqueIndicators.size === 0) {
+    return 'No specific technical indicators identified.';
+  }
+
+  return `Technical indicators: ${Array.from(uniqueIndicators).join(', ')}.`;
 } 

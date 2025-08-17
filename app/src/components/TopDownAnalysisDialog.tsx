@@ -14,7 +14,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2, Check, ChevronLeft, ChevronRight, TrendingUp, Clock, Calendar, AlertTriangle, Info, Plus, X, User, CheckCircle } from "lucide-react";
+import { Loader2, Check, ChevronLeft, ChevronRight, TrendingUp, Clock, Calendar, AlertTriangle, Info, Plus, X, User, CheckCircle, Target, FileText } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useUserProfile } from "./UserProfileContext";
@@ -454,15 +454,21 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
 
   // AI Analysis mutation
   const aiAnalysisMutation = useMutation({
-    mutationFn: async ({ analysisId, answers, timeframeAnalyses }: {
+    mutationFn: async ({ analysisId, answers, timeframeAnalyses, selectedTimeframes }: {
       analysisId: string;
       answers: TDAAnswerInput[];
       timeframeAnalyses: TDATimeframeAnalysis[];
+      selectedTimeframes: TimeframeType[];
     }) => {
       const response = await fetch('/api/tda/ai-analysis', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ analysis_id: analysisId, answers, timeframe_analyses: timeframeAnalyses })
+        body: JSON.stringify({ 
+          analysis_id: analysisId, 
+          answers, 
+          timeframe_analyses: timeframeAnalyses,
+          selected_timeframes: selectedTimeframes
+        })
       });
       
       if (!response.ok) {
@@ -794,7 +800,8 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
       await aiAnalysisMutation.mutateAsync({
         analysisId,
         answers: allAnswers,
-        timeframeAnalyses
+        timeframeAnalyses,
+        selectedTimeframes
       });
     } catch (error) {
       console.error('Error generating AI analysis:', error);
@@ -1408,10 +1415,10 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
                 </div>
                 </div>
                 <div className="space-y-2">
-                  <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Analysis Time</Label>
+                  <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Selected Timeframes</Label>
                   <div className="p-3 bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
                     <p className="text-sm font-medium text-slate-800">
-                    {analysisTimestamp?.time || new Date().toTimeString().slice(0, 5)}
+                    {selectedTimeframes.join(', ')}
                   </p>
                   </div>
                 </div>
@@ -1419,7 +1426,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
             </CardContent>
           </Card>
 
-          {/* Timeframe Analysis Summary */}
+          {/* Timeframe Analysis Summary - Only show selected timeframes */}
           {selectedTimeframes.map((timeframe) => {
             const timeframeQuestions = questions.filter((q: any) => q.timeframe === timeframe);
             const hasAnswers = timeframeQuestions.some((q: any) => questionAnswers[q.id]);
@@ -1575,7 +1582,22 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
             </AlertDescription>
           </Alert>
 
-          {/* Overall Results */}
+          {/* Executive Summary */}
+          <Card className="bg-gradient-to-r from-purple-50/80 to-indigo-50/80 backdrop-blur-md border border-purple-200/50 shadow-[0_8px_24px_rgba(147,51,234,0.15)]">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <TrendingUp className="h-5 w-5 text-purple-600" />
+                Executive Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-slate-700 leading-relaxed">
+                {analysisResult.ai_summary}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Overall Results with Enhanced Visualization */}
           <Card className="bg-white/60 backdrop-blur-sm border border-white/30 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
             <CardHeader>
               <CardTitle className="flex items-center justify-between text-slate-800">
@@ -1585,56 +1607,176 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
                 </Badge>
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
+            <CardContent className="space-y-6">
+              {/* Probability and Confidence Visualization */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
                   <Label className="text-sm font-medium text-slate-700">AI Probability</Label>
-                  <p className="text-2xl font-bold text-slate-800">{analysisResult.overall_probability}%</p>
+                  <div className="relative">
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div 
+                        className="bg-gradient-to-r from-blue-500 to-blue-600 h-4 rounded-full transition-all duration-500"
+                        style={{ width: `${analysisResult.overall_probability}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-800 mt-2">{analysisResult.overall_probability}%</p>
+                  </div>
                 </div>
-                <div>
+                <div className="space-y-3">
                   <Label className="text-sm font-medium text-slate-700">AI Confidence</Label>
-                  <p className="text-2xl font-bold text-slate-800">{analysisResult.confidence_level}%</p>
+                  <div className="relative">
+                    <div className="w-full bg-slate-200 rounded-full h-4">
+                      <div 
+                        className="bg-gradient-to-r from-green-500 to-green-600 h-4 rounded-full transition-all duration-500"
+                        style={{ width: `${analysisResult.confidence_level}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-2xl font-bold text-slate-800 mt-2">{analysisResult.confidence_level}%</p>
+                  </div>
                 </div>
               </div>
-              <div>
+
+              {/* Risk Assessment */}
+              <div className="space-y-3">
                 <Label className="text-sm font-medium text-slate-700">AI Risk Assessment</Label>
-                <Badge className={`${getRiskColor(analysisResult.risk_level)} backdrop-blur-sm`}>
+                <Badge className={`${getRiskColor(analysisResult.risk_level)} backdrop-blur-sm text-lg px-4 py-2`}>
                   {analysisResult.risk_level}
                 </Badge>
               </div>
-              <div>
-                <Label className="text-sm font-medium text-slate-700">AI Summary</Label>
-                <p className="text-sm text-slate-600">{analysisResult.ai_summary}</p>
-              </div>
+
+              {/* Enhanced AI Fields */}
+              {analysisResult.risk_reward_ratio && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-slate-700">Risk-Reward Ratio</Label>
+                  <p className="text-lg font-semibold text-slate-800">{analysisResult.risk_reward_ratio}:1</p>
+                </div>
+              )}
+
+              {analysisResult.market_volatility && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-slate-700">Market Volatility</Label>
+                  <Badge className={`${
+                    analysisResult.market_volatility === 'HIGH' ? 'bg-red-100 text-red-700 border-red-200' :
+                    analysisResult.market_volatility === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                    'bg-green-100 text-green-700 border-green-200'
+                  } backdrop-blur-sm`}>
+                    {analysisResult.market_volatility}
+                  </Badge>
+                </div>
+              )}
+
+              {analysisResult.support_resistance && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-slate-700">Support & Resistance</Label>
+                  <p className="text-sm text-slate-600">{analysisResult.support_resistance}</p>
+                </div>
+              )}
+
+              {analysisResult.market_sentiment && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-slate-700">Market Sentiment</Label>
+                  <p className="text-sm text-slate-600">{analysisResult.market_sentiment}</p>
+                </div>
+              )}
+
+              {analysisResult.technical_indicators && (
+                <div className="space-y-3">
+                  <Label className="text-sm font-medium text-slate-700">Technical Indicators</Label>
+                  <p className="text-sm text-slate-600">{analysisResult.technical_indicators}</p>
+                </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Timeframe Breakdown */}
+          {/* Trading Strategy */}
+          {(analysisResult.entry_strategy || analysisResult.exit_strategy || analysisResult.position_sizing) && (
+            <Card className="bg-gradient-to-r from-emerald-50/80 to-teal-50/80 backdrop-blur-md border border-emerald-200/50 shadow-[0_8px_24px_rgba(16,185,129,0.15)]">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-slate-800">
+                  <Target className="h-5 w-5 text-emerald-600" />
+                  Trading Strategy
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {analysisResult.entry_strategy && (
+                  <div>
+                    <Label className="text-sm font-semibold text-emerald-800">Entry Strategy</Label>
+                    <p className="text-sm text-slate-700 mt-1">{analysisResult.entry_strategy}</p>
+                  </div>
+                )}
+                {analysisResult.exit_strategy && (
+                  <div>
+                    <Label className="text-sm font-semibold text-emerald-800">Exit Strategy</Label>
+                    <p className="text-sm text-slate-700 mt-1">{analysisResult.exit_strategy}</p>
+                  </div>
+                )}
+                {analysisResult.position_sizing && (
+                  <div>
+                    <Label className="text-sm font-semibold text-emerald-800">Position Sizing</Label>
+                    <p className="text-sm text-slate-700 mt-1">{analysisResult.position_sizing}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Timeframe Breakdown - Only show selected timeframes */}
           <Card className="bg-white/60 backdrop-blur-sm border border-white/30 shadow-[0_4px_12px_rgba(0,0,0,0.05)]">
             <CardHeader>
               <CardTitle className="text-slate-800">AI Timeframe Breakdown</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {Object.entries(analysisResult.timeframe_breakdown).map(([timeframe, data]) => {
+                {selectedTimeframes.map((timeframe) => {
+                  const data = analysisResult.timeframe_breakdown[timeframe];
+                  if (!data) return null;
+                  
                   const timeframeData = allTimeframes.find(t => t.value === timeframe);
                   return (
                     <div key={timeframe} className="bg-white/40 backdrop-blur-sm border border-white/30 rounded-lg p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                      <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center justify-between mb-3">
                         <h4 className="font-medium text-slate-800">{timeframeData?.label}</h4>
-                        <Badge variant="outline" className="bg-white/80 backdrop-blur-sm border border-white/30 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">{(data as any).sentiment}</Badge>
+                        <Badge variant="outline" className="bg-white/80 backdrop-blur-sm border border-white/30 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                          {data.sentiment}
+                        </Badge>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 mb-2">
+                      <div className="grid grid-cols-2 gap-4 mb-3">
                         <div>
                           <Label className="text-xs text-slate-700">AI Probability</Label>
-                          <p className="font-medium text-slate-800">{(data as any).probability}%</p>
+                          <div className="relative mt-1">
+                            <div className="w-full bg-slate-200 rounded-full h-2">
+                              <div 
+                                className="bg-gradient-to-r from-blue-500 to-blue-600 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${data.probability}%` }}
+                              ></div>
+                            </div>
+                            <p className="font-medium text-slate-800 text-sm mt-1">{data.probability}%</p>
+                          </div>
                         </div>
                         <div>
                           <Label className="text-xs text-slate-700">AI Strength</Label>
-                          <p className="font-medium text-slate-800">{(data as any).strength}%</p>
+                          <div className="relative mt-1">
+                            <div className="w-full bg-slate-200 rounded-full h-2">
+                              <div 
+                                className="bg-gradient-to-r from-green-500 to-green-600 h-2 rounded-full transition-all duration-500"
+                                style={{ width: `${data.strength}%` }}
+                              ></div>
+                            </div>
+                            <p className="font-medium text-slate-800 text-sm mt-1">{data.strength}%</p>
+                          </div>
                         </div>
                       </div>
-                      <p className="text-xs text-slate-600">{(data as any).reasoning}</p>
+                      <p className="text-xs text-slate-600">{data.reasoning}</p>
+                      {data.key_levels && (
+                        <p className="text-xs text-slate-600 mt-2">
+                          <strong>Key Levels:</strong> {data.key_levels}
+                        </p>
+                      )}
+                      {data.technical_analysis && (
+                        <p className="text-xs text-slate-600 mt-1">
+                          <strong>Technical Analysis:</strong> {data.technical_analysis}
+                        </p>
+                      )}
                     </div>
                   );
                 })}
@@ -2176,6 +2318,60 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
     }
   };
 
+  const handleExportToWord = async () => {
+    if (!analysisId || !questions) return;
+
+    try {
+      // Get selected timeframes from the current analysis
+      const selectedTimeframes = questions
+        .map(q => q.timeframe)
+        .filter((value, index, self) => self.indexOf(value) === index);
+
+      // Call the API route to generate and download the Word document
+      const response = await fetch('/api/tda/export-word', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          analysis_id: analysisId,
+          selected_timeframes: selectedTimeframes
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to export Word document');
+      }
+
+      // Get the blob from the response
+      const blob = await response.blob();
+      
+      // Create a download link
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `TDA_${setupForm.getValues('currency_pair')}_${new Date().toISOString().split('T')[0]}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+
+      toast({
+        title: "Export Successful",
+        description: "Top Down Analysis has been exported as a Word document.",
+      });
+
+    } catch (error) {
+      console.error('Export error:', error);
+      toast({
+        title: "Export Failed",
+        description: error instanceof Error ? error.message : "Failed to export Word document. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <>
     <Dialog open={isOpen} onOpenChange={handleClose}>
@@ -2235,20 +2431,28 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
         {currentStep === 4 && (
             <DialogFooter className="bg-white/70 backdrop-blur-sm rounded-b-xl border-t border-white/20 shadow-sm">
               <Button variant="outline" onClick={handleClose} className="bg-white/80 hover:bg-white text-slate-700 border-slate-200 hover:border-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.1)]">
-              Close
-            </Button>
-            <Button onClick={() => {
-              // Reset and start new analysis
-              setCurrentStep(0);
-              setAnalysisId(null);
-              setCurrentTimeframe('DAILY');
-              setQuestionAnswers({});
-              setAnalysisResult(null);
+                Close
+              </Button>
+              <Button 
+                onClick={handleExportToWord}
+                variant="outline"
+                className="bg-white/80 hover:bg-white text-slate-700 border-slate-200 hover:border-slate-300 shadow-[0_2px_8px_rgba(0,0,0,0.1)]"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Export to Word
+              </Button>
+              <Button onClick={() => {
+                // Reset and start new analysis
+                setCurrentStep(0);
+                setAnalysisId(null);
+                setCurrentTimeframe('DAILY');
+                setQuestionAnswers({});
+                setAnalysisResult(null);
                 setSelectedTimeframes(['DAILY', 'H1', 'M15']);
               }} className="bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white shadow-[0_4px_12px_rgba(59,130,246,0.3)]">
-              New Analysis
-            </Button>
-          </DialogFooter>
+                New Analysis
+              </Button>
+            </DialogFooter>
         )}
       </DialogContent>
     </Dialog>

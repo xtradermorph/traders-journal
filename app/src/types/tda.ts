@@ -78,6 +78,16 @@ export interface TopDownAnalysis {
   ai_summary?: string;
   ai_reasoning?: string;
   
+  // Enhanced AI Analysis Results (Alpha Vantage)
+  risk_reward_ratio?: number;
+  entry_strategy?: string;
+  exit_strategy?: string;
+  position_sizing?: string;
+  market_sentiment?: string;
+  technical_indicators?: string;
+  market_volatility?: string;
+  support_resistance?: string;
+  
   // Metadata
   notes?: string;
   tags?: string[];
@@ -110,12 +120,22 @@ export interface AIAnalysisResponse {
   risk_level: string;
   ai_summary: string;
   ai_reasoning: string;
+  risk_reward_ratio?: number;
+  entry_strategy?: string;
+  exit_strategy?: string;
+  position_sizing?: string;
+  market_sentiment?: string;
+  technical_indicators?: string;
+  market_volatility?: string;
+  support_resistance?: string;
   timeframe_breakdown: {
     [key in TimeframeType]: {
       probability: number;
       sentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
       strength: number;
       reasoning: string;
+      key_levels?: string;
+      technical_analysis?: string;
     };
   };
 }
