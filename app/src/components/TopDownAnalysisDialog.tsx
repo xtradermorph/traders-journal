@@ -1517,115 +1517,64 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-6">
-                    {/* Questions and Answers - Organized by category */}
+                    {/* Questions and Answers - Structured Table Format */}
                     {hasAnswers && (
                       <div className="space-y-4">
                         <h4 className="text-lg font-semibold text-slate-800 border-b border-blue-200 pb-2">Analysis Summary</h4>
                         
-                        {/* Group questions by category for better organization */}
-                        {(() => {
-                          const trendQuestions = timeframeQuestions.filter((q: any) => 
-                            q.question_text.toLowerCase().includes('trend') || 
-                            q.question_text.toLowerCase().includes('direction') ||
-                            q.question_text.toLowerCase().includes('momentum')
-                          );
-                          const supportResistanceQuestions = timeframeQuestions.filter((q: any) => 
-                            q.question_text.toLowerCase().includes('support') || 
-                            q.question_text.toLowerCase().includes('resistance') ||
-                            q.question_text.toLowerCase().includes('level')
-                          );
-                          const otherQuestions = timeframeQuestions.filter((q: any) => 
-                            !trendQuestions.includes(q) && !supportResistanceQuestions.includes(q)
-                          );
-
-                          return (
-                            <div className="space-y-6">
-                              {/* Trend Analysis */}
-                              {trendQuestions.length > 0 && (
-                                <div className="space-y-3">
-                                  <h5 className="text-md font-semibold text-blue-700 border-b border-blue-100 pb-1">Trend Analysis</h5>
-                                  {trendQuestions.map((question: any) => {
-                                    const answer = questionAnswers[question.id];
-                                    if (!answer) return null;
-                                    
-                                    return (
-                                      <div key={question.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                                        <Label className="text-sm font-semibold text-blue-800 mb-2 block">
-                                          {question.question_text}
-                                        </Label>
-                                        <div className="mt-2">
-                                          {question.question_type === 'TEXT' ? (
-                                            <p className="text-sm text-slate-700 whitespace-pre-wrap bg-white/40 backdrop-blur-sm border border-white/20 rounded p-3">{answer}</p>
-                                          ) : (
-                                            <Badge variant="outline" className="text-sm bg-white/80 backdrop-blur-sm border border-white/30 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                                              {answer.toString()}
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {/* Support & Resistance */}
-                              {supportResistanceQuestions.length > 0 && (
-                                <div className="space-y-3">
-                                  <h5 className="text-md font-semibold text-blue-700 border-b border-blue-100 pb-1">Support & Resistance</h5>
-                                  {supportResistanceQuestions.map((question: any) => {
-                                    const answer = questionAnswers[question.id];
-                                    if (!answer) return null;
-                                    
-                                    return (
-                                      <div key={question.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                                        <Label className="text-sm font-semibold text-blue-800 mb-2 block">
-                                          {question.question_text}
-                                        </Label>
-                                        <div className="mt-2">
-                                          {question.question_type === 'TEXT' ? (
-                                            <p className="text-sm text-slate-700 whitespace-pre-wrap bg-white/40 backdrop-blur-sm border border-white/20 rounded p-3">{answer}</p>
-                                          ) : (
-                                            <Badge variant="outline" className="text-sm bg-white/80 backdrop-blur-sm border border-white/30 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                                              {answer.toString()}
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-
-                              {/* Other Analysis */}
-                              {otherQuestions.length > 0 && (
-                                <div className="space-y-3">
-                                  <h5 className="text-md font-semibold text-blue-700 border-b border-blue-100 pb-1">Additional Analysis</h5>
-                                  {otherQuestions.map((question: any) => {
-                                    const answer = questionAnswers[question.id];
-                                    if (!answer) return null;
-                                    
-                                    return (
-                                      <div key={question.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                                        <Label className="text-sm font-semibold text-blue-800 mb-2 block">
-                                          {question.question_text}
-                                        </Label>
-                                        <div className="mt-2">
-                                          {question.question_type === 'TEXT' ? (
-                                            <p className="text-sm text-slate-700 whitespace-pre-wrap bg-white/40 backdrop-blur-sm border border-white/20 rounded p-3">{answer}</p>
-                                          ) : (
-                                            <Badge variant="outline" className="text-sm bg-white/80 backdrop-blur-sm border border-white/30 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                                              {answer.toString()}
-                                            </Badge>
-                                          )}
-                                        </div>
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })()}
+                        {/* Structured Table Format */}
+                        <div className="bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+                          <table className="w-full">
+                            <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                              <tr>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-blue-200">Analysis Point</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-blue-200">Value</th>
+                                <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-blue-200">Sentiment</th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-blue-100">
+                              {timeframeQuestions.map((question: any) => {
+                                const answer = questionAnswers[question.id];
+                                if (!answer) return null;
+                                
+                                // Determine sentiment based on answer
+                                const getSentiment = (answer: any) => {
+                                  const answerStr = answer.toString().toLowerCase();
+                                  if (answerStr.includes('long') || answerStr.includes('bullish') || answerStr.includes('green') || answerStr.includes('up')) {
+                                    return { text: 'Bullish', color: 'text-green-600 bg-green-50 border-green-200' };
+                                  } else if (answerStr.includes('short') || answerStr.includes('bearish') || answerStr.includes('red') || answerStr.includes('down')) {
+                                    return { text: 'Bearish', color: 'text-red-600 bg-red-50 border-red-200' };
+                                  } else if (answerStr.includes('neutral') || answerStr.includes('sideways')) {
+                                    return { text: 'Neutral', color: 'text-gray-600 bg-gray-50 border-gray-200' };
+                                  }
+                                  return { text: 'N/A', color: 'text-gray-500 bg-gray-50 border-gray-200' };
+                                };
+                                
+                                const sentiment = getSentiment(answer);
+                                
+                                return (
+                                  <tr key={question.id} className="hover:bg-blue-50/50 transition-colors">
+                                    <td className="px-4 py-3 text-sm font-medium text-slate-800">
+                                      {question.question_text}
+                                    </td>
+                                    <td className="px-4 py-3 text-sm text-slate-700">
+                                      {question.question_type === 'TEXT' ? (
+                                        <span className="whitespace-pre-wrap">{answer}</span>
+                                      ) : (
+                                        <span className="font-medium">{answer.toString()}</span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-3">
+                                      <Badge variant="outline" className={`text-xs ${sentiment.color}`}>
+                                        {sentiment.text}
+                                      </Badge>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     )}
 

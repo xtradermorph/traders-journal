@@ -86,12 +86,12 @@ export async function POST(request: NextRequest) {
     const wordBuffer = await generateWordDocument(wordData);
 
     // Return the document as a downloadable file
-    const fileName = `TDA_${analysis.currency_pair}_${new Date(analysis.analysis_date).toISOString().split('T')[0]}.docx`;
+    const fileName = `TDA_${analysis.currency_pair}_${new Date(analysis.analysis_date).toISOString().split('T')[0]}.html`;
     
     return new NextResponse(wordBuffer, {
       status: 200,
       headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Type': 'text/html',
         'Content-Disposition': `attachment; filename="${fileName}"`,
         'Content-Length': wordBuffer.length.toString()
       }
@@ -259,213 +259,115 @@ function prepareWordData(data: WordData) {
 
 async function generateWordDocument(templateData: any): Promise<Buffer> {
   try {
-    // Create a simple Word document using docx library
-    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
-    
-    const doc = new Document({
-      sections: [{
-        properties: {},
-        children: [
-          new Paragraph({
-            text: "TOP DOWN ANALYSIS REPORT",
-            heading: HeadingLevel.HEADING_1,
-            alignment: AlignmentType.CENTER,
-          }),
-          new Paragraph({
-            text: "================================",
-            alignment: AlignmentType.CENTER,
-          }),
-          new Paragraph({ text: "" }),
-          
-          // Document metadata
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Currency Pair: ", bold: true }),
-              new TextRun({ text: templateData.currencyPair }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Analysis Date: ", bold: true }),
-              new TextRun({ text: templateData.analysisDate }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Analyst: ", bold: true }),
-              new TextRun({ text: templateData.analystName }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Report Date: ", bold: true }),
-              new TextRun({ text: templateData.reportDate }),
-            ],
-          }),
-          new Paragraph({ text: "" }),
-          
-          // Analysis overview
-          new Paragraph({
-            text: "ANALYSIS OVERVIEW",
-            heading: HeadingLevel.HEADING_2,
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Selected Timeframes: ", bold: true }),
-              new TextRun({ text: templateData.selectedTimeframes }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Total Timeframes: ", bold: true }),
-              new TextRun({ text: templateData.totalTimeframes.toString() }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Questions Answered: ", bold: true }),
-              new TextRun({ text: `${templateData.answeredQuestions}/${templateData.totalQuestions} (${templateData.completionRate}%)` }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Screenshots: ", bold: true }),
-              new TextRun({ text: templateData.totalScreenshots.toString() }),
-            ],
-          }),
-          new Paragraph({ text: "" }),
-          
-          // AI Analysis
-          ...(templateData.hasAI ? [
-            new Paragraph({
-              text: "AI ANALYSIS",
-              heading: HeadingLevel.HEADING_2,
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "Overall Probability: ", bold: true }),
-                new TextRun({ text: `${templateData.aiAnalysis.probability}%` }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "Trade Recommendation: ", bold: true }),
-                new TextRun({ text: templateData.aiAnalysis.recommendation }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "Confidence Level: ", bold: true }),
-                new TextRun({ text: `${templateData.aiAnalysis.confidence}%` }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "Risk Level: ", bold: true }),
-                new TextRun({ text: templateData.aiAnalysis.riskLevel }),
-              ],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "Risk-Reward Ratio: ", bold: true }),
-                new TextRun({ text: `${templateData.aiAnalysis.riskRewardRatio}:1` }),
-              ],
-            }),
-            new Paragraph({ text: "" }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "AI Summary: ", bold: true }),
-              ],
-            }),
-            new Paragraph({
-              text: templateData.aiAnalysis.summary,
-            }),
-            new Paragraph({ text: "" }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "AI Reasoning: ", bold: true }),
-              ],
-            }),
-            new Paragraph({
-              text: templateData.aiAnalysis.reasoning,
-            }),
-            new Paragraph({ text: "" }),
-          ] : []),
-          
-          // Timeframe Analysis
-          ...(templateData.hasTimeframes ? [
-            new Paragraph({
-              text: "TIMEFRAME ANALYSIS",
-              heading: HeadingLevel.HEADING_2,
-            }),
-            ...templateData.timeframes.flatMap(tf => [
-              new Paragraph({
-                text: `${tf.name} Timeframe:`,
-                heading: HeadingLevel.HEADING_3,
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({ text: "Questions: ", bold: true }),
-                  new TextRun({ text: tf.questions.length.toString() }),
-                ],
-              }),
-              new Paragraph({
-                children: [
-                  new TextRun({ text: "Screenshots: ", bold: true }),
-                  new TextRun({ text: tf.screenshotCount.toString() }),
-                ],
-              }),
-              ...(tf.analysis?.timeframe_probability ? [
-                new Paragraph({
-                  children: [
-                    new TextRun({ text: "Probability: ", bold: true }),
-                    new TextRun({ text: `${tf.analysis.timeframe_probability}%` }),
-                  ],
-                }),
-              ] : []),
-              ...(tf.analysis?.timeframe_sentiment ? [
-                new Paragraph({
-                  children: [
-                    new TextRun({ text: "Sentiment: ", bold: true }),
-                    new TextRun({ text: tf.analysis.timeframe_sentiment }),
-                  ],
-                }),
-              ] : []),
-              new Paragraph({ text: "" }),
-            ]),
-          ] : []),
-          
-          // Disclaimer
-          new Paragraph({
-            text: "DISCLAIMER",
-            heading: HeadingLevel.HEADING_2,
-          }),
-          new Paragraph({
-            text: templateData.disclaimer,
-          }),
-          new Paragraph({ text: "" }),
-          
-          // Footer
-          new Paragraph({
-            text: "---",
-            alignment: AlignmentType.CENTER,
-          }),
-          new Paragraph({
-            text: templateData.footer,
-            alignment: AlignmentType.CENTER,
-          }),
-        ],
-      }],
-    });
-    
-    // Generate the document
-    const buffer = await Packer.toBuffer(doc);
-    return buffer;
-  } catch (error) {
-    console.error('Error generating Word document:', error);
-    // Fallback to text document
+    // Create a simple text-based document that can be opened in Word
     const documentContent = generateTextDocument(templateData);
-    return Buffer.from(documentContent, 'utf-8');
+    
+    // Create a simple HTML document that Word can open
+    const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Top Down Analysis Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-top: 30px; }
+        h3 { color: #2c3e50; }
+        .metadata { background: #ecf0f1; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .metadata p { margin: 5px 0; }
+        .ai-section { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .timeframe-section { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .disclaimer { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #ffc107; }
+        table { width: 100%; border-collapse: collapse; margin: 15px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .footer { text-align: center; margin-top: 40px; color: #7f8c8d; }
+    </style>
+</head>
+<body>
+    <h1>TOP DOWN ANALYSIS REPORT</h1>
+    
+    <div class="metadata">
+        <h2>Document Information</h2>
+        <p><strong>Currency Pair:</strong> ${templateData.currencyPair}</p>
+        <p><strong>Analysis Date:</strong> ${templateData.analysisDate}</p>
+        <p><strong>Analyst:</strong> ${templateData.analystName}</p>
+        <p><strong>Report Date:</strong> ${templateData.reportDate}</p>
+        <p><strong>Selected Timeframes:</strong> ${templateData.selectedTimeframes}</p>
+        <p><strong>Questions Answered:</strong> ${templateData.answeredQuestions}/${templateData.totalQuestions} (${templateData.completionRate}%)</p>
+        <p><strong>Screenshots:</strong> ${templateData.totalScreenshots}</p>
+    </div>
+
+    ${templateData.hasAI ? `
+    <div class="ai-section">
+        <h2>AI ANALYSIS</h2>
+        <p><strong>Overall Probability:</strong> ${templateData.aiAnalysis.probability}%</p>
+        <p><strong>Trade Recommendation:</strong> ${templateData.aiAnalysis.recommendation}</p>
+        <p><strong>Confidence Level:</strong> ${templateData.aiAnalysis.confidence}%</p>
+        <p><strong>Risk Level:</strong> ${templateData.aiAnalysis.riskLevel}</p>
+        <p><strong>Risk-Reward Ratio:</strong> ${templateData.aiAnalysis.riskRewardRatio}:1</p>
+        
+        <h3>AI Summary</h3>
+        <p>${templateData.aiAnalysis.summary}</p>
+        
+        <h3>AI Reasoning</h3>
+        <p>${templateData.aiAnalysis.reasoning}</p>
+    </div>
+    ` : ''}
+
+    ${templateData.hasTimeframes ? `
+    <div class="timeframe-section">
+        <h2>TIMEFRAME ANALYSIS</h2>
+        ${templateData.timeframes.map(tf => `
+            <h3>${tf.name} Timeframe</h3>
+            <table>
+                <tr>
+                    <th>Metric</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td>Questions</td>
+                    <td>${tf.questions.length}</td>
+                </tr>
+                <tr>
+                    <td>Screenshots</td>
+                    <td>${tf.screenshotCount}</td>
+                </tr>
+                ${tf.analysis?.timeframe_probability ? `
+                <tr>
+                    <td>Probability</td>
+                    <td>${tf.analysis.timeframe_probability}%</td>
+                </tr>
+                ` : ''}
+                ${tf.analysis?.timeframe_sentiment ? `
+                <tr>
+                    <td>Sentiment</td>
+                    <td>${tf.analysis.timeframe_sentiment}</td>
+                </tr>
+                ` : ''}
+            </table>
+        `).join('')}
+    </div>
+    ` : ''}
+
+    <div class="disclaimer">
+        <h2>DISCLAIMER</h2>
+        <p>${templateData.disclaimer}</p>
+    </div>
+
+    <div class="footer">
+        <p>${templateData.footer}</p>
+    </div>
+</body>
+</html>`;
+
+    return Buffer.from(htmlContent, 'utf-8');
+  } catch (error) {
+    console.error('Error generating document:', error);
+    // Ultimate fallback
+    const fallbackContent = `TOP DOWN ANALYSIS REPORT\n\nCurrency Pair: ${templateData.currencyPair}\nAnalysis Date: ${templateData.analysisDate}\n\nError generating full report.`;
+    return Buffer.from(fallbackContent, 'utf-8');
   }
 }
 

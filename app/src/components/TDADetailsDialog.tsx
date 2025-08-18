@@ -407,29 +407,61 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                           </div>
                         </div>
 
-                        {/* Questions and Answers */}
-                        <div className="space-y-3">
-                          {timeframeQuestions.map((question: TDAQuestion) => {
-                            const answer = timeframeAnswers.find((a: TDAAnswer) => a.question_id === question.id);
-                            
-                            return (
-                              <div key={question.id} className="bg-white/50 rounded-lg p-3 border border-green-100">
-                                <h4 className="font-medium text-slate-800 mb-2">{question.question_text}</h4>
-                                <div className="text-sm text-slate-600">
-                                  {(() => {
-                                    const answerText = answer ? (answer.answer_text || String(answer.answer_value || 'No answer provided')) : 'No answer provided';
-                                    if (answerText === 'RED' || answerText === 'Red') {
-                                      return <span className="text-red-600 font-medium">{answerText}</span>;
-                                    } else if (answerText === 'GREEN' || answerText === 'Green') {
-                                      return <span className="text-green-600 font-medium">{answerText}</span>;
-                                    } else {
-                                      return answerText;
+                        {/* Questions and Answers - Structured Table Format */}
+                        <div className="space-y-4">
+                          <h4 className="text-lg font-semibold text-slate-800 border-b border-blue-200 pb-2">Analysis Summary</h4>
+                          
+                          {/* Structured Table Format */}
+                          <div className="bg-white/80 backdrop-blur-sm border border-white/30 rounded-lg overflow-hidden shadow-[0_4px_12px_rgba(0,0,0,0.1)]">
+                            <table className="w-full">
+                              <thead className="bg-gradient-to-r from-blue-50 to-indigo-50">
+                                <tr>
+                                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-blue-200">Analysis Point</th>
+                                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-blue-200">Value</th>
+                                  <th className="px-4 py-3 text-left text-sm font-semibold text-slate-700 border-b border-blue-200">Sentiment</th>
+                                </tr>
+                              </thead>
+                              <tbody className="divide-y divide-blue-100">
+                                {timeframeQuestions.map((question: TDAQuestion) => {
+                                  const answer = timeframeAnswers.find((a: TDAAnswer) => a.question_id === question.id);
+                                  if (!answer) return null;
+                                  
+                                  const answerText = answer.answer_text || String(answer.answer_value || 'No answer provided');
+                                  
+                                  // Determine sentiment based on answer
+                                  const getSentiment = (answer: string) => {
+                                    const answerStr = answer.toLowerCase();
+                                    if (answerStr.includes('long') || answerStr.includes('bullish') || answerStr.includes('green') || answerStr.includes('up')) {
+                                      return { text: 'Bullish', color: 'text-green-600 bg-green-50 border-green-200' };
+                                    } else if (answerStr.includes('short') || answerStr.includes('bearish') || answerStr.includes('red') || answerStr.includes('down')) {
+                                      return { text: 'Bearish', color: 'text-red-600 bg-red-50 border-red-200' };
+                                    } else if (answerStr.includes('neutral') || answerStr.includes('sideways')) {
+                                      return { text: 'Neutral', color: 'text-gray-600 bg-gray-50 border-gray-200' };
                                     }
-                                  })()}
-                                </div>
-                              </div>
-                            );
-                          })}
+                                    return { text: 'N/A', color: 'text-gray-500 bg-gray-50 border-gray-200' };
+                                  };
+                                  
+                                  const sentiment = getSentiment(answerText);
+                                  
+                                  return (
+                                    <tr key={question.id} className="hover:bg-blue-50/50 transition-colors">
+                                      <td className="px-4 py-3 text-sm font-medium text-slate-800">
+                                        {question.question_text}
+                                      </td>
+                                      <td className="px-4 py-3 text-sm text-slate-700">
+                                        <span className="whitespace-pre-wrap">{answerText}</span>
+                                      </td>
+                                      <td className="px-4 py-3">
+                                        <Badge variant="outline" className={`text-xs ${sentiment.color}`}>
+                                          {sentiment.text}
+                                        </Badge>
+                                      </td>
+                                    </tr>
+                                  );
+                                })}
+                              </tbody>
+                            </table>
+                          </div>
                         </div>
                       </div>
                     );
