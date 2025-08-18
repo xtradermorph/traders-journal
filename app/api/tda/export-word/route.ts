@@ -115,13 +115,13 @@ export async function POST(request: NextRequest) {
       return mapping[timeframe] || 'Trader Sentiment';
     };
 
-    // Helper function to create table cell
-    const createCell = (text: string, bold: boolean = false, alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT, width: number = 20) => {
+    // Helper function to create table cell with color coding
+    const createCell = (text: string, bold: boolean = false, alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT, width: number = 20, color?: string) => {
       return new TableCell({
         children: [
           new Paragraph({
             children: [
-              new TextRun({ text, bold })
+              new TextRun({ text, bold, color })
             ],
             alignment
           })
@@ -321,17 +321,17 @@ export async function POST(request: NextRequest) {
       
       const rows: TableRow[] = [];
       
-      // Header row
+      // Header row - more distinctive
       rows.push(new TableRow({
         children: [
-          createCell(timeframeDisplay, true, AlignmentType.CENTER, 100)
+          createCell(timeframeDisplay, true, AlignmentType.CENTER, 100, "1e40af") // Blue color
         ]
       }));
       
-      // Trader type row
+      // Trader type row - more distinctive
       rows.push(new TableRow({
         children: [
-          createCell(traderType, false, AlignmentType.CENTER, 100)
+          createCell(traderType, true, AlignmentType.CENTER, 100, "2563eb") // Lighter blue
         ]
       }));
       
@@ -355,11 +355,23 @@ export async function POST(request: NextRequest) {
           const value = getAnswerValue(answer);
           const cellWidth = 100 / rowQuestions.length;
           
+          // Add color coding for bullish/bearish terms
+          let color: string | undefined;
+          if (value && typeof value === 'string') {
+            const lowerValue = value.toLowerCase();
+            if (lowerValue.includes('bullish') || lowerValue.includes('long') || lowerValue.includes('oversold') || lowerValue.includes('up')) {
+              color = "008000"; // Green for bullish
+            } else if (lowerValue.includes('bearish') || lowerValue.includes('short') || lowerValue.includes('overbought') || lowerValue.includes('down')) {
+              color = "ff0000"; // Red for bearish
+            }
+          }
+          
           cells.push(createCell(
             `${question.question_text}: ${value || ""}`, 
             true, 
             AlignmentType.LEFT, 
-            cellWidth
+            cellWidth,
+            color
           ));
         });
         
@@ -451,11 +463,15 @@ export async function POST(request: NextRequest) {
           new Paragraph({
             children: [
               new TextRun({ text: "Analyst: ", bold: true }),
-              new TextRun({ text: analystName }),
-              new TextRun({ text: "     " }), // Spacing
+              new TextRun({ text: analystName })
+            ],
+          }),
+          new Paragraph({
+            children: [
               new TextRun({ text: "Analysis Date and Time: ", bold: true }),
               new TextRun({ text: new Date(analysis.analysis_date).toLocaleDateString() + " " + (analysis.analysis_time || "") })
             ],
+            alignment: AlignmentType.RIGHT,
           }),
           new Paragraph({
             children: [
@@ -493,6 +509,47 @@ export async function POST(request: NextRequest) {
               // Use simple format for other timeframes
               return createSimpleTimeframeSection(timeframe, timeframeDisplay, answers || []);
             }
+          }),
+
+          // AI Analysis Section (only if AI analysis exists and was selected)
+          ...(analysis.ai_analysis ? [
+            new Paragraph({ text: "" }),
+            new Paragraph({
+              text: "AI Analysis",
+              heading: HeadingLevel.HEADING_2,
+              alignment: AlignmentType.CENTER,
+            }),
+            new Paragraph({
+              text: analysis.ai_analysis,
+              alignment: AlignmentType.JUSTIFIED,
+            }),
+            new Paragraph({ text: "" })
+          ] : []),
+
+          // Footer and Disclaimer
+          new Paragraph({ text: "" }),
+          new Paragraph({
+            text: "Disclaimer",
+            heading: HeadingLevel.HEADING_3,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({
+            text: "This analysis is for educational and informational purposes only. It does not constitute financial advice, investment recommendations, or trading advice. Trading foreign exchange carries a high level of risk and may not be suitable for all investors. The high degree of leverage can work against you as well as for you. Before deciding to trade foreign exchange, you should carefully consider your investment objectives, level of experience, and risk appetite. You could sustain a loss of some or all of your initial investment and therefore you should not invest money that you cannot afford to lose.",
+            alignment: AlignmentType.JUSTIFIED,
+          }),
+          new Paragraph({ text: "" }),
+          new Paragraph({
+            text: "Risk Warning: Past performance is not indicative of future results. The value of investments can go down as well as up, and you may get back less than you invested.",
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({ text: "" }),
+          new Paragraph({
+            text: `Report Generated: ${new Date().toLocaleString()}`,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({
+            text: "Trader's Journal - Professional Trading Analysis Platform",
+            alignment: AlignmentType.CENTER,
           })
         ]
       }]
