@@ -73,8 +73,7 @@ export async function POST(request: NextRequest) {
           order_index
         )
       `)
-      .eq('analysis_id', finalAnalysisId)
-      .order('tda_questions.order_index');
+      .eq('analysis_id', finalAnalysisId);
 
     if (answersError) {
       console.log('Answers error:', answersError);
@@ -447,7 +446,7 @@ export async function POST(request: NextRequest) {
             alignment: AlignmentType.CENTER,
           }),
           new Paragraph({ text: "" }),
-
+          
           // Document Information (reformatted as requested)
           new Paragraph({
             children: [
@@ -466,17 +465,17 @@ export async function POST(request: NextRequest) {
             alignment: AlignmentType.RIGHT,
           }),
           new Paragraph({ text: "" }),
-
+          
           // Announcements Section
-          new Paragraph({
+            new Paragraph({
             text: "Medium & High Impact Announcements",
             heading: HeadingLevel.HEADING_3,
-          }),
-          new Paragraph({
+            }),
+            new Paragraph({
             text: "(www.latestforexrates.com)",
             heading: HeadingLevel.HEADING_4,
-          }),
-          new Paragraph({ text: "" }),
+            }),
+            new Paragraph({ text: "" }),
 
           // Timeframe Analysis Sections
           ...selectedTimeframes.flatMap(timeframe => {
@@ -501,7 +500,7 @@ export async function POST(request: NextRequest) {
 
     // Generate document buffer
     const buffer = await Packer.toBuffer(doc);
-
+    
     // Return the document
     return new NextResponse(buffer, {
       headers: {
