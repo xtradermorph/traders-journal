@@ -1,56 +1,65 @@
 {
-    "compilerOptions": {
-      "target": "ES2020",
-      "useDefineForClassFields": true,
-      "lib": [
-        "ES2020",
-        "DOM",
-        "DOM.Iterable"
-      ],
-      "module": "ESNext",
-      "skipLibCheck": true,
-      "esModuleInterop": true,
-      "allowSyntheticDefaultImports": true,
-      "strict": true,
-      "forceConsistentCasingInFileNames": true,
-      "moduleResolution": "bundler",
-      "resolveJsonModule": true,
-      "isolatedModules": true,
-      "noEmit": true,
-      "jsx": "preserve",
-      "jsxImportSource": "react",
-      "baseUrl": ".",
-      "paths": {
-        "@/*": ["./app/src/*"],
-        "@/src/*": ["./app/src/*"],
-        "@shared/*": ["./shared/*"],
-        "@assets/*": ["./assets/*"]
-      },
-      "plugins": [
-        {
-          "name": "next"
-        }
-      ],
-      "allowJs": true,
-      "incremental": true
-    },
-    "include": [
-      "next-env.d.ts",
-      "**/*.ts",
-      "**/*.tsx",
-      "app/src/**/*.ts",
-      "app/src/**/*.d.ts", 
-      "app/src/**/*.tsx",
-      "shared/**/*.ts",
-      "shared/**/*.tsx"
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": [
+      "ES2020",
+      "DOM",
+      "DOM.Iterable"
     ],
-    "references": [
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "strict": true,
+    "forceConsistentCasingInFileNames": true,
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "preserve",
+    "jsxImportSource": "react",
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "./app/src/*"
+      ],
+      "@/src/*": [
+        "./app/src/*"
+      ],
+      "@shared/*": [
+        "./shared/*"
+      ],
+      "@assets/*": [
+        "./assets/*"
+      ]
+    },
+    "plugins": [
       {
-        "path": "./tsconfig.node.json"
+        "name": "next"
       }
     ],
-    "exclude": [
-      "node_modules",
-      "supabase/functions"
-    ]
-  }
+    "allowJs": true,
+    "incremental": true
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "app/src/**/*.ts",
+    "app/src/**/*.d.ts",
+    "app/src/**/*.tsx",
+    "shared/**/*.ts",
+    "shared/**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+  "references": [
+    {
+      "path": "./tsconfig.node.json"
+    }
+  ],
+  "exclude": [
+    "node_modules",
+    "supabase/functions"
+  ]
+}

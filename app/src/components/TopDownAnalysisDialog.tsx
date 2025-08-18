@@ -151,7 +151,15 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
   const [validationState, setValidationState] = useState({ hasTriedNext: false, validationErrors: [] as TDAValidationError[] });
   const [selectedTimeframes, setSelectedTimeframes] = useState<TimeframeType[]>(['DAILY', 'H1', 'M15']);
   const [announcements, setAnnouncements] = useState<TDAAnnouncement[]>([]);
-  const [screenshots, setScreenshots] = useState<{ [key in TimeframeType]: TDAScreenshot[] }>({
+  // Local screenshot interface for upload state
+  interface LocalScreenshot {
+    id: string;
+    file_name: string;
+    file: File;
+    uploadedAt: string;
+  }
+
+  const [screenshots, setScreenshots] = useState<{ [key in TimeframeType]: LocalScreenshot[] }>({
     DAILY: [], H1: [], M15: [], M30: [], M10: [], H8: [], H4: [], H2: [], MN1: [], W1: []
   });
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -730,6 +738,41 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
 
     try {
       await saveAnswersMutation.mutateAsync({ analysisId, answers });
+      
+      // Upload screenshots for current timeframe if any exist
+      const currentScreenshots = screenshots[currentTimeframe];
+      if (currentScreenshots && currentScreenshots.length > 0) {
+        for (const screenshot of currentScreenshots) {
+          try {
+            const formData = new FormData();
+            formData.append('file', screenshot.file);
+            formData.append('analysisId', analysisId);
+            formData.append('timeframe', currentTimeframe);
+
+            const response = await fetch('/api/tda/upload-screenshot', {
+              method: 'POST',
+              body: formData,
+            });
+
+            if (!response.ok) {
+              const errorData = await response.json();
+              console.error('Screenshot upload failed:', errorData);
+              toast({
+                title: "Screenshot Upload Failed",
+                description: `Failed to upload ${screenshot.file_name}. ${errorData.error || 'Unknown error'}`,
+                variant: "destructive",
+              });
+            }
+          } catch (uploadError) {
+            console.error('Error uploading screenshot:', uploadError);
+            toast({
+              title: "Screenshot Upload Error",
+              description: `Failed to upload ${screenshot.file_name}. Please try again.`,
+              variant: "destructive",
+            });
+          }
+        }
+      }
       
       // Move to next timeframe or complete
       const currentIndex = selectedTimeframes.findIndex(t => t === currentTimeframe);
@@ -1415,6 +1458,22 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
                 </div>
                 </div>
                 <div className="space-y-2">
+                  <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Analysis Time</Label>
+                  <div className="p-3 bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                    <p className="text-sm font-medium text-slate-800">
+                    {analysisTimestamp ? (
+                      analysisTimestamp.time
+                    ) : (
+                      new Date().toLocaleTimeString('en-US', { 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        hour12: true 
+                      })
+                    )}
+                  </p>
+                </div>
+                </div>
+                <div className="space-y-2">
                   <Label className="text-sm font-semibold text-slate-700 uppercase tracking-wide">Selected Timeframes</Label>
                   <div className="p-3 bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
                     <p className="text-sm font-medium text-slate-800">
@@ -1426,83 +1485,176 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
             </CardContent>
           </Card>
 
-          {/* Timeframe Analysis Summary - Only show selected timeframes */}
-          {selectedTimeframes.map((timeframe) => {
-            const timeframeQuestions = questions.filter((q: any) => q.timeframe === timeframe);
-            const hasAnswers = timeframeQuestions.some((q: any) => questionAnswers[q.id]);
-            const hasScreenshots = screenshots[timeframe] && screenshots[timeframe].length > 0;
-            
-            if (!hasAnswers && !hasScreenshots) return null;
-            
-            const timeframeData = allTimeframes.find(t => t.value === timeframe);
-            
-            return (
-              <Card key={timeframe} className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-md border border-blue-200/50 shadow-[0_8px_24px_rgba(59,130,246,0.15)]">
-                <CardHeader className="pb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-[0_4px_12px_rgba(59,130,246,0.3)]">
-                    {timeframeData?.icon}
-                    </div>
-                    <div>
-                      <CardTitle className="text-xl font-bold text-slate-800">{timeframeData?.label}</CardTitle>
-                      <CardDescription className="text-slate-600 font-medium">{timeframeData?.value} Analysis</CardDescription>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  {/* Questions and Answers */}
-                  {hasAnswers && (
-                  <div className="space-y-4">
-                      <h4 className="text-lg font-semibold text-slate-800 border-b border-blue-200 pb-2">Analysis Questions & Answers</h4>
-                    {timeframeQuestions.map((question: any) => {
-                      const answer = questionAnswers[question.id];
-                      if (!answer) return null;
-                      
-                      return (
-                          <div key={question.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-4 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                            <Label className="text-sm font-semibold text-blue-800 mb-2 block">
-                            {question.question_text}
-                          </Label>
-                            <div className="mt-2">
-                            {question.question_type === 'TEXT' ? (
-                                <p className="text-sm text-slate-700 whitespace-pre-wrap bg-white/40 backdrop-blur-sm border border-white/20 rounded p-3">{answer}</p>
-                            ) : (
-                                <Badge variant="outline" className="text-sm bg-white/80 backdrop-blur-sm border border-white/30 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                                {answer.toString()}
-                              </Badge>
-                            )}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  )}
+          {/* Timeframe Analysis Summary - Show in correct order */}
+          {(() => {
+            // Sort timeframes by their order in allTimeframes
+            const sortedTimeframes = selectedTimeframes.sort((a, b) => {
+              const aOrder = allTimeframes.find(t => t.value === a)?.order || 0;
+              const bOrder = allTimeframes.find(t => t.value === b)?.order || 0;
+              return aOrder - bOrder;
+            });
 
-                  {/* Screenshots */}
-                  {hasScreenshots && (
-                    <div className="space-y-4">
-                      <h4 className="text-lg font-semibold text-slate-800 border-b border-blue-200 pb-2">Chart Screenshots</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {screenshots[timeframe].map((screenshot) => (
-                          <div key={screenshot.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <span className="text-sm font-medium text-slate-700">{screenshot.file_name}</span>
-                              <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
-                                Uploaded
-                              </Badge>
-                            </div>
-                            <p className="text-xs text-slate-500">
-                              {new Date(screenshot.created_at).toLocaleString()}
-                            </p>
-                          </div>
-                        ))}
+            return sortedTimeframes.map((timeframe) => {
+              const timeframeQuestions = questions.filter((q: any) => q.timeframe === timeframe);
+              const hasAnswers = timeframeQuestions.some((q: any) => questionAnswers[q.id]);
+              const hasScreenshots = screenshots[timeframe] && screenshots[timeframe].length > 0;
+              
+              if (!hasAnswers && !hasScreenshots) return null;
+              
+              const timeframeData = allTimeframes.find(t => t.value === timeframe);
+              
+              return (
+                <Card key={timeframe} className="bg-gradient-to-r from-blue-50/80 to-indigo-50/80 backdrop-blur-md border border-blue-200/50 shadow-[0_8px_24px_rgba(59,130,246,0.15)]">
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center shadow-[0_4px_12px_rgba(59,130,246,0.3)]">
+                        {timeframeData?.icon}
+                      </div>
+                      <div>
+                        <CardTitle className="text-xl font-bold text-slate-800">{timeframeData?.label}</CardTitle>
+                        <CardDescription className="text-slate-600 font-medium">{timeframeData?.value} Analysis</CardDescription>
                       </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
+                  </CardHeader>
+                  <CardContent className="space-y-6">
+                    {/* Questions and Answers - Organized by category */}
+                    {hasAnswers && (
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-semibold text-slate-800 border-b border-blue-200 pb-2">Analysis Summary</h4>
+                        
+                        {/* Group questions by category for better organization */}
+                        {(() => {
+                          const trendQuestions = timeframeQuestions.filter((q: any) => 
+                            q.question_text.toLowerCase().includes('trend') || 
+                            q.question_text.toLowerCase().includes('direction') ||
+                            q.question_text.toLowerCase().includes('momentum')
+                          );
+                          const supportResistanceQuestions = timeframeQuestions.filter((q: any) => 
+                            q.question_text.toLowerCase().includes('support') || 
+                            q.question_text.toLowerCase().includes('resistance') ||
+                            q.question_text.toLowerCase().includes('level')
+                          );
+                          const otherQuestions = timeframeQuestions.filter((q: any) => 
+                            !trendQuestions.includes(q) && !supportResistanceQuestions.includes(q)
+                          );
+
+                          return (
+                            <div className="space-y-6">
+                              {/* Trend Analysis */}
+                              {trendQuestions.length > 0 && (
+                                <div className="space-y-3">
+                                  <h5 className="text-md font-semibold text-blue-700 border-b border-blue-100 pb-1">Trend Analysis</h5>
+                                  {trendQuestions.map((question: any) => {
+                                    const answer = questionAnswers[question.id];
+                                    if (!answer) return null;
+                                    
+                                    return (
+                                      <div key={question.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                                        <Label className="text-sm font-semibold text-blue-800 mb-2 block">
+                                          {question.question_text}
+                                        </Label>
+                                        <div className="mt-2">
+                                          {question.question_type === 'TEXT' ? (
+                                            <p className="text-sm text-slate-700 whitespace-pre-wrap bg-white/40 backdrop-blur-sm border border-white/20 rounded p-3">{answer}</p>
+                                          ) : (
+                                            <Badge variant="outline" className="text-sm bg-white/80 backdrop-blur-sm border border-white/30 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                                              {answer.toString()}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* Support & Resistance */}
+                              {supportResistanceQuestions.length > 0 && (
+                                <div className="space-y-3">
+                                  <h5 className="text-md font-semibold text-blue-700 border-b border-blue-100 pb-1">Support & Resistance</h5>
+                                  {supportResistanceQuestions.map((question: any) => {
+                                    const answer = questionAnswers[question.id];
+                                    if (!answer) return null;
+                                    
+                                    return (
+                                      <div key={question.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                                        <Label className="text-sm font-semibold text-blue-800 mb-2 block">
+                                          {question.question_text}
+                                        </Label>
+                                        <div className="mt-2">
+                                          {question.question_type === 'TEXT' ? (
+                                            <p className="text-sm text-slate-700 whitespace-pre-wrap bg-white/40 backdrop-blur-sm border border-white/20 rounded p-3">{answer}</p>
+                                          ) : (
+                                            <Badge variant="outline" className="text-sm bg-white/80 backdrop-blur-sm border border-white/30 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                                              {answer.toString()}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+
+                              {/* Other Analysis */}
+                              {otherQuestions.length > 0 && (
+                                <div className="space-y-3">
+                                  <h5 className="text-md font-semibold text-blue-700 border-b border-blue-100 pb-1">Additional Analysis</h5>
+                                  {otherQuestions.map((question: any) => {
+                                    const answer = questionAnswers[question.id];
+                                    if (!answer) return null;
+                                    
+                                    return (
+                                      <div key={question.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                                        <Label className="text-sm font-semibold text-blue-800 mb-2 block">
+                                          {question.question_text}
+                                        </Label>
+                                        <div className="mt-2">
+                                          {question.question_type === 'TEXT' ? (
+                                            <p className="text-sm text-slate-700 whitespace-pre-wrap bg-white/40 backdrop-blur-sm border border-white/20 rounded p-3">{answer}</p>
+                                          ) : (
+                                            <Badge variant="outline" className="text-sm bg-white/80 backdrop-blur-sm border border-white/30 text-slate-700 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                                              {answer.toString()}
+                                            </Badge>
+                                          )}
+                                        </div>
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Screenshots */}
+                    {hasScreenshots && (
+                      <div className="space-y-4">
+                        <h4 className="text-lg font-semibold text-slate-800 border-b border-blue-200 pb-2">Chart Screenshots</h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {screenshots[timeframe].map((screenshot) => (
+                            <div key={screenshot.id} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3 shadow-[0_2px_8px_rgba(0,0,0,0.05)]">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <span className="text-sm font-medium text-slate-700">{screenshot.file_name}</span>
+                                <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">
+                                  Uploaded
+                                </Badge>
+                              </div>
+                              <p className="text-xs text-slate-500">
+                                {new Date(screenshot.uploadedAt).toLocaleString()}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            });
+          })()}
         </div>
       );
     };
@@ -1784,15 +1936,66 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
             </CardContent>
           </Card>
 
-          {/* Detailed Reasoning */}
-          <Card>
+          {/* AI Detailed Reasoning - Enhanced and Compact */}
+          <Card className="bg-gradient-to-r from-indigo-50/80 to-purple-50/80 backdrop-blur-md border border-indigo-200/50 shadow-[0_8px_24px_rgba(99,102,241,0.15)]">
             <CardHeader>
-              <CardTitle>AI Detailed Reasoning</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-slate-800">
+                <Brain className="h-5 w-5 text-indigo-600" />
+                AI Detailed Reasoning
+              </CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                {analysisResult.ai_reasoning}
-              </p>
+              <div className="space-y-4">
+                {/* Market Sentiment Summary */}
+                {analysisResult.market_sentiment && (
+                  <div className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-indigo-800 mb-2">Market Sentiment</h4>
+                    <p className="text-sm text-slate-700 leading-relaxed">{analysisResult.market_sentiment}</p>
+                  </div>
+                )}
+
+                {/* Technical Analysis Summary */}
+                {analysisResult.technical_indicators && (
+                  <div className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3">
+                    <h4 className="text-sm font-semibold text-indigo-800 mb-2">Technical Analysis</h4>
+                    <p className="text-sm text-slate-700 leading-relaxed">{analysisResult.technical_indicators}</p>
+                  </div>
+                )}
+
+                {/* Timeframe-Specific Reasoning */}
+                <div className="space-y-3">
+                  <h4 className="text-sm font-semibold text-indigo-800">Timeframe Analysis</h4>
+                  {selectedTimeframes.map((timeframe) => {
+                    const data = analysisResult.timeframe_breakdown[timeframe];
+                    if (!data || !data.reasoning) return null;
+                    
+                    const timeframeData = allTimeframes.find(t => t.value === timeframe);
+                    return (
+                      <div key={timeframe} className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3">
+                        <div className="flex items-center justify-between mb-2">
+                          <h5 className="text-sm font-medium text-slate-800">{timeframeData?.label}</h5>
+                          <Badge className={`${
+                            data.sentiment === 'BULLISH' ? 'bg-green-100 text-green-700 border-green-200' :
+                            data.sentiment === 'BEARISH' ? 'bg-red-100 text-red-700 border-red-200' :
+                            'bg-gray-100 text-gray-700 border-gray-200'
+                          } text-xs`}>
+                            {data.sentiment}
+                          </Badge>
+                        </div>
+                        <p className="text-xs text-slate-600 leading-relaxed">{data.reasoning}</p>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Overall Reasoning */}
+                <div className="bg-white/60 backdrop-blur-sm border border-white/30 rounded-lg p-3">
+                  <h4 className="text-sm font-semibold text-indigo-800 mb-2">Overall Assessment</h4>
+                  <p className="text-sm text-slate-700 leading-relaxed whitespace-pre-wrap">
+                    {analysisResult.ai_reasoning}
+                  </p>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -2133,7 +2336,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
               <div className="space-y-2">
                 <Label className="text-sm font-medium text-slate-700">Chart Screenshots (Optional)</Label>
                 <p className="text-xs text-slate-600">
-                  Upload screenshots of your chart analysis. JPG, JPEG, PNG, HEIC formats only. Maximum 3MB per file.
+                  Upload screenshots of your chart analysis. JPG, JPEG, PNG, HEIC formats only. Maximum 3MB per file. Only one screenshot allowed per timeframe.
                 </p>
                 
                 {/* Upload Progress */}
@@ -2175,6 +2378,8 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
                           description: "Please select a file smaller than 3MB.",
                           variant: "destructive",
                         });
+                        // Clear the input
+                        e.target.value = '';
                         return;
                       }
                       
@@ -2194,20 +2399,33 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
                         });
                       }, 100);
 
+                      // Check if a screenshot already exists for this timeframe
+                      if (screenshots[currentTimeframe] && screenshots[currentTimeframe].length > 0) {
+                        toast({
+                          title: "Screenshot Already Uploaded",
+                          description: "Only one screenshot is allowed per timeframe. Please remove the existing screenshot first.",
+                          variant: "destructive",
+                        });
+                        // Clear the input
+                        e.target.value = '';
+                        return;
+                      }
+                      
                       // Add to screenshots array for this timeframe
                       const newScreenshot = {
-                        id: Date.now(),
-                        name: file.name,
+                        id: Date.now().toString(),
+                        file_name: file.name,
                         file: file,
                         uploadedAt: new Date().toISOString()
                       };
                       
                       setScreenshots(prev => ({
                         ...prev,
-                        [currentTimeframe]: prev[currentTimeframe] 
-                          ? [...prev[currentTimeframe], newScreenshot]
-                          : [newScreenshot]
+                        [currentTimeframe]: [newScreenshot]
                       }));
+                      
+                      // Clear the input after successful upload
+                      e.target.value = '';
                     }
                   }}
                   className="bg-white/90 backdrop-blur-sm border-slate-200 hover:border-slate-300 focus:border-blue-400 shadow-[0_2px_8px_rgba(0,0,0,0.05)] text-slate-800"

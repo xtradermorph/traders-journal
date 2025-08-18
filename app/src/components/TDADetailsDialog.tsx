@@ -162,42 +162,19 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
     }
   };
 
-  // Check if timeframe should show summary only
-  const isSummaryOnlyTimeframe = (timeframe: string) => {
-    return ['DAILY', 'H1', 'M15'].includes(timeframe);
+  // Get questions for a specific timeframe from the database
+  const getTimeframeQuestions = (timeframe: string) => {
+    if (!data?.questions) return [];
+    return data.questions.filter(q => q.timeframe === timeframe);
   };
 
-  // Get summary questions for specific timeframes
-  const getSummaryQuestions = (timeframe: string) => {
-    if (timeframe === 'DAILY') {
-      return [
-        { id: 'daily_announcements', question_text: 'Announcements' },
-        { id: 'daily_trend', question_text: 'Current Daily Trend' },
-        { id: 'daily_analysis', question_text: 'Analysis' }
-      ];
-    } else if (timeframe === 'H1') {
-      return [
-        { id: 'hour_trend', question_text: 'Current Hourly Trend' },
-        { id: 'hour_analysis', question_text: 'Analysis' }
-      ];
-    } else if (timeframe === 'M15') {
-      return [
-        { id: 'min15_trend', question_text: 'Current 15-Minute Trend' },
-        { id: 'min15_analysis', question_text: 'Analysis' }
-      ];
-    }
-    return [];
+  // Get answers for a specific timeframe
+  const getTimeframeAnswers = (timeframe: string) => {
+    if (!data?.answers) return [];
+    const timeframeQuestions = getTimeframeQuestions(timeframe);
+    const questionIds = timeframeQuestions.map(q => q.id);
+    return data.answers.filter(a => questionIds.includes(a.question_id));
   };
-
-  const getHardcodedQuestions = (timeframe: string) => {
-    if (timeframe === 'DAILY') {
-      return [
-        { id: 'daily_announcements', question_text: 'Announcements' },
-        { id: 'daily_trend', question_text: 'Current Daily Trend' },
-        { id: 'daily_support_resistance', question_text: "Today's Key Support / Resistance Levels" },
-        { id: 'daily_cycle_pressure', question_text: 'Cycle Pressure' },
-        { id: 'daily_cycle_notes', question_text: 'Notes' },
-        { id: 'daily_previous_candle', question_text: 'Previous Candle Colour' },
         { id: 'daily_pivot_range', question_text: "Today's Pivot Point Range" },
         { id: 'daily_pivot_notes', question_text: 'Notes' },
         { id: 'daily_patterns', question_text: 'Candle / Chart Patterns' },
@@ -316,7 +293,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
   }
 
   // Get analyzed timeframes from timeframe_analyses
-  const analyzedTimeframes = (data.timeframe_analyses || []).map((ta: TDATimeframeAnalysis) => ta.timeframe as string);
+
 
   return (
     <>
@@ -459,14 +436,23 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {analyzedTimeframes.length === 0 ? (
-                  <p className="text-slate-600 text-center py-4">No timeframe data available</p>
-                ) : (
-                  analyzedTimeframes.map((timeframe: string) => {
+                {(() => {
+                  if (!data?.questions || data.questions.length === 0) {
+                    return <p className="text-slate-600 text-center py-4">No timeframe data available</p>;
+                  }
+
+                  // Get unique timeframes from questions and sort them
+                  const timeframes = [...new Set(data.questions.map(q => q.timeframe))].sort((a, b) => {
+                    const order = { 'DAILY': 1, 'H1': 2, 'M15': 3, 'H4': 4, 'H2': 5, 'M30': 6, 'M10': 7, 'H8': 8, 'W1': 9, 'MN1': 10 };
+                    return (order[a as keyof typeof order] || 999) - (order[b as keyof typeof order] || 999);
+                  });
+
+                  return timeframes.map((timeframe: string) => {
                     const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
-                    const timeframeAnswers = data.answers || [];
-                    const isSummaryOnly = isSummaryOnlyTimeframe(timeframe);
-                    const questionsToShow = isSummaryOnly ? getSummaryQuestions(timeframe) : getHardcodedQuestions(timeframe);
+                    const timeframeQuestions = getTimeframeQuestions(timeframe);
+                    const timeframeAnswers = getTimeframeAnswers(timeframe);
+
+                    if (timeframeQuestions.length === 0) return null;
 
                     return (
                       <div key={timeframe} className="bg-white/70 rounded-lg p-4 border border-green-200">
@@ -495,17 +481,8 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
 
                         {/* Questions and Answers */}
                         <div className="space-y-3">
-                          {questionsToShow.map((question: TDAQuestion) => {
-                            // Find the answer by matching question text instead of ID
-                            const answer = data.answers.find((a: TDAAnswer) => {
-                              // First try to find the question in the database questions
-                              const dbQuestion = data.questions.find((q: TDAQuestion) => q.question_text === question.question_text);
-                              if (dbQuestion) {
-                                return a.question_id === dbQuestion.id;
-                              }
-                              // If not found, try direct text matching
-                              return a.answer_text && a.answer_text.includes(question.question_text);
-                            });
+                          {timeframeQuestions.map((question: TDAQuestion) => {
+                            const answer = timeframeAnswers.find((a: TDAAnswer) => a.question_id === question.id);
                             
                             return (
                               <div key={question.id} className="bg-white/50 rounded-lg p-3 border border-green-100">
@@ -528,8 +505,8 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                         </div>
                       </div>
                     );
-                  })
-                )}
+                  });
+                })()}
               </CardContent>
             </Card>
 

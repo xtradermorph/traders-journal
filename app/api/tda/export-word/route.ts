@@ -259,15 +259,213 @@ function prepareWordData(data: WordData) {
 
 async function generateWordDocument(templateData: any): Promise<Buffer> {
   try {
-    // For now, we'll create a simple text-based document
-    // In a full implementation, you would use a Word template
-    const documentContent = generateTextDocument(templateData);
+    // Create a simple Word document using docx library
+    const { Document, Packer, Paragraph, TextRun, HeadingLevel, AlignmentType } = await import('docx');
     
-    // Convert to Buffer
-    return Buffer.from(documentContent, 'utf-8');
+    const doc = new Document({
+      sections: [{
+        properties: {},
+        children: [
+          new Paragraph({
+            text: "TOP DOWN ANALYSIS REPORT",
+            heading: HeadingLevel.HEADING_1,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({
+            text: "================================",
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({ text: "" }),
+          
+          // Document metadata
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Currency Pair: ", bold: true }),
+              new TextRun({ text: templateData.currencyPair }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Analysis Date: ", bold: true }),
+              new TextRun({ text: templateData.analysisDate }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Analyst: ", bold: true }),
+              new TextRun({ text: templateData.analystName }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Report Date: ", bold: true }),
+              new TextRun({ text: templateData.reportDate }),
+            ],
+          }),
+          new Paragraph({ text: "" }),
+          
+          // Analysis overview
+          new Paragraph({
+            text: "ANALYSIS OVERVIEW",
+            heading: HeadingLevel.HEADING_2,
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Selected Timeframes: ", bold: true }),
+              new TextRun({ text: templateData.selectedTimeframes }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Total Timeframes: ", bold: true }),
+              new TextRun({ text: templateData.totalTimeframes.toString() }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Questions Answered: ", bold: true }),
+              new TextRun({ text: `${templateData.answeredQuestions}/${templateData.totalQuestions} (${templateData.completionRate}%)` }),
+            ],
+          }),
+          new Paragraph({
+            children: [
+              new TextRun({ text: "Screenshots: ", bold: true }),
+              new TextRun({ text: templateData.totalScreenshots.toString() }),
+            ],
+          }),
+          new Paragraph({ text: "" }),
+          
+          // AI Analysis
+          ...(templateData.hasAI ? [
+            new Paragraph({
+              text: "AI ANALYSIS",
+              heading: HeadingLevel.HEADING_2,
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Overall Probability: ", bold: true }),
+                new TextRun({ text: `${templateData.aiAnalysis.probability}%` }),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Trade Recommendation: ", bold: true }),
+                new TextRun({ text: templateData.aiAnalysis.recommendation }),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Confidence Level: ", bold: true }),
+                new TextRun({ text: `${templateData.aiAnalysis.confidence}%` }),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Risk Level: ", bold: true }),
+                new TextRun({ text: templateData.aiAnalysis.riskLevel }),
+              ],
+            }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "Risk-Reward Ratio: ", bold: true }),
+                new TextRun({ text: `${templateData.aiAnalysis.riskRewardRatio}:1` }),
+              ],
+            }),
+            new Paragraph({ text: "" }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "AI Summary: ", bold: true }),
+              ],
+            }),
+            new Paragraph({
+              text: templateData.aiAnalysis.summary,
+            }),
+            new Paragraph({ text: "" }),
+            new Paragraph({
+              children: [
+                new TextRun({ text: "AI Reasoning: ", bold: true }),
+              ],
+            }),
+            new Paragraph({
+              text: templateData.aiAnalysis.reasoning,
+            }),
+            new Paragraph({ text: "" }),
+          ] : []),
+          
+          // Timeframe Analysis
+          ...(templateData.hasTimeframes ? [
+            new Paragraph({
+              text: "TIMEFRAME ANALYSIS",
+              heading: HeadingLevel.HEADING_2,
+            }),
+            ...templateData.timeframes.flatMap(tf => [
+              new Paragraph({
+                text: `${tf.name} Timeframe:`,
+                heading: HeadingLevel.HEADING_3,
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Questions: ", bold: true }),
+                  new TextRun({ text: tf.questions.length.toString() }),
+                ],
+              }),
+              new Paragraph({
+                children: [
+                  new TextRun({ text: "Screenshots: ", bold: true }),
+                  new TextRun({ text: tf.screenshotCount.toString() }),
+                ],
+              }),
+              ...(tf.analysis?.timeframe_probability ? [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: "Probability: ", bold: true }),
+                    new TextRun({ text: `${tf.analysis.timeframe_probability}%` }),
+                  ],
+                }),
+              ] : []),
+              ...(tf.analysis?.timeframe_sentiment ? [
+                new Paragraph({
+                  children: [
+                    new TextRun({ text: "Sentiment: ", bold: true }),
+                    new TextRun({ text: tf.analysis.timeframe_sentiment }),
+                  ],
+                }),
+              ] : []),
+              new Paragraph({ text: "" }),
+            ]),
+          ] : []),
+          
+          // Disclaimer
+          new Paragraph({
+            text: "DISCLAIMER",
+            heading: HeadingLevel.HEADING_2,
+          }),
+          new Paragraph({
+            text: templateData.disclaimer,
+          }),
+          new Paragraph({ text: "" }),
+          
+          // Footer
+          new Paragraph({
+            text: "---",
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({
+            text: templateData.footer,
+            alignment: AlignmentType.CENTER,
+          }),
+        ],
+      }],
+    });
+    
+    // Generate the document
+    const buffer = await Packer.toBuffer(doc);
+    return buffer;
   } catch (error) {
     console.error('Error generating Word document:', error);
-    throw error;
+    // Fallback to text document
+    const documentContent = generateTextDocument(templateData);
+    return Buffer.from(documentContent, 'utf-8');
   }
 }
 
