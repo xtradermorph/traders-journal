@@ -366,8 +366,11 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                     return <p className="text-slate-600 text-center py-4">No timeframe data available</p>;
                   }
 
-                  // Get unique timeframes from questions and sort them
-                  const timeframes = [...new Set(data.questions.map(q => q.timeframe))].sort((a, b) => {
+                  // Get unique timeframes from answers (which represent selected timeframes) and sort them
+                  const timeframes = [...new Set(data.answers.map(a => {
+                    const question = data.questions.find(q => q.id === a.question_id);
+                    return question?.timeframe;
+                  }).filter(Boolean))].sort((a, b) => {
                     const order = { 'DAILY': 1, 'H1': 2, 'M15': 3, 'H4': 4, 'H2': 5, 'M30': 6, 'M10': 7, 'H8': 8, 'W1': 9, 'MN1': 10 };
                     return (order[a as keyof typeof order] || 999) - (order[b as keyof typeof order] || 999);
                   });

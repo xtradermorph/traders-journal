@@ -1485,7 +1485,7 @@ const TopDownAnalysisDialog = ({ isOpen, onClose }: TopDownAnalysisDialogProps) 
             </CardContent>
           </Card>
 
-          {/* Timeframe Analysis Summary - Show in correct order */}
+          {/* Timeframe Analysis Summary - Show ONLY SELECTED timeframes */}
           {(() => {
             // Sort timeframes by their order in allTimeframes
             const sortedTimeframes = selectedTimeframes.sort((a, b) => {
