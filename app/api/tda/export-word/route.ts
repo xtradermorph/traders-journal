@@ -75,57 +75,104 @@ export async function POST(request: NextRequest) {
       ? `${userProfile.first_name} ${userProfile.last_name}`
       : userProfile?.username || 'Trader';
 
-    let document = '';
-    document += `TOP DOWN ANALYSIS REPORT\n`;
-    document += `========================\n\n`;
-    document += `Currency Pair: ${analysis.currency_pair}\n`;
-    document += `Analysis Date: ${new Date(analysis.analysis_date).toLocaleDateString()}\n`;
-    document += `Analyst: ${analystName}\n`;
-    document += `Report Date: ${new Date().toLocaleDateString()}\n\n`;
+    // Create HTML document that Word can open properly
+    const htmlDocument = `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Top Down Analysis Report</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
+        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        h2 { color: #34495e; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-top: 30px; }
+        h3 { color: #2c3e50; }
+        .metadata { background: #ecf0f1; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .metadata p { margin: 5px 0; }
+        .ai-section { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .answers-section { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .screenshots-section { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .disclaimer { background: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #dc3545; }
+        .footer { text-align: center; margin-top: 40px; color: #7f8c8d; }
+        .answer-item { margin: 15px 0; padding: 10px; background: white; border-left: 3px solid #007bff; }
+        .question { font-weight: bold; color: #2c3e50; }
+        .answer { margin-top: 5px; color: #34495e; }
+    </style>
+</head>
+<body>
+    <h1>TOP DOWN ANALYSIS REPORT</h1>
     
-    if (analysis.ai_summary) {
-      document += `AI SUMMARY\n`;
-      document += `==========\n`;
-      document += `${analysis.ai_summary}\n\n`;
-    }
+    <div class="metadata">
+        <h2>Document Information</h2>
+        <p><strong>Currency Pair:</strong> ${analysis.currency_pair}</p>
+        <p><strong>Analysis Date:</strong> ${new Date(analysis.analysis_date).toLocaleDateString()}</p>
+        <p><strong>Analyst:</strong> ${analystName}</p>
+        <p><strong>Report Date:</strong> ${new Date().toLocaleDateString()}</p>
+        <p><strong>Total Answers:</strong> ${answers?.length || 0}</p>
+        <p><strong>Total Screenshots:</strong> ${screenshots?.length || 0}</p>
+    </div>
     
-    if (answers && answers.length > 0) {
-      document += `ANSWERS\n`;
-      document += `=======\n`;
-      answers.forEach((answer, index) => {
-        const question = questions?.find(q => q.id === answer.question_id);
-        document += `${index + 1}. ${question?.question_text || 'Unknown question'}\n`;
-        document += `   Answer: ${answer.answer_text || answer.answer_value || 'No answer'}\n\n`;
-      });
-    }
+    ${analysis.ai_summary ? `
+    <div class="ai-section">
+        <h2>AI ANALYSIS</h2>
+        <p><strong>AI Summary:</strong></p>
+        <p>${analysis.ai_summary}</p>
+    </div>
+    ` : ''}
     
-    if (screenshots && screenshots.length > 0) {
-      document += `SCREENSHOTS\n`;
-      document += `===========\n`;
-      screenshots.forEach(screenshot => {
-        document += `- ${screenshot.file_name} (${screenshot.timeframe})\n`;
-      });
-      document += '\n';
-    }
+    ${answers && answers.length > 0 ? `
+    <div class="answers-section">
+        <h2>ANALYSIS ANSWERS</h2>
+        ${answers.map((answer, index) => {
+          const question = questions?.find(q => q.id === answer.question_id);
+          return `
+            <div class="answer-item">
+                <div class="question">${index + 1}. ${question?.question_text || 'Unknown question'}</div>
+                <div class="answer">Answer: ${answer.answer_text || answer.answer_value || 'No answer provided'}</div>
+            </div>
+          `;
+        }).join('')}
+    </div>
+    ` : ''}
     
-    document += `DISCLAIMER\n`;
-    document += `==========\n`;
-    document += `This report is generated for ${analystName} based on their Top Down Analysis of ${analysis.currency_pair}.\n`;
-    document += `Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}`;
+    ${screenshots && screenshots.length > 0 ? `
+    <div class="screenshots-section">
+        <h2>CHART SCREENSHOTS</h2>
+        <ul>
+            ${screenshots.map(screenshot => `
+                <li><strong>${screenshot.file_name}</strong> (${screenshot.timeframe} timeframe)</li>
+            `).join('')}
+        </ul>
+    </div>
+    ` : ''}
+    
+    <div class="disclaimer">
+        <h2>DISCLAIMER</h2>
+        <p>This report is generated for ${analystName} based on their Top Down Analysis of ${analysis.currency_pair}. 
+        The AI analysis provided is for informational purposes only and should not be considered as trading advice. 
+        Always rely on your own analysis and risk management. Trading forex involves substantial risk of loss.</p>
+    </div>
+    
+    <div class="footer">
+        <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | 
+        Trader's Journal - Top Down Analysis Report</p>
+    </div>
+</body>
+</html>`;
 
-    console.log('Document generated, length:', document.length);
+    console.log('Document generated, length:', htmlDocument.length);
 
-    // Return the document
-    const fileName = `TDA_${analysis.currency_pair}_${new Date(analysis.analysis_date).toISOString().split('T')[0]}.txt`;
+    // Return the document as a Word-compatible HTML file
+    const fileName = `TDA_${analysis.currency_pair}_${new Date(analysis.analysis_date).toISOString().split('T')[0]}.html`;
     
     console.log('Sending response with filename:', fileName);
     
-    return new NextResponse(document, {
+    return new NextResponse(htmlDocument, {
       status: 200,
       headers: {
-        'Content-Type': 'text/plain',
+        'Content-Type': 'text/html',
         'Content-Disposition': `attachment; filename="${fileName}"`,
-        'Content-Length': Buffer.byteLength(document, 'utf8').toString()
+        'Content-Length': Buffer.byteLength(htmlDocument, 'utf8').toString()
       }
     });
 
