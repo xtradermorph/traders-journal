@@ -29,9 +29,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { analysisId } = await request.json();
+    const { analysisId, analysis_id } = await request.json();
     
-    if (!analysisId) {
+    const finalAnalysisId = analysisId || analysis_id;
+    
+    if (!finalAnalysisId) {
       return NextResponse.json({ error: 'Analysis ID is required' }, { status: 400 });
     }
 
@@ -39,7 +41,7 @@ export async function POST(request: NextRequest) {
     const { data: analysis, error: analysisError } = await supabase
       .from('top_down_analyses')
       .select('*')
-      .eq('id', analysisId)
+      .eq('id', finalAnalysisId)
       .eq('user_id', user.id)
       .single();
 
@@ -71,7 +73,7 @@ export async function POST(request: NextRequest) {
           order_index
         )
       `)
-      .eq('analysis_id', analysisId)
+      .eq('analysis_id', finalAnalysisId)
       .order('tda_questions.order_index');
 
     if (answersError) {
