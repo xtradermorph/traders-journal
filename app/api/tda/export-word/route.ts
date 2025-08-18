@@ -75,104 +75,62 @@ export async function POST(request: NextRequest) {
       ? `${userProfile.first_name} ${userProfile.last_name}`
       : userProfile?.username || 'Trader';
 
-    // Create HTML document that Word can open properly
-    const htmlDocument = `
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Top Down Analysis Report</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; line-height: 1.6; }
-        h1 { color: #2c3e50; text-align: center; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
-        h2 { color: #34495e; border-bottom: 1px solid #bdc3c7; padding-bottom: 5px; margin-top: 30px; }
-        h3 { color: #2c3e50; }
-        .metadata { background: #ecf0f1; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .metadata p { margin: 5px 0; }
-        .ai-section { background: #e8f5e8; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .answers-section { background: #f8f9fa; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .screenshots-section { background: #fff3cd; padding: 15px; border-radius: 5px; margin: 20px 0; }
-        .disclaimer { background: #f8d7da; padding: 15px; border-radius: 5px; margin: 20px 0; border-left: 4px solid #dc3545; }
-        .footer { text-align: center; margin-top: 40px; color: #7f8c8d; }
-        .answer-item { margin: 15px 0; padding: 10px; background: white; border-left: 3px solid #007bff; }
-        .question { font-weight: bold; color: #2c3e50; }
-        .answer { margin-top: 5px; color: #34495e; }
-    </style>
-</head>
-<body>
-    <h1>TOP DOWN ANALYSIS REPORT</h1>
-    
-    <div class="metadata">
-        <h2>Document Information</h2>
-        <p><strong>Currency Pair:</strong> ${analysis.currency_pair}</p>
-        <p><strong>Analysis Date:</strong> ${new Date(analysis.analysis_date).toLocaleDateString()}</p>
-        <p><strong>Analyst:</strong> ${analystName}</p>
-        <p><strong>Report Date:</strong> ${new Date().toLocaleDateString()}</p>
-        <p><strong>Total Answers:</strong> ${answers?.length || 0}</p>
-        <p><strong>Total Screenshots:</strong> ${screenshots?.length || 0}</p>
-    </div>
-    
-    ${analysis.ai_summary ? `
-    <div class="ai-section">
-        <h2>AI ANALYSIS</h2>
-        <p><strong>AI Summary:</strong></p>
-        <p>${analysis.ai_summary}</p>
-    </div>
-    ` : ''}
-    
-    ${answers && answers.length > 0 ? `
-    <div class="answers-section">
-        <h2>ANALYSIS ANSWERS</h2>
-        ${answers.map((answer, index) => {
-          const question = questions?.find(q => q.id === answer.question_id);
-          return `
-            <div class="answer-item">
-                <div class="question">${index + 1}. ${question?.question_text || 'Unknown question'}</div>
-                <div class="answer">Answer: ${answer.answer_text || answer.answer_value || 'No answer provided'}</div>
-            </div>
-          `;
-        }).join('')}
-    </div>
-    ` : ''}
-    
-    ${screenshots && screenshots.length > 0 ? `
-    <div class="screenshots-section">
-        <h2>CHART SCREENSHOTS</h2>
-        <ul>
-            ${screenshots.map(screenshot => `
-                <li><strong>${screenshot.file_name}</strong> (${screenshot.timeframe} timeframe)</li>
-            `).join('')}
-        </ul>
-    </div>
-    ` : ''}
-    
-    <div class="disclaimer">
-        <h2>DISCLAIMER</h2>
-        <p>This report is generated for ${analystName} based on their Top Down Analysis of ${analysis.currency_pair}. 
-        The AI analysis provided is for informational purposes only and should not be considered as trading advice. 
-        Always rely on your own analysis and risk management. Trading forex involves substantial risk of loss.</p>
-    </div>
-    
-    <div class="footer">
-        <p>Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | 
-        Trader's Journal - Top Down Analysis Report</p>
-    </div>
-</body>
-</html>`;
+    // Create RTF document that Word can open properly
+    const rtfDocument = `{\\rtf1\\ansi\\deff0 {\\fonttbl {\\f0 Times New Roman;}}
+\\f0\\fs24
+{\\b TOP DOWN ANALYSIS REPORT}\\par
+{\\b ========================}\\par\\par
 
-    console.log('Document generated, length:', htmlDocument.length);
+{\\b Document Information:}\\par
+Currency Pair: ${analysis.currency_pair}\\par
+Analysis Date: ${new Date(analysis.analysis_date).toLocaleDateString()}\\par
+Analyst: ${analystName}\\par
+Report Date: ${new Date().toLocaleDateString()}\\par
+Total Answers: ${answers?.length || 0}\\par
+Total Screenshots: ${screenshots?.length || 0}\\par\\par
 
-    // Return the document as a Word-compatible HTML file
-    const fileName = `TDA_${analysis.currency_pair}_${new Date(analysis.analysis_date).toISOString().split('T')[0]}.html`;
+${analysis.ai_summary ? `
+{\\b AI ANALYSIS}\\par
+{\\b ===========}\\par
+AI Summary: ${analysis.ai_summary}\\par\\par
+` : ''}
+
+${answers && answers.length > 0 ? `
+{\\b ANALYSIS ANSWERS}\\par
+{\\b ===============}\\par
+${answers.map((answer, index) => {
+  const question = questions?.find(q => q.id === answer.question_id);
+  return `${index + 1}. ${question?.question_text || 'Unknown question'}\\par
+   Answer: ${answer.answer_text || answer.answer_value || 'No answer provided'}\\par\\par`;
+}).join('')}
+` : ''}
+
+${screenshots && screenshots.length > 0 ? `
+{\\b CHART SCREENSHOTS}\\par
+{\\b =================}\\par
+${screenshots.map(screenshot => `- ${screenshot.file_name} (${screenshot.timeframe} timeframe)\\par`).join('')}\\par
+` : ''}
+
+{\\b DISCLAIMER}\\par
+{\\b ==========}\\par
+This report is generated for ${analystName} based on their Top Down Analysis of ${analysis.currency_pair}. The AI analysis provided is for informational purposes only and should not be considered as trading advice. Always rely on your own analysis and risk management. Trading forex involves substantial risk of loss.\\par\\par
+
+Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Trader's Journal - Top Down Analysis Report\\par
+}`;
+
+    console.log('Document generated, length:', rtfDocument.length);
+
+    // Return the document as a Word-compatible RTF file
+    const fileName = `TDA_${analysis.currency_pair}_${new Date(analysis.analysis_date).toISOString().split('T')[0]}.rtf`;
     
     console.log('Sending response with filename:', fileName);
     
-    return new NextResponse(htmlDocument, {
+    return new NextResponse(rtfDocument, {
       status: 200,
       headers: {
-        'Content-Type': 'text/html',
+        'Content-Type': 'application/rtf',
         'Content-Disposition': `attachment; filename="${fileName}"`,
-        'Content-Length': Buffer.byteLength(htmlDocument, 'utf8').toString()
+        'Content-Length': Buffer.byteLength(rtfDocument, 'utf8').toString()
       }
     });
 
