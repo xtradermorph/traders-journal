@@ -1,0 +1,5 @@
+[33m3dbf80d[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Implement proper .docx document generation using docx library
+[33m99a43e8[m Change to RTF format for Word compatibility
+[33m219bb71[m Fix Word document format - use HTML that Word can open properly
+[33mb0dad80[m Fix authentication by restoring Database type import
+[33m146f81b[m Create minimal bulletproof export route

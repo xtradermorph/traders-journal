@@ -3,6 +3,18 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 import { TimeframeType } from '@/types/tda';
+import { 
+  Document, 
+  Packer, 
+  Paragraph, 
+  TextRun, 
+  HeadingLevel, 
+  AlignmentType,
+  Table,
+  TableRow,
+  TableCell,
+  WidthType
+} from 'docx';
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,19 +29,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const body = await request.json();
-    const { analysis_id } = body;
-    console.log('Request body:', { analysis_id });
-
-    if (!analysis_id) {
+    const { analysisId } = await request.json();
+    
+    if (!analysisId) {
       return NextResponse.json({ error: 'Analysis ID is required' }, { status: 400 });
     }
 
-    // Get the analysis
+    // Fetch analysis data
     const { data: analysis, error: analysisError } = await supabase
       .from('top_down_analyses')
       .select('*')
-      .eq('id', analysis_id)
+      .eq('id', analysisId)
       .eq('user_id', user.id)
       .single();
 
@@ -38,61 +48,72 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Analysis not found' }, { status: 404 });
     }
 
-    console.log('Analysis found:', analysis.currency_pair);
-
-    // Get user profile
-    const { data: userProfile } = await supabase
+    // Fetch user profile for analyst name
+    const { data: profile } = await supabase
       .from('profiles')
-      .select('first_name, last_name, username')
+      .select('first_name, last_name')
       .eq('id', user.id)
       .single();
 
-    // Get answers
-    const { data: answers } = await supabase
+    const analystName = profile ? `${profile.first_name || ''} ${profile.last_name || ''}`.trim() || user.email : user.email;
+
+    // Fetch answers for the analysis
+    const { data: answers, error: answersError } = await supabase
       .from('tda_answers')
-      .select('*')
-      .eq('analysis_id', analysis_id);
+      .select(`
+        *,
+        tda_questions (
+          id,
+          timeframe,
+          question_text,
+          question_type,
+          options,
+          order_index
+        )
+      `)
+      .eq('analysis_id', analysisId)
+      .order('tda_questions.order_index');
 
-    // Get questions
-    const { data: questions } = await supabase
-      .from('tda_questions')
-      .select('*');
+    if (answersError) {
+      console.log('Answers error:', answersError);
+      return NextResponse.json({ error: 'Failed to fetch answers' }, { status: 500 });
+    }
 
-    // Get screenshots
-    const { data: screenshots } = await supabase
-      .from('tda_screenshots')
-      .select('*')
-      .eq('analysis_id', analysis_id);
+    // Get unique timeframes from answers (only show selected timeframes)
+    const selectedTimeframes = answers ? 
+      Array.from(new Set(answers.map(a => a.tda_questions?.timeframe).filter(Boolean))) : [];
 
-    console.log('Data fetched:', {
-      answers: answers?.length || 0,
-      questions: questions?.length || 0,
-      screenshots: screenshots?.length || 0,
-      userProfile: !!userProfile
-    });
+    // Special timeframes that use the detailed table format
+    const specialTimeframes: TimeframeType[] = ['DAILY', 'H1', 'M15'];
 
-    // Generate Word document
-    const analystName = userProfile?.first_name && userProfile?.last_name 
-      ? `${userProfile.first_name} ${userProfile.last_name}`
-      : userProfile?.username || 'Trader';
+    // Helper function to get timeframe display name
+    const getTimeframeDisplayName = (timeframe: string) => {
+      const mapping: Record<string, string> = {
+        'DAILY': 'Daily Candle Chart',
+        'H1': '1-Hour Candle Chart', 
+        'M15': '15-Minute Chart',
+        'H4': '4-Hour Chart',
+        'M30': '30-Minute Chart',
+        'M5': '5-Minute Chart',
+        'M1': '1-Minute Chart'
+      };
+      return mapping[timeframe] || timeframe;
+    };
 
-    console.log('Generating Word document...');
-    
-    // Create Word document using docx library
-    const { 
-      Document, 
-      Packer, 
-      Paragraph, 
-      TextRun, 
-      HeadingLevel, 
-      AlignmentType,
-      Table,
-      TableRow,
-      TableCell,
-      WidthType,
-      BorderStyle
-    } = await import('docx');
-    
+    // Helper function to get trader type
+    const getTraderType = (timeframe: string) => {
+      const mapping: Record<string, string> = {
+        'DAILY': 'Position Trader Sentiment',
+        'H1': 'Swing / Day Trader Sentiment',
+        'M15': 'Intraday Trader Sentiment',
+        'H4': 'Swing Trader Sentiment',
+        'M30': 'Day Trader Sentiment',
+        'M5': 'Scalper Sentiment',
+        'M1': 'Scalper Sentiment'
+      };
+      return mapping[timeframe] || 'Trader Sentiment';
+    };
+
     // Helper function to create table cell
     const createCell = (text: string, bold: boolean = false, alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT, width: number = 20) => {
       return new TableCell({
@@ -116,182 +137,295 @@ export async function POST(request: NextRequest) {
       });
     };
 
-    // Helper function to create timeframe table
-    const createTimeframeTable = (timeframe: string, timeframeDisplay: string, traderType: string) => {
-      const rows = [
-        // Header row
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ text: timeframeDisplay, heading: HeadingLevel.HEADING_3 })],
-              width: { size: 100, type: WidthType.PERCENTAGE }
-            })
-          ]
-        }),
-        new TableRow({
-          children: [
-            new TableCell({
-              children: [new Paragraph({ text: traderType, heading: HeadingLevel.HEADING_4 })],
-              width: { size: 100, type: WidthType.PERCENTAGE }
-            })
-          ]
-        }),
-        // Column headers
-        new TableRow({
-          children: [
-            createCell("", false, AlignmentType.LEFT, 25),
-            createCell("Details/Values", true, AlignmentType.CENTER, 25),
-            createCell("Sentiment/Fibonacci", true, AlignmentType.CENTER, 25),
-            createCell("Swing Levels", true, AlignmentType.CENTER, 15),
-            createCell("Notes", true, AlignmentType.CENTER, 10)
-          ]
-        })
-      ];
-
-      // Add specific rows based on timeframe
-      if (timeframe === 'DAILY') {
-        const dailyRows = [
-          { label: "Current Daily Trend", options: ["Long", "Short"] },
-          { label: "Today's Key Support / Resistance Levels", options: [] },
-          { label: "Previous Candle Colour", options: ["Red", "Green"] },
-          { label: "Today's Pivot Point Range", options: ["Mid S2 to MidR1", "MidS1 to MidR2"] },
-          { label: "Candle / Chart Patterns", options: [] },
-          { label: "MACD Lines", options: ["Above Waterline", "Below Waterline", "Blue Below Red", "Blue Above Red"] },
-          { label: "MACD Histogram", options: ["Below Waterline", "Above Waterline", "Moving Up", "Moving Down"] },
-          { label: "RSI", options: ["Oversold", "NZ From Oversold", "Overbought", "NZ From Overbought", "Heading Up", "Heading Down", "Heading Sideways", "B Below Y", "B Above Y"] },
-          { label: "REI", options: ["Oversold", "NZ From Oversold", "Overbought", "NZ From Overbought", "Heading Up", "Heading Down", "Heading Sideways"] },
-          { label: "Analysis", options: [] }
-        ];
-
-                  dailyRows.forEach(row => {
-            rows.push(new TableRow({
-              children: [
-                createCell(row.label, true, AlignmentType.LEFT, 25),
-                createEmptyCell(25),
-                createCell("Cycle Pressure: Bullish/Bearish\nFibonacci: Converging/Diverging/Parallel", false, AlignmentType.LEFT, 25),
-                createEmptyCell(15),
-                createEmptyCell(10)
-              ]
-            }));
-          });
-      } else if (timeframe === 'H1') {
-        const h1Rows = [
-          { label: "Current 1-Hour Trend", options: ["Long", "Short"] },
-          { label: "Session's Key Support / Resistance Levels", options: [] },
-          { label: "MACD Lines", options: ["Above Waterline", "Below Waterline", "Blue Below Red", "Blue Above Red"] },
-          { label: "MACD Histogram", options: ["Below Waterline", "Above Waterline", "Moving Up", "Moving Down"] },
-          { label: "RSI", options: ["Oversold", "NZ From Oversold", "Overbought", "NZ From Overbought", "Heading Up", "Heading Down", "Heading Sideways", "B Below Y", "B Above Y"] },
-          { label: "REI", options: ["Oversold", "NZ From Oversold", "Overbought", "NZ From Overbought", "Heading Up", "Heading Down", "Heading Sideways"] },
-          { label: "Analysis", options: [] }
-        ];
-
-        h1Rows.forEach(row => {
-          rows.push(new TableRow({
-            children: [
-              createCell(row.label, true, AlignmentType.LEFT, 25),
-              createEmptyCell(25),
-              createCell("Cycle Pressure: Bullish/Bearish\nFibonacci: Converging/Diverging/Parallel", false, AlignmentType.LEFT, 25),
-              createEmptyCell(15),
-              createEmptyCell(10)
-            ]
-          }));
-        });
-      } else if (timeframe === 'M15') {
-        const m15Rows = [
-          { label: "Current 15-Minute Trend", options: ["Long", "Short", "Sideways"] },
-          { label: "Session's Key Support / Resistance Levels", options: [] },
-          { label: "Most Relevant Trend Line", options: ["Support", "Resistance", "Latest Swing Low", "Latest Swing High"] },
-          { label: "Price Location in Pivot Range", options: ["From Low Moving Up", "Nearing Top", "From High Moving Down", "Nearing Bottom", "From Middle Sideways"] },
-          { label: "Drive or Exhaustion", options: ["Long Drive Zone", "Long Exhaustion Zone", "Short Drive Zone", "Short Exhaustion Zone"] },
-          { label: "Candle / Chart Patterns", options: [] },
-          { label: "MACD Lines", options: ["Above Waterline", "Below Waterline", "Blue Below Red", "Blue Above Red"] },
-          { label: "MACD Histogram", options: ["Below Waterline", "Above Waterline", "Moving Up", "Moving Down"] },
-          { label: "RSI", options: ["Oversold", "NZ From Oversold", "Overbought", "NZ From Overbought", "Heading Up", "Heading Down", "Heading Sideways", "B Below Y", "B Above Y"] },
-          { label: "REI", options: ["Oversold", "NZ From Oversold", "Overbought", "NZ From Overbought", "Heading Up", "Heading Down", "Heading Sideways"] },
-          { label: "Analysis", options: [] },
-          { label: "Trade Entry & Exit Details", options: [] },
-          { label: "Lessons Learned", options: [] }
-        ];
-
-        m15Rows.forEach(row => {
-          rows.push(new TableRow({
-            children: [
-              createCell(row.label, true, AlignmentType.LEFT, 25),
-              createEmptyCell(25),
-              createCell("Cycle Pressure: Bullish/Bearish\nFibonacci: Converging/Diverging/Parallel", false, AlignmentType.LEFT, 25),
-              createEmptyCell(15),
-              createEmptyCell(10)
-            ]
-          }));
-        });
+    // Helper function to get answer value
+    const getAnswerValue = (answer: any) => {
+      if (answer.answer_text) {
+        return answer.answer_text;
+      } else if (answer.answer_value && typeof answer.answer_value === 'object') {
+        if (Array.isArray(answer.answer_value)) {
+          return answer.answer_value.join(', ');
+        } else {
+          return JSON.stringify(answer.answer_value);
+        }
       }
+      return "";
+    };
+
+    // Helper function to get organized questions for a timeframe (matching TDA dialog structure)
+    const getOrganizedQuestions = (timeframe: string) => {
+      const timeframeQuestions = answers?.filter(a => a.tda_questions?.timeframe === timeframe) || [];
+      
+      if (timeframe === 'DAILY') {
+        // DAILY layout: exact grouping as specified in TDA dialog
+        const announcements = timeframeQuestions.filter(a => a.tda_questions?.question_text === 'Announcements');
+        const analysis = timeframeQuestions.filter(a => a.tda_questions?.question_text === 'Analysis');
+        
+        // Row 1: Announcements
+        const row1 = announcements;
+        
+        // Row 2: Current Daily Trend, Today's Key Support / Resistance Levels, Cycle Pressure, Notes
+        const row2 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text === 'Current Daily Trend' ||
+          a.tda_questions?.question_text === "Today's Key Support / Resistance Levels" ||
+          a.tda_questions?.question_text === 'Cycle Pressure' ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 5)
+        );
+        
+        // Row 3: Previous Candle Colour, Today's Pivot Point Range, Notes
+        const row3 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text === 'Previous Candle Colour' ||
+          a.tda_questions?.question_text === "Today's Pivot Point Range" ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 8)
+        );
+        
+        // Row 4: Candle / Chart Patterns, Fibonacci: Swing Low, Fibonacci: Swing High
+        const row4 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text === 'Candle / Chart Patterns' ||
+          a.tda_questions?.question_text === 'Fibonacci: Swing Low' ||
+          a.tda_questions?.question_text === 'Fibonacci: Swing High'
+        );
+        
+        // Row 5: MACD Lines group
+        const row5 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('MACD Lines') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 16)
+        );
+        
+        // Row 6: MACD Histogram group
+        const row6 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('MACD Histogram') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 20)
+        );
+        
+        // Row 7: RSI group
+        const row7 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('RSI') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 25)
+        );
+        
+        // Row 8: REI group
+        const row8 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('REI') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 29)
+        );
+        
+        // Row 9: Analysis
+        const row9 = analysis;
+        
+        return [row1, row2, row3, row4, row5, row6, row7, row8, row9].filter(row => row.length > 0);
+        
+      } else if (timeframe === 'H1') {
+        // H1 layout: exact grouping as specified in TDA dialog
+        const analysis = timeframeQuestions.filter(a => a.tda_questions?.question_text === 'Analysis');
+        
+        // Row 1: Current 1 Hour Trend, Session's Key Support / Resistance Levels, Cycle Pressure, Notes
+        const row1 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text === 'Current 1 Hour Trend' ||
+          a.tda_questions?.question_text === "Session's Key Support / Resistance Levels" ||
+          a.tda_questions?.question_text === 'Cycle Pressure' ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 4)
+        );
+        
+        // Row 2: MACD Lines group
+        const row2 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('MACD Lines') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 9)
+        );
+        
+        // Row 3: MACD Histogram group
+        const row3 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('MACD Histogram') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 13)
+        );
+        
+        // Row 4: RSI group
+        const row4 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('RSI') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 18)
+        );
+        
+        // Row 5: REI group
+        const row5 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('REI') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 22)
+        );
+        
+        // Row 6: Analysis
+        const row6 = analysis;
+        
+        return [row1, row2, row3, row4, row5, row6].filter(row => row.length > 0);
+        
+      } else if (timeframe === 'M15') {
+        // M15 layout: exact grouping as specified in TDA dialog
+        const analysis = timeframeQuestions.filter(a => a.tda_questions?.question_text === 'Analysis');
+        
+        // Row 1: Current 15 Minutes Trend, Today's Key Support / Resistance Levels, Cycle Pressure, Notes
+        const row1 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text === 'Current 15 Minutes Trend' ||
+          a.tda_questions?.question_text === "Today's Key Support / Resistance Levels" ||
+          a.tda_questions?.question_text === 'Cycle Pressure' ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 4)
+        );
+        
+        // Row 2: Most Relevant Trend Line, Price Location in Pivot Range, Drive or Exhaustion
+        const row2 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text === 'Most Relevant Trend Line' ||
+          a.tda_questions?.question_text === 'Price Location in Pivot Range' ||
+          a.tda_questions?.question_text === 'Drive or Exhaustion'
+        );
+        
+        // Row 3: Candle / Chart Patterns, Fibonacci: Swing Low, Fibonacci: Swing High
+        const row3 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text === 'Candle / Chart Patterns' ||
+          a.tda_questions?.question_text === 'Fibonacci: Swing Low' ||
+          a.tda_questions?.question_text === 'Fibonacci: Swing High'
+        );
+        
+        // Row 4: MACD Lines group
+        const row4 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('MACD Lines') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 15)
+        );
+        
+        // Row 5: MACD Histogram group
+        const row5 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('MACD Histogram') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 19)
+        );
+        
+        // Row 6: RSI group
+        const row6 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('RSI') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 24)
+        );
+        
+        // Row 7: REI group
+        const row7 = timeframeQuestions.filter(a => 
+          a.tda_questions?.question_text.includes('REI') ||
+          (a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 28)
+        );
+        
+        // Row 8: Analysis
+        const row8 = analysis;
+        
+        return [row1, row2, row3, row4, row5, row6, row7, row8].filter(row => row.length > 0);
+      }
+      
+      return [];
+    };
+
+    // Helper function to create timeframe table for special timeframes (matching screenshot format)
+    const createTimeframeTable = (timeframe: string, timeframeDisplay: string, traderType: string) => {
+      const organizedRows = getOrganizedQuestions(timeframe);
+      
+      const rows: TableRow[] = [];
+      
+      // Header row
+      rows.push(new TableRow({
+        children: [
+          createCell(timeframeDisplay, true, AlignmentType.CENTER, 100)
+        ]
+      }));
+      
+      // Trader type row
+      rows.push(new TableRow({
+        children: [
+          createCell(traderType, false, AlignmentType.CENTER, 100)
+        ]
+      }));
+      
+      // Empty row for spacing
+      rows.push(new TableRow({
+        children: [
+          createEmptyCell(100)
+        ]
+      }));
+
+      // Create rows based on the organized structure
+      organizedRows.forEach(rowQuestions => {
+        if (rowQuestions.length === 0) return;
+        
+        const cells: TableCell[] = [];
+        
+        rowQuestions.forEach(answer => {
+          const question = answer.tda_questions;
+          if (!question) return;
+          
+          const value = getAnswerValue(answer);
+          const cellWidth = 100 / rowQuestions.length;
+          
+          cells.push(createCell(
+            `${question.question_text}: ${value || ""}`, 
+            true, 
+            AlignmentType.LEFT, 
+            cellWidth
+          ));
+        });
+        
+        if (cells.length > 0) {
+          rows.push(new TableRow({ children: cells }));
+        }
+      });
 
       return new Table({
         rows,
         width: { size: 100, type: WidthType.PERCENTAGE },
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 1 },
-          bottom: { style: BorderStyle.SINGLE, size: 1 },
-          left: { style: BorderStyle.SINGLE, size: 1 },
-          right: { style: BorderStyle.SINGLE, size: 1 },
-          insideHorizontal: { style: BorderStyle.SINGLE, size: 1 },
-          insideVertical: { style: BorderStyle.SINGLE, size: 1 }
+        margins: {
+          top: 200,
+          bottom: 200,
+          left: 200,
+          right: 200
         }
       });
     };
 
-    // Helper function to create simple timeframe section
-    const createSimpleTimeframeSection = (timeframe: string, timeframeDisplay: string, answers: any[], questions: any[]) => {
-      const timeframeQuestions = questions.filter(q => q.timeframe === timeframe);
-      const timeframeAnswers = answers.filter(a => 
-        timeframeQuestions.some(q => q.id === a.question_id)
-      );
+    // Helper function to create simple timeframe section for other timeframes
+    const createSimpleTimeframeSection = (timeframe: string, timeframeDisplay: string, answers: any[]) => {
+      const timeframeAnswers = answers.filter(a => a.tda_questions?.timeframe === timeframe);
+      
+      const elements: any[] = [];
+      
+      // Header
+      elements.push(new Paragraph({
+        text: timeframeDisplay,
+        heading: HeadingLevel.HEADING_3,
+      }));
+      
+      elements.push(new Paragraph({
+        text: getTraderType(timeframe),
+        heading: HeadingLevel.HEADING_4,
+      }));
+      
+      elements.push(new Paragraph({ text: "" }));
 
-      const sections = [
-        new Paragraph({
-          text: timeframeDisplay,
-          heading: HeadingLevel.HEADING_3,
-        }),
-        new Paragraph({ text: "" })
-      ];
+      // Add questions and answers
+      timeframeAnswers.forEach(answer => {
+        const question = answer.tda_questions;
+        if (!question) return;
 
-      timeframeQuestions.forEach(question => {
-        const answer = timeframeAnswers.find(a => a.question_id === question.id);
-        sections.push(
-          new Paragraph({
-            children: [
-              new TextRun({ text: question.question_text, bold: true })
-            ]
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Answer: " }),
-              new TextRun({ text: answer?.answer_text || answer?.answer_value || 'No answer provided' })
-            ]
-          }),
-          new Paragraph({ text: "" })
-        );
+        const valueText = getAnswerValue(answer);
+
+        elements.push(new Paragraph({
+          children: [
+            new TextRun({ text: `${question.question_text}: `, bold: true }),
+            new TextRun({ text: valueText || "Not answered" })
+          ]
+        }));
       });
 
-      return sections;
+      return elements;
     };
 
-    // Get unique timeframes from questions
-    const uniqueTimeframes = questions ? 
-      Array.from(new Set(questions.map(q => q.timeframe))).sort() : [];
-
-    // Define special timeframes that need the table format
-    const specialTimeframes: TimeframeType[] = ['DAILY', 'H1', 'M15'];
-    
+    // Create document
     const doc = new Document({
       sections: [{
         properties: {
           page: {
             margin: {
-              top: 1440, // 1 inch
-              right: 1440,
-              bottom: 1440,
-              left: 1440
+              top: 360, // 0.25 inch - minimal margins
+              right: 360,
+              bottom: 360,
+              left: 360
             }
           }
         },
@@ -310,44 +444,26 @@ export async function POST(request: NextRequest) {
             heading: HeadingLevel.HEADING_1,
             alignment: AlignmentType.CENTER,
           }),
-          new Paragraph({
-            text: "==================================",
-            alignment: AlignmentType.CENTER,
-          }),
           new Paragraph({ text: "" }),
-          
-          // Document Information
-          new Paragraph({
-            text: "Document Information",
-            heading: HeadingLevel.HEADING_2,
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Currency Pair: ", bold: true }),
-              new TextRun({ text: analysis.currency_pair }),
-            ],
-          }),
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Analysis Date: ", bold: true }),
-              new TextRun({ text: new Date(analysis.analysis_date).toLocaleDateString() }),
-            ],
-          }),
+
+          // Document Information (reformatted as requested)
           new Paragraph({
             children: [
               new TextRun({ text: "Analyst: ", bold: true }),
               new TextRun({ text: analystName }),
+              new TextRun({ text: "     " }), // Spacing
+              new TextRun({ text: "Analysis Date and Time: ", bold: true }),
+              new TextRun({ text: new Date(analysis.analysis_date).toLocaleDateString() + " " + (analysis.analysis_time || "") })
             ],
           }),
           new Paragraph({
             children: [
-              new TextRun({ text: "Report Date: ", bold: true }),
-              new TextRun({ text: new Date().toLocaleDateString() }),
+              new TextRun({ text: "Currency Pair: ", bold: true }),
+              new TextRun({ text: analysis.currency_pair })
             ],
+            alignment: AlignmentType.RIGHT,
           }),
           new Paragraph({ text: "" }),
-
-
 
           // Announcements Section
           new Paragraph({
@@ -361,148 +477,39 @@ export async function POST(request: NextRequest) {
           new Paragraph({ text: "" }),
 
           // Timeframe Analysis Sections
-          ...(() => {
-            const sections: any[] = [];
+          ...selectedTimeframes.flatMap(timeframe => {
+            const timeframeDisplay = getTimeframeDisplayName(timeframe);
             
-            // Separate timeframes into special and regular
-            const specialTimeframesInAnalysis = uniqueTimeframes.filter(tf => 
-              specialTimeframes.includes(tf as TimeframeType)
-            );
-            const regularTimeframesInAnalysis = uniqueTimeframes.filter(tf => 
-              !specialTimeframes.includes(tf as TimeframeType)
-            );
-
-            // Add special timeframe tables if any exist
-            if (specialTimeframesInAnalysis.length > 0) {
-              specialTimeframesInAnalysis.forEach(timeframe => {
-                const timeframeDisplay = getTimeframeDisplayName(timeframe);
-                const traderType = timeframe === 'DAILY' ? 'Position Trader Sentiment' :
-                                 timeframe === 'H1' ? 'Swing / Day Trader Sentiment' :
-                                 'Intraday Trader Sentiment';
-                
-                sections.push(
-                  createTimeframeTable(timeframe, timeframeDisplay, traderType),
-                  new Paragraph({ text: "" })
-                );
-              });
+            if (specialTimeframes.includes(timeframe as TimeframeType)) {
+              // Use table format for special timeframes
+              const traderType = getTraderType(timeframe);
+              
+              return [
+                createTimeframeTable(timeframe, timeframeDisplay, traderType),
+                new Paragraph({ text: "" })
+              ];
+            } else {
+              // Use simple format for other timeframes
+              return createSimpleTimeframeSection(timeframe, timeframeDisplay, answers || []);
             }
-
-            // Add regular timeframe sections if any exist
-            if (regularTimeframesInAnalysis.length > 0) {
-              // Add separator if we have both types
-              if (specialTimeframesInAnalysis.length > 0) {
-                sections.push(
-                  new Paragraph({
-                    text: "OTHER TIMEFRAMES",
-                    heading: HeadingLevel.HEADING_2,
-                  }),
-                  new Paragraph({ text: "" })
-                );
-              }
-
-              regularTimeframesInAnalysis.forEach(timeframe => {
-                const timeframeDisplay = getTimeframeDisplayName(timeframe);
-                sections.push(...createSimpleTimeframeSection(timeframe, timeframeDisplay, answers || [], questions || []));
-              });
-            }
-
-            return sections;
-          })(),
-
-          // AI Analysis
-          ...(analysis.ai_summary ? [
-            new Paragraph({
-              text: "AI ANALYSIS",
-              heading: HeadingLevel.HEADING_2,
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "AI Summary: ", bold: true }),
-              ],
-            }),
-            new Paragraph({
-              text: analysis.ai_summary,
-            }),
-            new Paragraph({ text: "" }),
-          ] : []),
-
-          // Screenshots
-          ...(screenshots && screenshots.length > 0 ? [
-            new Paragraph({
-              text: "CHART SCREENSHOTS",
-              heading: HeadingLevel.HEADING_2,
-            }),
-            ...screenshots.map(screenshot => 
-              new Paragraph({
-                children: [
-                  new TextRun({ text: "- ", bold: true }),
-                  new TextRun({ text: screenshot.file_name }),
-                  new TextRun({ text: ` (${screenshot.timeframe} timeframe)` }),
-                ],
-              })
-            ),
-            new Paragraph({ text: "" }),
-          ] : []),
-          
-          // Disclaimer
-          new Paragraph({
-            text: "DISCLAIMER",
-            heading: HeadingLevel.HEADING_2,
-          }),
-          new Paragraph({
-            text: `This report is generated for ${analystName} based on their Top Down Analysis of ${analysis.currency_pair}. The AI analysis provided is for informational purposes only and should not be considered as trading advice. Always rely on your own analysis and risk management. Trading forex involves substantial risk of loss.`,
-          }),
-          new Paragraph({ text: "" }),
-          
-          // Footer
-          new Paragraph({
-            text: `Generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()} | Trader's Journal - Top Down Analysis Report`,
-            alignment: AlignmentType.CENTER,
-          }),
-        ],
-      }],
+          })
+        ]
+      }]
     });
 
-    console.log('Document created, packing...');
-    
-    // Pack the document
+    // Generate document buffer
     const buffer = await Packer.toBuffer(doc);
-    
-    console.log('Document packed, size:', buffer.length);
 
-    // Return the document as a .docx file
-    const fileName = `TDA_${analysis.currency_pair}_${new Date(analysis.analysis_date).toISOString().split('T')[0]}.docx`;
-    
-    console.log('Sending response with filename:', fileName);
-    
+    // Return the document
     return new NextResponse(buffer, {
-      status: 200,
       headers: {
         'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        'Content-Disposition': `attachment; filename="${fileName}"`,
-        'Content-Length': buffer.length.toString()
+        'Content-Disposition': `attachment; filename="TDA_${analysis.currency_pair}_${analysis.analysis_date}.docx"`
       }
     });
 
   } catch (error) {
     console.error('Export error:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
-  }
-}
-
-// Helper function to get timeframe display name
-function getTimeframeDisplayName(timeframe: string): string {
-  switch (timeframe) {
-    case 'DAILY': return 'Daily Candle Chart';
-    case 'H1': return '1-Hour Candle Chart';
-    case 'H2': return '2-Hour Candle Chart';
-    case 'H4': return '4-Hour Candle Chart';
-    case 'H8': return '8-Hour Candle Chart';
-    case 'M15': return '15-Minute Chart';
-    case 'M30': return '30-Minute Chart';
-    case 'M10': return '10-Minute Chart';
-    case 'W1': return 'Weekly Chart';
-    case 'MN1': return 'Monthly Chart';
-    default: return `${timeframe} Chart`;
+    return NextResponse.json({ error: 'Failed to export document' }, { status: 500 });
   }
 }
