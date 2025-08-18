@@ -463,15 +463,11 @@ export async function POST(request: NextRequest) {
           new Paragraph({
             children: [
               new TextRun({ text: "Analyst: ", bold: true }),
-              new TextRun({ text: analystName })
-            ],
-          }),
-          new Paragraph({
-            children: [
+              new TextRun({ text: analystName }),
+              new TextRun({ text: "     " }), // Spacing
               new TextRun({ text: "Analysis Date and Time: ", bold: true }),
               new TextRun({ text: new Date(analysis.analysis_date).toLocaleDateString() + " " + (analysis.analysis_time || "") })
             ],
-            alignment: AlignmentType.RIGHT,
           }),
           new Paragraph({
             children: [
