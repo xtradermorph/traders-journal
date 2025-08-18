@@ -5,16 +5,19 @@ import { Database } from '@/types/supabase';
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('Export request started');
     const supabase = createRouteHandlerClient<Database>({ cookies });
     
     // Check authentication
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.log('Auth error:', authError);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const body = await request.json();
     const { analysis_id, selected_timeframes } = body;
+    console.log('Request body:', { analysis_id, selected_timeframes });
 
     if (!analysis_id) {
       return NextResponse.json({ error: 'Analysis ID is required' }, { status: 400 });
@@ -29,8 +32,18 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (analysisError || !analysis) {
+      console.log('Analysis error:', analysisError);
       return NextResponse.json({ error: 'Analysis not found' }, { status: 404 });
     }
+
+    console.log('Analysis found:', analysis.currency_pair);
+
+    // Get all timeframes if none are selected
+    const timeframesToExport = selected_timeframes && selected_timeframes.length > 0 
+      ? selected_timeframes 
+      : ['DAILY', 'H1', 'M15', 'H4', 'H2', 'M30', 'M10', 'H8', 'W1', 'MN1'];
+
+    console.log('Timeframes to export:', timeframesToExport);
 
     // Fetch all related data
     const [answersResponse, questionsResponse, screenshotsResponse, userProfileResponse] = await Promise.all([
@@ -41,12 +54,12 @@ export async function POST(request: NextRequest) {
       supabase
         .from('tda_questions')
         .select('*')
-        .in('timeframe', selected_timeframes || []),
+        .in('timeframe', timeframesToExport),
       supabase
         .from('tda_screenshots')
         .select('*')
         .eq('analysis_id', analysis_id)
-        .in('timeframe', selected_timeframes || []),
+        .in('timeframe', timeframesToExport),
       supabase
         .from('profiles')
         .select('first_name, last_name, username')
@@ -54,8 +67,25 @@ export async function POST(request: NextRequest) {
         .single()
     ]);
 
-    if (answersResponse.error || questionsResponse.error || screenshotsResponse.error) {
-      return NextResponse.json({ error: 'Failed to fetch analysis data' }, { status: 500 });
+    console.log('Data fetched:', {
+      answers: answersResponse.data?.length || 0,
+      questions: questionsResponse.data?.length || 0,
+      screenshots: screenshotsResponse.data?.length || 0,
+      userProfile: !!userProfileResponse.data
+    });
+
+    // Check for errors but don't fail if some data is missing
+    if (answersResponse.error) {
+      console.error('Answers fetch error:', answersResponse.error);
+    }
+    if (questionsResponse.error) {
+      console.error('Questions fetch error:', questionsResponse.error);
+    }
+    if (screenshotsResponse.error) {
+      console.error('Screenshots fetch error:', screenshotsResponse.error);
+    }
+    if (userProfileResponse.error) {
+      console.error('User profile fetch error:', userProfileResponse.error);
     }
 
     const answers = answersResponse.data || [];
@@ -63,18 +93,24 @@ export async function POST(request: NextRequest) {
     const screenshots = screenshotsResponse.data || [];
     const userProfile = userProfileResponse.data;
 
+    console.log('Generating document...');
+
     // Generate simple text document
     const documentContent = generateSimpleDocument({
       analysis,
       answers,
       questions,
       screenshots,
-      selectedTimeframes: selected_timeframes || [],
+      selectedTimeframes: timeframesToExport,
       userProfile
     });
 
+    console.log('Document generated, length:', documentContent.length);
+
     // Return the document as a downloadable file
     const fileName = `TDA_${analysis.currency_pair}_${new Date(analysis.analysis_date).toISOString().split('T')[0]}.txt`;
+    
+    console.log('Sending response with filename:', fileName);
     
     return new NextResponse(documentContent, {
       status: 200,
