@@ -44,8 +44,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch questions' }, { status: 500 });
     }
 
-    // Generate AI analysis with only selected timeframes
-    const aiResponse = await generateAIAnalysis(answers, timeframe_analyses, questions, analysis.currency_pair, selected_timeframes);
+    // Fetch Alpha Vantage market data for enhanced AI analysis
+    const alphaVantageData = await fetchAlphaVantageData(analysis.currency_pair);
+
+    // Generate AI analysis with only selected timeframes and Alpha Vantage data
+    const aiResponse = await generateAIAnalysis(answers, timeframe_analyses, questions, analysis.currency_pair, selected_timeframes, alphaVantageData);
 
     // Update analysis with AI results
     const { error: updateError } = await supabase
@@ -116,24 +119,70 @@ export async function POST(request: NextRequest) {
   }
 }
 
+async function fetchAlphaVantageData(currencyPair: string) {
+  try {
+    const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
+    if (!apiKey) {
+      console.warn('Alpha Vantage API key not configured');
+      return null;
+    }
+
+    // Fetch current market data
+    const response = await fetch(
+      `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currencyPair.slice(0, 3)}&to_symbol=${currencyPair.slice(3, 6)}&apikey=${apiKey}`
+    );
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch Alpha Vantage data');
+    }
+
+    const data = await response.json();
+    
+    // Extract relevant market data
+    const timeSeriesData = data['Time Series FX (Daily)'];
+    if (!timeSeriesData) {
+      return null;
+    }
+
+    const dates = Object.keys(timeSeriesData).sort().reverse();
+    const latestData = timeSeriesData[dates[0]];
+    const previousData = timeSeriesData[dates[1]];
+
+    return {
+      currentPrice: parseFloat(latestData['4. close']),
+      previousPrice: parseFloat(previousData['4. close']),
+      dailyChange: parseFloat(latestData['4. close']) - parseFloat(previousData['4. close']),
+      dailyChangePercent: ((parseFloat(latestData['4. close']) - parseFloat(previousData['4. close'])) / parseFloat(previousData['4. close'])) * 100,
+      high: parseFloat(latestData['2. high']),
+      low: parseFloat(latestData['3. low']),
+      volume: parseFloat(latestData['5. volume']),
+      marketTrend: parseFloat(latestData['4. close']) > parseFloat(previousData['4. close']) ? 'BULLISH' : 'BEARISH'
+    };
+  } catch (error) {
+    console.error('Alpha Vantage fetch error:', error);
+    return null;
+  }
+}
+
 async function generateAIAnalysis(
   answers: Record<string, unknown>[],
   timeframeAnalyses: Record<string, unknown>[],
   questions: Record<string, unknown>[],
   currencyPair: string,
-  selectedTimeframes: TimeframeType[]
+  selectedTimeframes: TimeframeType[],
+  alphaVantageData?: any
 ): Promise<AIAnalysisResponse> {
   // Use OpenAI for real AI analysis
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     // Fallback to algorithm if no API key
     console.warn("No OpenAI API key found, using algorithm fallback");
-    return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair, selectedTimeframes);
+    return generateAlgorithmAnalysis(answers, timeframeAnalyses, questions, currencyPair, selectedTimeframes, alphaVantageData);
   }
 
   try {
-    // Get current market data for the currency pair
-    const marketData = await fetchMarketData(currencyPair);
+    // Use Alpha Vantage data if available, otherwise fetch market data
+    const marketData = alphaVantageData || await fetchMarketData(currencyPair);
     
     // Prepare data for OpenAI - only include selected timeframes
     const analysisData = {
@@ -164,7 +213,7 @@ USER ANALYSIS DATA:
 ${JSON.stringify(analysisData, null, 2)}
 
 ALPHA VANTAGE MARKET DATA:
-${JSON.stringify(marketData, null, 2)}
+${alphaVantageData ? JSON.stringify(alphaVantageData, null, 2) : 'Market data unavailable'}
 
 TASK: Provide a comprehensive trading analysis based on the user's timeframe analysis and real-time Alpha Vantage market data.
 
@@ -487,7 +536,8 @@ function generateAlgorithmAnalysis(
   timeframeAnalyses: Record<string, unknown>[],
   questions: Record<string, unknown>[],
   currencyPair: string,
-  selectedTimeframes: TimeframeType[]
+  selectedTimeframes: TimeframeType[],
+  alphaVantageData?: any
 ): AIAnalysisResponse {
   
   // Initialize only selected timeframes with default values
@@ -533,7 +583,7 @@ function generateAlgorithmAnalysis(
     weightedSum += timeframeScores[timeframe] * weight;
   });
 
-  const overallProbability = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 100) / 100 : 50;
+  let overallProbability = totalWeight > 0 ? Math.round((weightedSum / totalWeight) * 100) / 100 : 50;
 
   // Determine trade recommendation
   let tradeRecommendation: 'LONG' | 'SHORT' | 'NEUTRAL' | 'AVOID';
@@ -556,6 +606,28 @@ function generateAlgorithmAnalysis(
     tradeRecommendation = 'AVOID';
     confidenceLevel = 100 - overallProbability;
     riskLevel = 'HIGH';
+  }
+
+  // Enhance metrics with Alpha Vantage data if available
+  if (alphaVantageData) {
+    const marketAlignment = calculateMarketAlignment(timeframeSentiments, alphaVantageData);
+    
+    // Adjust probability based on market alignment
+    if (marketAlignment > 0.7) {
+      overallProbability = Math.min(100, overallProbability + 10);
+    } else if (marketAlignment < 0.3) {
+      overallProbability = Math.max(0, overallProbability - 10);
+    }
+
+    // Adjust confidence based on market volatility
+    const volatility = Math.abs(alphaVantageData.dailyChangePercent);
+    if (volatility > 2) {
+      confidenceLevel = Math.max(0, confidenceLevel - 15);
+      riskLevel = 'HIGH';
+    } else if (volatility < 0.5) {
+      confidenceLevel = Math.min(100, confidenceLevel + 10);
+      riskLevel = 'LOW';
+    }
   }
 
   // Generate enhanced AI summary and reasoning
@@ -588,6 +660,25 @@ function generateAlgorithmAnalysis(
     technical_indicators: generateTechnicalIndicators(answers, questions, selectedTimeframes),
     timeframe_breakdown: timeframeBreakdown
   };
+}
+
+function calculateMarketAlignment(timeframeSentiments: Record<TimeframeType, string>, alphaVantageData: any) {
+  if (!alphaVantageData) return 0.5;
+
+  const marketTrend = alphaVantageData.marketTrend;
+  const bullishTimeframes = Object.values(timeframeSentiments).filter(sentiment => sentiment === 'BULLISH').length;
+  const bearishTimeframes = Object.values(timeframeSentiments).filter(sentiment => sentiment === 'BEARISH').length;
+  const totalTimeframes = Object.keys(timeframeSentiments).length;
+
+  if (totalTimeframes === 0) return 0.5;
+
+  const analysisTrend = bullishTimeframes > bearishTimeframes ? 'BULLISH' : 'BEARISH';
+  
+  if (marketTrend === analysisTrend) {
+    return Math.max(0.7, (Math.max(bullishTimeframes, bearishTimeframes) / totalTimeframes));
+  } else {
+    return Math.min(0.3, (Math.min(bullishTimeframes, bearishTimeframes) / totalTimeframes));
+  }
 }
 
 function analyzeTimeframe(timeframe: TimeframeType, answers: Record<string, unknown>[], questions: Record<string, unknown>[]): {

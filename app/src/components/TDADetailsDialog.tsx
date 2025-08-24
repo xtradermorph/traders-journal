@@ -37,6 +37,9 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
   const [selectedScreenshot, setSelectedScreenshot] = useState<TDAScreenshot | null>(null);
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [enhancedReasoning, setEnhancedReasoning] = useState<any[]>([]);
+  const [updatedMetrics, setUpdatedMetrics] = useState<any>(null);
+  const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false);
   const { toast } = useToast();
 
   const fetchAnalysisData = useCallback(async () => {
@@ -48,6 +51,9 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
       }
       const result = await response.json();
       setData(result);
+      
+      // Fetch enhanced analysis with Alpha Vantage data
+      await fetchEnhancedAnalysis(result.analysis);
     } catch (error) {
       console.error('Error fetching analysis data:', error);
       toast({
@@ -59,6 +65,32 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
       setLoading(false);
     }
   }, [analysisId, toast]);
+
+  const fetchEnhancedAnalysis = async (analysis: any) => {
+    setIsLoadingEnhanced(true);
+    try {
+      const response = await fetch('/api/tda/enhanced-analysis', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          analysisId: analysis.id,
+          currencyPair: analysis.currency_pair
+        })
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setEnhancedReasoning(result.enhancedReasoning || []);
+        setUpdatedMetrics(result.updatedMetrics || null);
+      }
+    } catch (error) {
+      console.error('Error fetching enhanced analysis:', error);
+    } finally {
+      setIsLoadingEnhanced(false);
+    }
+  };
 
   const handleDownload = async () => {
     if (!data) return;
@@ -349,7 +381,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                             year: 'numeric', 
                             month: 'short', 
                             day: 'numeric' 
-                          })} at {data.analysis.analysis_time}
+                          })} at {data.analysis.analysis_time.replace(/:\d{2}$/, '')}
                         </>
                       ) : data.analysis?.completed_at ? (
                         new Date(data.analysis.completed_at).toLocaleTimeString('en-US', { 
@@ -625,35 +657,138 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                  {data.analysis?.ai_summary && (
-                    <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
-                      <h4 className="font-medium text-slate-800 mb-2">Summary</h4>
-                      <p className="text-sm text-slate-700">{data.analysis.ai_summary}</p>
+                  <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
+                    <h4 className="font-medium text-slate-800 mb-2">Summary</h4>
+                    <p className="text-sm text-slate-700">
+                      {(() => {
+                        // Use the original AI summary that was generated during TDA completion
+                        // This summary was created by analyzing ALL the questions, answers, and timeframe data
+                        if (data.analysis?.ai_summary) {
+                          return data.analysis.ai_summary;
+                        }
+
+                        // Fallback: Generate a basic summary if no AI summary exists
+                        const timeframes = getSelectedTimeframes();
+                        if (timeframes.length === 0) {
+                          return 'No analysis data available.';
+                        }
+
+                        // Get current sentiment data for each timeframe
+                        const timeframeSentiments = timeframes.map(timeframe => {
+                          const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
+                          return {
+                            timeframe: getTimeframeDisplayName(timeframe),
+                            sentiment: timeframeAnalysis?.timeframe_sentiment || 'NEUTRAL'
+                          };
+                        });
+
+                        // Calculate overall sentiment
+                        const bullishCount = timeframeSentiments.filter(t => t.sentiment === 'BULLISH').length;
+                        const bearishCount = timeframeSentiments.filter(t => t.sentiment === 'BEARISH').length;
+                        const neutralCount = timeframeSentiments.filter(t => t.sentiment === 'NEUTRAL').length;
+
+                        let overallSentiment = 'neutral';
+                        if (bullishCount > bearishCount && bullishCount > neutralCount) {
+                          overallSentiment = 'bullish';
+                        } else if (bearishCount > bullishCount && bearishCount > neutralCount) {
+                          overallSentiment = 'bearish';
+                        }
+
+                        // Generate summary text
+                        const timeframeText = timeframeSentiments.map(t => `${t.timeframe}: ${t.sentiment.toLowerCase()}`).join(', ');
+                        const probability = data.analysis?.overall_probability || 50;
+                        
+                        return `Top Down Analysis for ${data.analysis?.currency_pair} shows a ${probability.toFixed(1)}% probability of a ${overallSentiment} move. Key timeframes: ${timeframeText}. Recommendation: ${data.analysis?.trade_recommendation === 'AVOID' ? 'Avoid trading at this time' : `Consider ${data.analysis?.trade_recommendation?.toLowerCase() || 'neutral'} position`}.`;
+                      })()}
+                    </p>
+                  </div>
+                  <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
+                    <h4 className="font-medium text-slate-800 mb-2">Reasoning</h4>
+                    <div className="space-y-3">
+                      {isLoadingEnhanced ? (
+                        <div className="flex items-center justify-center py-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-indigo-600"></div>
+                          <span className="ml-2 text-sm text-slate-600">Loading enhanced analysis...</span>
+                        </div>
+                      ) : (() => {
+                        const timeframes = getSelectedTimeframes();
+                        if (timeframes.length === 0) {
+                          return <p className="text-sm text-slate-500">No reasoning data available.</p>;
+                        }
+
+                        return timeframes.map((timeframe: string) => {
+                          const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
+                          const enhancedReasoningData = enhancedReasoning.find(er => er.timeframe === timeframe);
+                          
+                          // Use enhanced reasoning if available, otherwise fallback to existing data
+                          let reasoning = enhancedReasoningData?.reasoning || 
+                                        timeframeAnalysis?.analysis_data?.ai_reasoning || 
+                                        timeframeAnalysis?.analysis_data?.reasoning || 
+                                        'Analysis completed based on user input and market conditions.';
+                          
+                          // Clean up reasoning - remove technical indicators and make it brief
+                          reasoning = reasoning
+                            .replace(/RSI|MACD|Moving Average|Technical indicators?/gi, '')
+                            .replace(/\s+/g, ' ')
+                            .trim();
+                          
+                          // Limit to brief opinion (max 100 characters)
+                          if (reasoning.length > 100) {
+                            reasoning = reasoning.substring(0, 100) + '...';
+                          }
+                          
+                          return (
+                            <div key={timeframe} className="border-l-4 border-indigo-200 pl-3 py-2">
+                              <div className="flex items-center justify-between mb-1">
+                                <h5 className="text-sm font-semibold text-slate-800">
+                                  {getTimeframeDisplayName(timeframe)} Analysis
+                                </h5>
+                                <Badge className={timeframeAnalysis?.timeframe_sentiment === 'BULLISH' ? 'bg-green-100 text-green-800' : timeframeAnalysis?.timeframe_sentiment === 'BEARISH' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}>
+                                  {timeframeAnalysis?.timeframe_sentiment === 'BULLISH' ? 'Bullish' : timeframeAnalysis?.timeframe_sentiment === 'BEARISH' ? 'Bearish' : 'Neutral'}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-slate-600 leading-relaxed">
+                                {reasoning}
+                              </p>
+                            </div>
+                          );
+                        });
+                      })()}
                     </div>
-                  )}
-                  {data.analysis?.ai_reasoning && (
-                    <div className="bg-white/70 rounded-lg p-3 border border-indigo-200">
-                      <h4 className="font-medium text-slate-800 mb-2">Reasoning</h4>
-                      <p className="text-sm text-slate-700">{data.analysis.ai_reasoning}</p>
-                    </div>
-                  )}
+                  </div>
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {data.analysis?.overall_probability && (
+                    {(updatedMetrics?.overall_probability || data.analysis?.overall_probability) && (
                       <div className="bg-white/70 rounded-lg p-3 border border-indigo-200 text-center">
                         <p className="text-xs text-slate-600">Overall Probability</p>
-                        <p className="text-lg font-bold text-indigo-600">{data.analysis.overall_probability}%</p>
+                        <p className="text-lg font-bold text-indigo-600">
+                          {updatedMetrics?.overall_probability || data.analysis?.overall_probability}%
+                          {updatedMetrics?.overall_probability && updatedMetrics.overall_probability !== data.analysis?.overall_probability && (
+                            <span className="text-xs text-green-600 ml-1">↑</span>
+                          )}
+                        </p>
                       </div>
                     )}
-                    {data.analysis?.confidence_level && (
+                    {(updatedMetrics?.confidence_level || data.analysis?.confidence_level) && (
                       <div className="bg-white/70 rounded-lg p-3 border border-indigo-200 text-center">
                         <p className="text-xs text-slate-600">Confidence Level</p>
-                        <p className="text-lg font-bold text-indigo-600">{data.analysis.confidence_level}%</p>
+                        <p className="text-lg font-bold text-indigo-600">
+                          {updatedMetrics?.confidence_level || data.analysis?.confidence_level}%
+                          {updatedMetrics?.confidence_level && updatedMetrics.confidence_level !== data.analysis?.confidence_level && (
+                            <span className="text-xs text-green-600 ml-1">↑</span>
+                          )}
+                        </p>
                       </div>
                     )}
-                    {data.analysis?.risk_level && (
+                    {(updatedMetrics?.risk_level || data.analysis?.risk_level) && (
                       <div className="bg-white/70 rounded-lg p-3 border border-indigo-200 text-center">
                         <p className="text-xs text-slate-600">Risk Level</p>
-                        <p className="text-lg font-bold text-indigo-600">{data.analysis.risk_level}</p>
+                        <Badge className={
+                          (updatedMetrics?.risk_level || data.analysis?.risk_level) === 'HIGH' ? 'bg-red-100 text-red-700 border-red-200' :
+                          (updatedMetrics?.risk_level || data.analysis?.risk_level) === 'MEDIUM' ? 'bg-yellow-100 text-yellow-700 border-yellow-200' :
+                          'bg-green-100 text-green-700 border-green-200'
+                        }>
+                          {updatedMetrics?.risk_level || data.analysis?.risk_level}
+                        </Badge>
                       </div>
                     )}
                   </div>
