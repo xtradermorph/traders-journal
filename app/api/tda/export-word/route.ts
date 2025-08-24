@@ -138,47 +138,139 @@ export async function POST(request: NextRequest) {
     };
 
     // Helper function to create cell with mixed colored text
-    const createMixedColorCell = (text: string, bold: boolean = false, alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT, width: number = 20) => {
+    const createMixedColorCell = (text: string, bold: boolean = false, alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT, width: number = 20, isAnalysis: boolean = false) => {
       const textRuns: TextRun[] = [];
       const words = text.split(' ');
       
-      for (let i = 0; i < words.length; i++) {
-        const word = words[i];
-        const lowerWord = word.toLowerCase();
-        let color: string | undefined;
-        
-        // Check for exact keyword matches
-        if (lowerWord === 'bullish' || lowerWord === 'long' || lowerWord === 'oversold' || lowerWord === 'green') {
-          color = "008000"; // Green
-        } else if (lowerWord === 'bearish' || lowerWord === 'short' || lowerWord === 'overbought' || lowerWord === 'red') {
-          color = "ff0000"; // Red
-        } else if (lowerWord === 'nz' && i + 2 < words.length && words[i + 1].toLowerCase() === 'from' && words[i + 2].toLowerCase() === 'oversold') {
-          color = "008000"; // Green
-          // Add the next two words with the same color
+      // Special formatting for Analysis sections
+      if (isAnalysis) {
+        // Make "Analysis:" distinctive with larger, bold font
+        const analysisIndex = text.indexOf('Analysis:');
+        if (analysisIndex !== -1) {
+          // Add "Analysis:" with special formatting
           textRuns.push(new TextRun({ 
-            text: word + ' ' + words[i + 1] + ' ' + words[i + 2] + (i + 2 < words.length - 1 ? ' ' : ''), 
-            bold, 
-            color: "008000"
+            text: "Analysis: ", 
+            bold: true,
+            size: 24, // Larger font for Analysis
+            color: "1e40af" // Blue color for Analysis
           }));
-          i += 2; // Skip the next two words
-          continue;
-        } else if (lowerWord === 'nz' && i + 2 < words.length && words[i + 1].toLowerCase() === 'from' && words[i + 2].toLowerCase() === 'overbought') {
-          color = "ff0000"; // Red
-          // Add the next two words with the same color
-          textRuns.push(new TextRun({ 
-            text: word + ' ' + words[i + 1] + ' ' + words[i + 2] + (i + 2 < words.length - 1 ? ' ' : ''), 
-            bold, 
-            color: "ff0000"
-          }));
-          i += 2; // Skip the next two words
-          continue;
+          
+          // Add the rest of the text
+          const remainingText = text.substring(analysisIndex + 9);
+          const remainingWords = remainingText.split(' ');
+          
+          for (let i = 0; i < remainingWords.length; i++) {
+            const word = remainingWords[i];
+            const lowerWord = word.toLowerCase();
+            let color: string | undefined;
+            
+            // Check for exact keyword matches
+            if (lowerWord === 'bullish' || lowerWord === 'long' || lowerWord === 'oversold' || lowerWord === 'green') {
+              color = "008000"; // Green
+            } else if (lowerWord === 'bearish' || lowerWord === 'short' || lowerWord === 'overbought' || lowerWord === 'red') {
+              color = "ff0000"; // Red
+            } else if (lowerWord === 'nz' && i + 2 < remainingWords.length && remainingWords[i + 1].toLowerCase() === 'from' && remainingWords[i + 2].toLowerCase() === 'oversold') {
+              color = "008000"; // Green
+              textRuns.push(new TextRun({ 
+                text: word + ' ' + remainingWords[i + 1] + ' ' + remainingWords[i + 2] + (i + 2 < remainingWords.length - 1 ? ' ' : ''), 
+                bold, 
+                color: "008000"
+              }));
+              i += 2;
+              continue;
+            } else if (lowerWord === 'nz' && i + 2 < remainingWords.length && remainingWords[i + 1].toLowerCase() === 'from' && remainingWords[i + 2].toLowerCase() === 'overbought') {
+              color = "ff0000"; // Red
+              textRuns.push(new TextRun({ 
+                text: word + ' ' + remainingWords[i + 1] + ' ' + remainingWords[i + 2] + (i + 2 < remainingWords.length - 1 ? ' ' : ''), 
+                bold, 
+                color: "ff0000"
+              }));
+              i += 2;
+              continue;
+            }
+            
+            textRuns.push(new TextRun({ 
+              text: word + (i < remainingWords.length - 1 ? ' ' : ''), 
+              bold, 
+              color: color || "000000"
+            }));
+          }
+        } else {
+          // Fallback if "Analysis:" not found
+          for (let i = 0; i < words.length; i++) {
+            const word = words[i];
+            const lowerWord = word.toLowerCase();
+            let color: string | undefined;
+            
+            if (lowerWord === 'bullish' || lowerWord === 'long' || lowerWord === 'oversold' || lowerWord === 'green') {
+              color = "008000";
+            } else if (lowerWord === 'bearish' || lowerWord === 'short' || lowerWord === 'overbought' || lowerWord === 'red') {
+              color = "ff0000";
+            } else if (lowerWord === 'nz' && i + 2 < words.length && words[i + 1].toLowerCase() === 'from' && words[i + 2].toLowerCase() === 'oversold') {
+              textRuns.push(new TextRun({ 
+                text: word + ' ' + words[i + 1] + ' ' + words[i + 2] + (i + 2 < words.length - 1 ? ' ' : ''), 
+                bold, 
+                color: "008000"
+              }));
+              i += 2;
+              continue;
+            } else if (lowerWord === 'nz' && i + 2 < words.length && words[i + 1].toLowerCase() === 'from' && words[i + 2].toLowerCase() === 'overbought') {
+              textRuns.push(new TextRun({ 
+                text: word + ' ' + words[i + 1] + ' ' + words[i + 2] + (i + 2 < words.length - 1 ? ' ' : ''), 
+                bold, 
+                color: "ff0000"
+              }));
+              i += 2;
+              continue;
+            }
+            
+            textRuns.push(new TextRun({ 
+              text: word + (i < words.length - 1 ? ' ' : ''), 
+              bold, 
+              color: color || "000000"
+            }));
+          }
         }
-        
-        textRuns.push(new TextRun({ 
-          text: word + (i < words.length - 1 ? ' ' : ''), 
-          bold, 
-          color: color || "000000" // Default to black
-        }));
+      } else {
+        // Regular formatting for non-Analysis sections
+        for (let i = 0; i < words.length; i++) {
+          const word = words[i];
+          const lowerWord = word.toLowerCase();
+          let color: string | undefined;
+          
+          // Check for exact keyword matches
+          if (lowerWord === 'bullish' || lowerWord === 'long' || lowerWord === 'oversold' || lowerWord === 'green') {
+            color = "008000"; // Green
+          } else if (lowerWord === 'bearish' || lowerWord === 'short' || lowerWord === 'overbought' || lowerWord === 'red') {
+            color = "ff0000"; // Red
+          } else if (lowerWord === 'nz' && i + 2 < words.length && words[i + 1].toLowerCase() === 'from' && words[i + 2].toLowerCase() === 'oversold') {
+            color = "008000"; // Green
+            // Add the next two words with the same color
+            textRuns.push(new TextRun({ 
+              text: word + ' ' + words[i + 1] + ' ' + words[i + 2] + (i + 2 < words.length - 1 ? ' ' : ''), 
+              bold, 
+              color: "008000"
+            }));
+            i += 2; // Skip the next two words
+            continue;
+          } else if (lowerWord === 'nz' && i + 2 < words.length && words[i + 1].toLowerCase() === 'from' && words[i + 2].toLowerCase() === 'overbought') {
+            color = "ff0000"; // Red
+            // Add the next two words with the same color
+            textRuns.push(new TextRun({ 
+              text: word + ' ' + words[i + 1] + ' ' + words[i + 2] + (i + 2 < words.length - 1 ? ' ' : ''), 
+              bold, 
+              color: "ff0000"
+            }));
+            i += 2; // Skip the next two words
+            continue;
+          }
+          
+          textRuns.push(new TextRun({ 
+            text: word + (i < words.length - 1 ? ' ' : ''), 
+            bold, 
+            color: color || "000000" // Default to black
+          }));
+        }
       }
       
       return new TableCell({
@@ -187,15 +279,15 @@ export async function POST(request: NextRequest) {
             children: textRuns,
             alignment,
             spacing: {
-              before: 40,
-              after: 40
+              before: isAnalysis ? 80 : 40, // More spacing for Analysis sections
+              after: isAnalysis ? 80 : 40
             }
           })
         ],
         width: { size: width, type: WidthType.PERCENTAGE },
         margins: {
-          top: 60,
-          bottom: 60,
+          top: isAnalysis ? 120 : 60, // More margins for Analysis sections
+          bottom: isAnalysis ? 120 : 60,
           left: 60,
           right: 60
         }
@@ -409,26 +501,28 @@ export async function POST(request: NextRequest) {
       
       const elements: any[] = [];
       
-      // Header - timeframe display (centered, black, uppercase)
+      // Header - timeframe display (centered, black, uppercase, larger font)
       elements.push(new Paragraph({
         children: [
           new TextRun({ 
             text: timeframeDisplay.toUpperCase(), 
             bold: true,
-            color: "000000" // Black color
+            color: "000000", // Black color
+            size: 32 // Larger font size for main header
           })
         ],
         heading: HeadingLevel.HEADING_2,
         alignment: AlignmentType.CENTER
       }));
       
-      // Trader type (centered, black, uppercase)
+      // Trader type (centered, black, uppercase, smaller font)
       elements.push(new Paragraph({
         children: [
           new TextRun({ 
             text: traderType.toUpperCase(), 
             bold: true,
-            color: "000000" // Black color
+            color: "000000", // Black color
+            size: 20 // Smaller font size for trader sentiment
           })
         ],
         heading: HeadingLevel.HEADING_3,
@@ -441,6 +535,11 @@ export async function POST(request: NextRequest) {
       organizedRows.forEach(rowQuestions => {
         if (rowQuestions.length === 0) return;
         
+        // Check if this row contains Analysis questions
+        const hasAnalysis = rowQuestions.some(answer => 
+          answer.tda_questions?.question_text === 'Analysis'
+        );
+        
         // Create a table row for this group of questions
         const cells: TableCell[] = [];
         
@@ -450,12 +549,16 @@ export async function POST(request: NextRequest) {
             const value = getAnswerValue(answer);
             const cellWidth = 100 / rowQuestions.length; // Dynamic width based on actual questions
             
+            // Check if this is an Analysis question for special formatting
+            const isAnalysis = question.question_text === 'Analysis';
+            
             // Create cell with mixed color text
             cells.push(createMixedColorCell(
               `${question.question_text}: ${value || ""}`, 
               true, 
               AlignmentType.LEFT, 
-              cellWidth
+              cellWidth,
+              isAnalysis // Pass analysis flag for special formatting
             ));
           }
         });
@@ -492,43 +595,84 @@ export async function POST(request: NextRequest) {
       return elements;
     };
 
-    // Helper function to create simple timeframe section for other timeframes
-    const createSimpleTimeframeSection = (timeframe: string, timeframeDisplay: string, answers: any[]) => {
-      const timeframeAnswers = answers.filter(a => a.tda_questions?.timeframe === timeframe);
-      
-      const elements: any[] = [];
-      
-      // Header
-      elements.push(new Paragraph({
-        text: timeframeDisplay,
-        heading: HeadingLevel.HEADING_3,
-      }));
-      
-      elements.push(new Paragraph({
-        text: getTraderType(timeframe),
-        heading: HeadingLevel.HEADING_4,
-      }));
-      
-      elements.push(new Paragraph({ text: "" }));
+         // Helper function to create simple timeframe section for other timeframes
+     const createSimpleTimeframeSection = (timeframe: string, timeframeDisplay: string, answers: any[]) => {
+       const timeframeAnswers = answers.filter(a => a.tda_questions?.timeframe === timeframe);
+       
+       const elements: any[] = [];
+       
+       // Header - timeframe display (centered, black, uppercase, larger font)
+       elements.push(new Paragraph({
+         children: [
+           new TextRun({ 
+             text: timeframeDisplay.toUpperCase(), 
+             bold: true,
+             color: "000000", // Black color
+             size: 32 // Larger font size for main header
+           })
+         ],
+         heading: HeadingLevel.HEADING_2,
+         alignment: AlignmentType.CENTER
+       }));
+       
+       // Trader type (centered, black, uppercase, smaller font)
+       elements.push(new Paragraph({
+         children: [
+           new TextRun({ 
+             text: getTraderType(timeframe).toUpperCase(), 
+             bold: true,
+             color: "000000", // Black color
+             size: 20 // Smaller font size for trader sentiment
+           })
+         ],
+         heading: HeadingLevel.HEADING_3,
+         alignment: AlignmentType.CENTER
+       }));
+       
+       elements.push(new Paragraph({ text: "" }));
 
-      // Add questions and answers
-      timeframeAnswers.forEach(answer => {
-        const question = answer.tda_questions;
-        if (!question) return;
+       // Add questions and answers
+       timeframeAnswers.forEach(answer => {
+         const question = answer.tda_questions;
+         if (!question) return;
 
-        const valueText = getAnswerValue(answer);
-        const color = getTextColor(valueText);
+         const valueText = getAnswerValue(answer);
+         const color = getTextColor(valueText);
+         const isAnalysis = question.question_text === 'Analysis';
 
-        elements.push(new Paragraph({
-          children: [
-            new TextRun({ text: `${question.question_text}: `, bold: true }),
-            new TextRun({ text: valueText || "Not answered", color })
-          ]
-        }));
-      });
+         // Special formatting for Analysis sections
+         if (isAnalysis) {
+           elements.push(new Paragraph({
+             children: [
+               new TextRun({ 
+                 text: "Analysis: ", 
+                 bold: true,
+                 size: 24, // Larger font for Analysis
+                 color: "1e40af" // Blue color for Analysis
+               }),
+               new TextRun({ 
+                 text: valueText || "Not answered", 
+                 color: color || "000000",
+                 size: 20
+               })
+             ],
+             spacing: {
+               before: 80,
+               after: 80
+             }
+           }));
+         } else {
+           elements.push(new Paragraph({
+             children: [
+               new TextRun({ text: `${question.question_text}: `, bold: true }),
+               new TextRun({ text: valueText || "Not answered", color })
+             ]
+           }));
+         }
+       });
 
-      return elements;
-    };
+       return elements;
+     };
 
     // Create document
     const doc = new Document({
@@ -629,20 +773,42 @@ export async function POST(request: NextRequest) {
             }),
             new Paragraph({ text: "" }),
 
-          // Timeframe Analysis Sections
-          ...selectedTimeframes.flatMap(timeframe => {
-            const timeframeDisplay = getTimeframeDisplayName(timeframe);
-            
-            if (specialTimeframes.includes(timeframe as TimeframeType)) {
-              // Use flexible format for special timeframes
-              const traderType = getTraderType(timeframe);
-              
-              return createFlexibleTimeframeSection(timeframe, timeframeDisplay, traderType);
-            } else {
-              // Use simple format for other timeframes
-              return createSimpleTimeframeSection(timeframe, timeframeDisplay, answers || []);
-            }
-          }),
+                     // Timeframe Analysis Sections
+           ...selectedTimeframes.flatMap((timeframe, index) => {
+             const timeframeDisplay = getTimeframeDisplayName(timeframe);
+             
+             // Add separator line before each timeframe (except the first one)
+             const separatorElements = index > 0 ? [
+               new Paragraph({ text: "" }),
+               new Paragraph({
+                 children: [
+                   new TextRun({ 
+                     text: "─".repeat(80), // Separator line
+                     color: "1e40af", // Blue color
+                     size: 16
+                   })
+                 ],
+                 alignment: AlignmentType.CENTER
+               }),
+               new Paragraph({ text: "" })
+             ] : [];
+             
+             if (specialTimeframes.includes(timeframe as TimeframeType)) {
+               // Use flexible format for special timeframes
+               const traderType = getTraderType(timeframe);
+               
+               return [
+                 ...separatorElements,
+                 ...createFlexibleTimeframeSection(timeframe, timeframeDisplay, traderType)
+               ];
+             } else {
+               // Use simple format for other timeframes
+               return [
+                 ...separatorElements,
+                 ...createSimpleTimeframeSection(timeframe, timeframeDisplay, answers || [])
+               ];
+             }
+           }),
 
           // AI Analysis Section (only if AI analysis exists and was selected)
           ...(analysis.ai_analysis ? [
