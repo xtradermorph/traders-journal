@@ -81,9 +81,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch answers' }, { status: 500 });
     }
 
-    // Get unique timeframes from answers (only show selected timeframes)
-    const selectedTimeframes = answers ? 
-      Array.from(new Set(answers.map(a => a.tda_questions?.timeframe).filter(Boolean))) : [];
+         // Get unique timeframes from answers and sort from higher to lower timeframes
+     const timeframeOrder = ['DAILY', 'H4', 'H1', 'M30', 'M15', 'M5', 'M1'];
+     const selectedTimeframes = answers ? 
+       Array.from(new Set(answers.map(a => a.tda_questions?.timeframe).filter(Boolean)))
+         .sort((a, b) => {
+           const aIndex = timeframeOrder.indexOf(a);
+           const bIndex = timeframeOrder.indexOf(b);
+           return aIndex - bIndex; // Sort from higher to lower timeframes
+         }) : [];
 
     // Special timeframes that use the detailed table format
     const specialTimeframes: TimeframeType[] = ['DAILY', 'H1', 'M15'];
