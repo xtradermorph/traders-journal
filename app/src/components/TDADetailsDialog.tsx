@@ -321,16 +321,26 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                   </div>
                   <div className="flex items-center space-x-2">
                     <Clock className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-slate-700">Time:</span>
+                    <span className="text-sm font-medium text-slate-700">Analysis Date & Time:</span>
                     <span className="text-sm text-slate-600">
-                      {data.analysis?.completed_at 
-                        ? new Date(data.analysis.completed_at).toLocaleTimeString('en-US', { 
-                            hour: '2-digit', 
-                            minute: '2-digit',
-                            hour12: true 
-                          })
-                        : 'N/A'
-                      }
+                      {data.analysis?.analysis_date && data.analysis?.analysis_time ? (
+                        <>
+                          {new Date(data.analysis.analysis_date).toLocaleDateString('en-US', { 
+                            weekday: 'short', 
+                            year: 'numeric', 
+                            month: 'short', 
+                            day: 'numeric' 
+                          })} at {data.analysis.analysis_time}
+                        </>
+                      ) : data.analysis?.completed_at ? (
+                        new Date(data.analysis.completed_at).toLocaleTimeString('en-US', { 
+                          hour: '2-digit', 
+                          minute: '2-digit',
+                          hour12: true 
+                        })
+                      ) : (
+                        'N/A'
+                      )}
                     </span>
                   </div>
                   <div className="flex items-center space-x-2">
