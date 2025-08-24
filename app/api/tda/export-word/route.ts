@@ -187,17 +187,17 @@ export async function POST(request: NextRequest) {
             children: textRuns,
             alignment,
             spacing: {
-              before: 100,
-              after: 100
+              before: 60,
+              after: 60
             }
           })
         ],
         width: { size: width, type: WidthType.PERCENTAGE },
         margins: {
-          top: 150,
-          bottom: 150,
-          left: 150,
-          right: 150
+          top: 80,
+          bottom: 80,
+          left: 80,
+          right: 80
         }
       });
     };
@@ -433,6 +433,7 @@ export async function POST(request: NextRequest) {
                 alignment: AlignmentType.CENTER
               })
             ],
+            columnSpan: 4, // Span across all columns
             width: { size: 100, type: WidthType.PERCENTAGE },
             margins: { top: 200, bottom: 200, left: 200, right: 200 }
           })
@@ -455,6 +456,7 @@ export async function POST(request: NextRequest) {
                 alignment: AlignmentType.CENTER
               })
             ],
+            columnSpan: 4, // Span across all columns
             width: { size: 100, type: WidthType.PERCENTAGE },
             margins: { top: 200, bottom: 200, left: 200, right: 200 }
           })
@@ -467,21 +469,28 @@ export async function POST(request: NextRequest) {
         
         const cells: TableCell[] = [];
         
-        rowQuestions.forEach(answer => {
-          const question = answer.tda_questions;
-          if (!question) return;
-          
-          const value = getAnswerValue(answer);
-          const cellWidth = 100 / rowQuestions.length;
-          
-          // Use mixed color cell for better keyword coloring
-          cells.push(createMixedColorCell(
-            `${question.question_text}: ${value || ""}`, 
-            true, 
-            AlignmentType.LEFT, 
-            cellWidth
-          ));
-        });
+        // Always create 4 cells for consistent layout
+        for (let i = 0; i < 4; i++) {
+          const answer = rowQuestions[i];
+          if (answer) {
+            const question = answer.tda_questions;
+            if (question) {
+              const value = getAnswerValue(answer);
+              
+              // Use mixed color cell for better keyword coloring
+              cells.push(createMixedColorCell(
+                `${question.question_text}: ${value || ""}`, 
+                true, 
+                AlignmentType.LEFT, 
+                25 // Fixed width for each cell
+              ));
+            } else {
+              cells.push(createEmptyCell(25));
+            }
+          } else {
+            cells.push(createEmptyCell(25));
+          }
+        }
         
         if (cells.length > 0) {
           rows.push(new TableRow({ children: cells }));
@@ -498,10 +507,10 @@ export async function POST(request: NextRequest) {
           right: 200
         },
         borders: {
-          top: { style: BorderStyle.SINGLE, size: 4, color: "1e40af" },
-          bottom: { style: BorderStyle.SINGLE, size: 4, color: "1e40af" },
-          left: { style: BorderStyle.SINGLE, size: 4, color: "1e40af" },
-          right: { style: BorderStyle.SINGLE, size: 4, color: "1e40af" },
+          top: { style: BorderStyle.SINGLE, size: 8, color: "1e40af" },
+          bottom: { style: BorderStyle.SINGLE, size: 8, color: "1e40af" },
+          left: { style: BorderStyle.SINGLE, size: 8, color: "1e40af" },
+          right: { style: BorderStyle.SINGLE, size: 8, color: "1e40af" },
           insideHorizontal: { style: BorderStyle.NONE },
           insideVertical: { style: BorderStyle.NONE }
         }
