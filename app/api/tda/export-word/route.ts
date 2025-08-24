@@ -165,6 +165,25 @@ export async function POST(request: NextRequest) {
       return "";
     };
 
+    // Helper function to get color for text based on specific keywords
+    const getTextColor = (text: string): string | undefined => {
+      if (!text || typeof text !== 'string') return undefined;
+      
+      const lowerText = text.toLowerCase();
+      
+      // Green colors for bullish terms
+      if (lowerText.includes('bullish') || lowerText.includes('long') || lowerText.includes('oversold') || lowerText.includes('nz from oversold') || lowerText.includes('green')) {
+        return "008000"; // Green
+      }
+      
+      // Red colors for bearish terms
+      if (lowerText.includes('bearish') || lowerText.includes('short') || lowerText.includes('overbought') || lowerText.includes('nz from overbought') || lowerText.includes('red')) {
+        return "ff0000"; // Red
+      }
+      
+      return undefined; // Default color (black)
+    };
+
     // Helper function to get organized questions for a timeframe (matching TDA dialog structure)
     const getOrganizedQuestions = (timeframe: string) => {
       const timeframeQuestions = answers?.filter(a => a.tda_questions?.timeframe === timeframe) || [];
@@ -334,17 +353,17 @@ export async function POST(request: NextRequest) {
       
       const rows: TableRow[] = [];
       
-      // Header row - more distinctive
+      // Header row - timeframe display (full width, centered, black, uppercase)
       rows.push(new TableRow({
         children: [
-          createCell(timeframeDisplay, true, AlignmentType.CENTER, 100, "1e40af") // Blue color
+          createCell(timeframeDisplay.toUpperCase(), true, AlignmentType.CENTER, 100, "000000") // Black color, uppercase
         ]
       }));
       
-      // Trader type row - more distinctive
+      // Trader type row (full width, centered, black, uppercase)
       rows.push(new TableRow({
         children: [
-          createCell(traderType, true, AlignmentType.CENTER, 100, "2563eb") // Lighter blue
+          createCell(traderType.toUpperCase(), true, AlignmentType.CENTER, 100, "000000") // Black color, uppercase
         ]
       }));
 
@@ -361,16 +380,8 @@ export async function POST(request: NextRequest) {
           const value = getAnswerValue(answer);
           const cellWidth = 100 / rowQuestions.length;
           
-          // Add color coding for bullish/bearish terms
-          let color: string | undefined;
-          if (value && typeof value === 'string') {
-            const lowerValue = value.toLowerCase();
-            if (lowerValue.includes('bullish') || lowerValue.includes('long') || lowerValue.includes('oversold') || lowerValue.includes('up')) {
-              color = "008000"; // Green for bullish
-            } else if (lowerValue.includes('bearish') || lowerValue.includes('short') || lowerValue.includes('overbought') || lowerValue.includes('down')) {
-              color = "ff0000"; // Red for bearish
-            }
-          }
+          // Use improved color coding function
+          const color = getTextColor(value);
           
           cells.push(createCell(
             `${question.question_text}: ${value || ""}`, 
@@ -431,11 +442,12 @@ export async function POST(request: NextRequest) {
         if (!question) return;
 
         const valueText = getAnswerValue(answer);
+        const color = getTextColor(valueText);
 
         elements.push(new Paragraph({
           children: [
             new TextRun({ text: `${question.question_text}: `, bold: true }),
-            new TextRun({ text: valueText || "Not answered" })
+            new TextRun({ text: valueText || "Not answered", color })
           ]
         }));
       });
@@ -467,7 +479,13 @@ export async function POST(request: NextRequest) {
           
           // Header
           new Paragraph({
-            text: "TOP DOWN ANALYSIS REPORT",
+            children: [
+              new TextRun({ 
+                text: "TOP DOWN ANALYSIS REPORT", 
+                bold: true,
+                color: "000000" // Black color
+              })
+            ],
             heading: HeadingLevel.HEADING_1,
             alignment: AlignmentType.CENTER,
           }),
@@ -495,7 +513,7 @@ export async function POST(request: NextRequest) {
                       new Paragraph({
                         children: [
                           new TextRun({ text: "Analysis Date and Time: ", bold: true }),
-                          new TextRun({ text: new Date(analysis.analysis_date).toLocaleDateString() + " " + (analysis.analysis_time || "") })
+                          new TextRun({ text: new Date(analysis.analysis_date).toLocaleDateString() + " " + (analysis.analysis_time ? analysis.analysis_time.substring(0, 5) : "") })
                         ],
                         alignment: AlignmentType.RIGHT
                       })
@@ -572,26 +590,53 @@ export async function POST(request: NextRequest) {
           // Footer and Disclaimer
           new Paragraph({ text: "" }),
           new Paragraph({
-            text: "Disclaimer",
+            children: [
+              new TextRun({ 
+                text: "Disclaimer", 
+                bold: true,
+                color: "ff0000" // Red color
+              })
+            ],
             heading: HeadingLevel.HEADING_3,
             alignment: AlignmentType.CENTER,
           }),
           new Paragraph({
-            text: "This analysis is for educational and informational purposes only. It does not constitute financial advice, investment recommendations, or trading advice. Trading foreign exchange carries a high level of risk and may not be suitable for all investors. The high degree of leverage can work against you as well as for you. Before deciding to trade foreign exchange, you should carefully consider your investment objectives, level of experience, and risk appetite. You could sustain a loss of some or all of your initial investment and therefore you should not invest money that you cannot afford to lose.",
+            children: [
+              new TextRun({ 
+                text: "This analysis is for educational and informational purposes only. It does not constitute financial advice, investment recommendations, or trading advice. Trading foreign exchange carries a high level of risk and may not be suitable for all investors. The high degree of leverage can work against you as well as for you. Before deciding to trade foreign exchange, you should carefully consider your investment objectives, level of experience, and risk appetite. You could sustain a loss of some or all of your initial investment and therefore you should not invest money that you cannot afford to lose.",
+                color: "000000" // Black color
+              })
+            ],
             alignment: AlignmentType.JUSTIFIED,
           }),
           new Paragraph({ text: "" }),
           new Paragraph({
-            text: "Risk Warning: Past performance is not indicative of future results. The value of investments can go down as well as up, and you may get back less than you invested.",
+            children: [
+              new TextRun({ 
+                text: "Risk Warning: Past performance is not indicative of future results. The value of investments can go down as well as up, and you may get back less than you invested.",
+                color: "000000" // Black color
+              })
+            ],
             alignment: AlignmentType.CENTER,
           }),
           new Paragraph({ text: "" }),
           new Paragraph({
-            text: `Report Generated: ${new Date().toLocaleString()}`,
+            children: [
+              new TextRun({ 
+                text: `Report Generated: ${new Date().toLocaleDateString()} ${new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' })}`,
+                color: "000000" // Black color
+              })
+            ],
             alignment: AlignmentType.CENTER,
           }),
           new Paragraph({
-            text: "Trader's Journal - Professional Trading Analysis Platform",
+            children: [
+              new TextRun({ 
+                text: "Trader's Journal - Your Ultimate Market Companion",
+                bold: true,
+                color: "000000" // Black color
+              })
+            ],
             alignment: AlignmentType.CENTER,
           })
         ]
