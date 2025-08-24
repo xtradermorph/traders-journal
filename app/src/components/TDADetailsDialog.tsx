@@ -315,11 +315,6 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
               <CardContent className="space-y-3">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-slate-700">Date:</span>
-                    <span className="text-sm text-slate-600">{formatDateTime(data.analysis?.analysis_date)}</span>
-                  </div>
-                  <div className="flex items-center space-x-2">
                     <Clock className="h-4 w-4 text-blue-600" />
                     <span className="text-sm font-medium text-slate-700">Analysis Date & Time:</span>
                     <span className="text-sm text-slate-600">
