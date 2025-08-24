@@ -13,7 +13,8 @@ import {
   Table,
   TableRow,
   TableCell,
-  WidthType
+  WidthType,
+  BorderStyle
 } from 'docx';
 
 export async function POST(request: NextRequest) {
@@ -126,7 +127,13 @@ export async function POST(request: NextRequest) {
             alignment
           })
         ],
-        width: { size: width, type: WidthType.PERCENTAGE }
+        width: { size: width, type: WidthType.PERCENTAGE },
+        margins: {
+          top: 100,
+          bottom: 100,
+          left: 100,
+          right: 100
+        }
       });
     };
 
@@ -134,7 +141,13 @@ export async function POST(request: NextRequest) {
     const createEmptyCell = (width: number = 20) => {
       return new TableCell({
         children: [new Paragraph({ text: "" })],
-        width: { size: width, type: WidthType.PERCENTAGE }
+        width: { size: width, type: WidthType.PERCENTAGE },
+        margins: {
+          top: 100,
+          bottom: 100,
+          left: 100,
+          right: 100
+        }
       });
     };
 
@@ -334,13 +347,6 @@ export async function POST(request: NextRequest) {
           createCell(traderType, true, AlignmentType.CENTER, 100, "2563eb") // Lighter blue
         ]
       }));
-      
-      // Empty row for spacing
-      rows.push(new TableRow({
-        children: [
-          createEmptyCell(100)
-        ]
-      }));
 
       // Create rows based on the organized structure
       organizedRows.forEach(rowQuestions => {
@@ -388,6 +394,14 @@ export async function POST(request: NextRequest) {
           bottom: 200,
           left: 200,
           right: 200
+        },
+        borders: {
+          top: { style: BorderStyle.SINGLE, size: 2, color: "1e40af" },
+          bottom: { style: BorderStyle.SINGLE, size: 2, color: "1e40af" },
+          left: { style: BorderStyle.SINGLE, size: 2, color: "1e40af" },
+          right: { style: BorderStyle.SINGLE, size: 2, color: "1e40af" },
+          insideHorizontal: { style: BorderStyle.NONE },
+          insideVertical: { style: BorderStyle.NONE }
         }
       });
     };
@@ -460,14 +474,47 @@ export async function POST(request: NextRequest) {
           new Paragraph({ text: "" }),
           
           // Document Information (reformatted as requested)
-          new Paragraph({
-            children: [
-              new TextRun({ text: "Analyst: ", bold: true }),
-              new TextRun({ text: analystName }),
-              new TextRun({ text: "     " }), // Spacing
-              new TextRun({ text: "Analysis Date and Time: ", bold: true }),
-              new TextRun({ text: new Date(analysis.analysis_date).toLocaleDateString() + " " + (analysis.analysis_time || "") })
+          new Table({
+            rows: [
+              new TableRow({
+                children: [
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: "Analyst: ", bold: true }),
+                          new TextRun({ text: analystName })
+                        ]
+                      })
+                    ],
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    margins: { top: 100, bottom: 100, left: 100, right: 100 }
+                  }),
+                  new TableCell({
+                    children: [
+                      new Paragraph({
+                        children: [
+                          new TextRun({ text: "Analysis Date and Time: ", bold: true }),
+                          new TextRun({ text: new Date(analysis.analysis_date).toLocaleDateString() + " " + (analysis.analysis_time || "") })
+                        ],
+                        alignment: AlignmentType.RIGHT
+                      })
+                    ],
+                    width: { size: 50, type: WidthType.PERCENTAGE },
+                    margins: { top: 100, bottom: 100, left: 100, right: 100 }
+                  })
+                ]
+              })
             ],
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            borders: {
+              top: { style: BorderStyle.NONE },
+              bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE },
+              right: { style: BorderStyle.NONE },
+              insideHorizontal: { style: BorderStyle.NONE },
+              insideVertical: { style: BorderStyle.NONE }
+            }
           }),
           new Paragraph({
             children: [
