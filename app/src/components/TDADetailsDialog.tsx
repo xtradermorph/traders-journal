@@ -182,6 +182,24 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
     return data.answers.filter(a => questionIds.includes(a.question_id));
   };
 
+  // Get selected timeframes (shared function to ensure consistency)
+  const getSelectedTimeframes = () => {
+    if (!data?.questions || !data?.answers || data.questions.length === 0 || data.answers.length === 0) {
+      return [];
+    }
+
+    // Get unique timeframes from answers and sort from higher to lower timeframes
+    const timeframes = [...new Set(data.answers.map(a => {
+      const question = data.questions.find(q => q.id === a.question_id);
+      return question?.timeframe;
+    }).filter(Boolean))].sort((a, b) => {
+      const order = { 'MN1': 1, 'W1': 2, 'DAILY': 3, 'H8': 4, 'H4': 5, 'H2': 6, 'H1': 7, 'M30': 8, 'M15': 9, 'M10': 10 };
+      return (order[a as keyof typeof order] || 999) - (order[b as keyof typeof order] || 999);
+    });
+
+    return timeframes;
+  };
+
   useEffect(() => {
     if (isOpen && analysisId) {
       fetchAnalysisData();
@@ -338,7 +356,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                           hour: '2-digit', 
                           minute: '2-digit',
                           hour12: true 
-                        }).replace(/:\d{2}\s/, ' ') // Remove seconds
+                        }).replace(/:\d{2}/, '') // Remove seconds completely
                       ) : (
                         'N/A'
                       )}
@@ -361,18 +379,11 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {(() => {
-                      if (!data?.questions || data.questions.length === 0) {
+                      const timeframes = getSelectedTimeframes();
+                      
+                      if (timeframes.length === 0) {
                         return <span className="text-sm text-slate-500">No timeframes available</span>;
                       }
-
-                      // Get unique timeframes from answers and sort from higher to lower timeframes
-                      const timeframes = [...new Set(data.answers.map(a => {
-                        const question = data.questions.find(q => q.id === a.question_id);
-                        return question?.timeframe;
-                      }).filter(Boolean))].sort((a, b) => {
-                        const order = { 'MN1': 1, 'W1': 2, 'DAILY': 3, 'H8': 4, 'H4': 5, 'H2': 6, 'H1': 7, 'M30': 8, 'M15': 9, 'M10': 10 };
-                        return (order[a as keyof typeof order] || 999) - (order[b as keyof typeof order] || 999);
-                      });
 
                       return timeframes.map((timeframe: string) => (
                         <Badge key={timeframe} variant="outline" className="text-blue-700 border-blue-300">
@@ -391,18 +402,11 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                   </div>
                   <div className="space-y-1">
                     {(() => {
-                      if (!data?.questions || data.questions.length === 0) {
+                      const timeframes = getSelectedTimeframes();
+                      
+                      if (timeframes.length === 0) {
                         return <span className="text-sm text-slate-500">No sentiment data available</span>;
                       }
-
-                      // Get unique timeframes from answers and sort from higher to lower timeframes
-                      const timeframes = [...new Set(data.answers.map(a => {
-                        const question = data.questions.find(q => q.id === a.question_id);
-                        return question?.timeframe;
-                      }).filter(Boolean))].sort((a, b) => {
-                        const order = { 'MN1': 1, 'W1': 2, 'DAILY': 3, 'H8': 4, 'H4': 5, 'H2': 6, 'H1': 7, 'M30': 8, 'M15': 9, 'M10': 10 };
-                        return (order[a as keyof typeof order] || 999) - (order[b as keyof typeof order] || 999);
-                      });
 
                       return timeframes.map((timeframe: string) => {
                         const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
@@ -437,18 +441,11 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
               </CardHeader>
               <CardContent className="space-y-4">
                 {(() => {
-                  if (!data?.questions || data.questions.length === 0) {
+                  const timeframes = getSelectedTimeframes();
+                  
+                  if (timeframes.length === 0) {
                     return <p className="text-slate-600 text-center py-4">No timeframe data available</p>;
                   }
-
-                  // Get unique timeframes from answers (which represent selected timeframes) and sort them from higher to lower timeframes
-                  const timeframes = [...new Set(data.answers.map(a => {
-                    const question = data.questions.find(q => q.id === a.question_id);
-                    return question?.timeframe;
-                  }).filter(Boolean))].sort((a, b) => {
-                    const order = { 'MN1': 1, 'W1': 2, 'DAILY': 3, 'H8': 4, 'H4': 5, 'H2': 6, 'H1': 7, 'M30': 8, 'M15': 9, 'M10': 10 };
-                    return (order[a as keyof typeof order] || 999) - (order[b as keyof typeof order] || 999);
-                  });
 
                   return timeframes.map((timeframe: string) => {
                     const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
@@ -503,9 +500,20 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                                   
                                   const answerText = answer.answer_text || String(answer.answer_value || 'No answer provided');
                                   
-                                  // Determine sentiment based on answer
-                                  const getSentiment = (answer: string) => {
-                                    const answerStr = answer.toLowerCase();
+                                  // Use the AI-generated sentiment from the database (consistent with Analysis Setup)
+                                  const getSentiment = () => {
+                                    if (timeframeAnalysis?.timeframe_sentiment) {
+                                      const sentiment = timeframeAnalysis.timeframe_sentiment;
+                                      if (sentiment === 'BULLISH') {
+                                        return { text: 'Bullish', color: 'text-green-600 bg-green-50 border-green-200' };
+                                      } else if (sentiment === 'BEARISH') {
+                                        return { text: 'Bearish', color: 'text-red-600 bg-red-50 border-red-200' };
+                                      } else {
+                                        return { text: 'Neutral', color: 'text-gray-600 bg-gray-50 border-gray-200' };
+                                      }
+                                    }
+                                    // Fallback to answer-based sentiment if no AI sentiment available
+                                    const answerStr = answerText.toLowerCase();
                                     if (answerStr.includes('long') || answerStr.includes('bullish') || answerStr.includes('green') || answerStr.includes('up')) {
                                       return { text: 'Bullish', color: 'text-green-600 bg-green-50 border-green-200' };
                                     } else if (answerStr.includes('short') || answerStr.includes('bearish') || answerStr.includes('red') || answerStr.includes('down')) {
@@ -516,7 +524,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                                     return { text: 'N/A', color: 'text-gray-500 bg-gray-50 border-gray-200' };
                                   };
                                   
-                                  const sentiment = getSentiment(answerText);
+                                  const sentiment = getSentiment();
                                   
                                   return (
                                     <tr key={question.id} className="hover:bg-blue-50/50 transition-colors">
