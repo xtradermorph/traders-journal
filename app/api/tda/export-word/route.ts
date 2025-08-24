@@ -253,21 +253,19 @@ export async function POST(request: NextRequest) {
       const timeframeQuestions = answers?.filter(a => a.tda_questions?.timeframe === timeframe) || [];
       
       if (timeframe === 'DAILY') {
-        // DAILY layout: exact grouping as specified in TDA dialog
+        // DAILY layout: flexible grouping based on actual questions
         const announcements = timeframeQuestions.filter(a => a.tda_questions?.question_text === 'Announcements');
         const analysis = timeframeQuestions.filter(a => a.tda_questions?.question_text === 'Analysis');
         
-        // Row 1: Announcements
+        // Row 1: Announcements (single item)
         const row1 = announcements;
         
-        // Row 2: Current Daily Trend, Today's Key Support / Resistance Levels, Cycle Pressure, Notes
-        const row2Questions = [
+        // Row 2: Current Daily Trend, Today's Key Support / Resistance Levels, Cycle Pressure
+        const row2 = [
           timeframeQuestions.find(a => a.tda_questions?.question_text === 'Current Daily Trend'),
           timeframeQuestions.find(a => a.tda_questions?.question_text === "Today's Key Support / Resistance Levels"),
           timeframeQuestions.find(a => a.tda_questions?.question_text === 'Cycle Pressure')
         ].filter(Boolean);
-        const row2Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 5);
-        const row2 = row2Notes ? [...row2Questions, row2Notes] : row2Questions;
         
         // Row 3: Previous Candle Colour, Today's Pivot Point Range, Notes
         const row3Questions = [
@@ -284,81 +282,121 @@ export async function POST(request: NextRequest) {
           timeframeQuestions.find(a => a.tda_questions?.question_text === 'Fibonacci: Swing High')
         ].filter(Boolean);
         
-        // Row 5: MACD Lines group + Notes
-        const macdLinesQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('MACD Lines'));
-        const row5Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 16);
-        const row5 = row5Notes ? [...macdLinesQuestions, row5Notes] : macdLinesQuestions;
+        // Row 5: MACD Lines Position, MACD Lines Blue vs Red, MACD Lines Movement
+        const row5 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Position'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Blue vs Red'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Movement')
+        ].filter(Boolean);
         
-        // Row 6: MACD Histogram group + Notes
-        const macdHistogramQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('MACD Histogram'));
-        const row6Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 20);
-        const row6 = row6Notes ? [...macdHistogramQuestions, row6Notes] : macdHistogramQuestions;
+        // Row 6: MACD Lines Sentiment, MACD Lines Notes, MACD Histogram Position
+        const row6 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Notes'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Position')
+        ].filter(Boolean);
         
-        // Row 7: RSI group + Notes
-        const rsiQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('RSI'));
-        const row7Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 25);
-        const row7 = row7Notes ? [...rsiQuestions, row7Notes] : rsiQuestions;
+        // Row 7: MACD Histogram Movement, MACD Histogram Sentiment, MACD Histogram Notes
+        const row7 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Movement'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Notes')
+        ].filter(Boolean);
         
-        // Row 8: REI group + Notes
-        const reiQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('REI'));
-        const row8Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 29);
-        const row8 = row8Notes ? [...reiQuestions, row8Notes] : reiQuestions;
+        // Row 8: RSI Condition, RSI Direction, RSI Black vs Yellow
+        const row8 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Condition'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Direction'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Black vs Yellow')
+        ].filter(Boolean);
         
-        // Row 9: Analysis
-        const row9 = analysis;
+        // Row 9: RSI Sentiment, RSI Notes, REI Condition
+        const row9 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Notes'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Condition')
+        ].filter(Boolean);
         
-        return [row1, row2, row3, row4, row5, row6, row7, row8, row9].filter(row => row.length > 0);
+        // Row 10: REI Direction, REI Sentiment, REI Notes
+        const row10 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Direction'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Notes')
+        ].filter(Boolean);
+        
+        // Row 11: Analysis
+        const row11 = analysis;
+        
+        return [row1, row2, row3, row4, row5, row6, row7, row8, row9, row10, row11].filter(row => row.length > 0);
         
       } else if (timeframe === 'H1') {
-        // H1 layout: exact grouping as specified in TDA dialog
+        // H1 layout: flexible grouping based on actual questions
         const analysis = timeframeQuestions.filter(a => a.tda_questions?.question_text === 'Analysis');
         
-        // Row 1: Current 1 Hour Trend, Session's Key Support / Resistance Levels, Cycle Pressure, Notes
-        const row1Questions = [
+        // Row 1: Current 1 Hour Trend, Session's Key Support / Resistance Levels, Cycle Pressure
+        const row1 = [
           timeframeQuestions.find(a => a.tda_questions?.question_text === 'Current 1 Hour Trend'),
           timeframeQuestions.find(a => a.tda_questions?.question_text === "Session's Key Support / Resistance Levels"),
           timeframeQuestions.find(a => a.tda_questions?.question_text === 'Cycle Pressure')
         ].filter(Boolean);
-        const row1Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 4);
-        const row1 = row1Notes ? [...row1Questions, row1Notes] : row1Questions;
         
-        // Row 2: MACD Lines group + Notes
-        const macdLinesQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('MACD Lines'));
-        const row2Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 9);
-        const row2 = row2Notes ? [...macdLinesQuestions, row2Notes] : macdLinesQuestions;
+        // Row 2: MACD Lines Position, MACD Lines Blue vs Red, MACD Lines Movement
+        const row2 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Position'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Blue vs Red'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Movement')
+        ].filter(Boolean);
         
-        // Row 3: MACD Histogram group + Notes
-        const macdHistogramQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('MACD Histogram'));
-        const row3Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 13);
-        const row3 = row3Notes ? [...macdHistogramQuestions, row3Notes] : macdHistogramQuestions;
+        // Row 3: MACD Lines Sentiment, MACD Lines Notes, MACD Histogram Position
+        const row3 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Notes'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Position')
+        ].filter(Boolean);
         
-        // Row 4: RSI group + Notes
-        const rsiQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('RSI'));
-        const row4Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 18);
-        const row4 = row4Notes ? [...rsiQuestions, row4Notes] : rsiQuestions;
+        // Row 4: MACD Histogram Movement, MACD Histogram Sentiment, MACD Histogram Notes
+        const row4 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Movement'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Notes')
+        ].filter(Boolean);
         
-        // Row 5: REI group + Notes
-        const reiQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('REI'));
-        const row5Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 22);
-        const row5 = row5Notes ? [...reiQuestions, row5Notes] : reiQuestions;
+        // Row 5: RSI Condition, RSI Direction, RSI Black vs Yellow
+        const row5 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Condition'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Direction'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Black vs Yellow')
+        ].filter(Boolean);
         
-        // Row 6: Analysis
-        const row6 = analysis;
+        // Row 6: RSI Sentiment, RSI Notes, REI Condition
+        const row6 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Notes'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Condition')
+        ].filter(Boolean);
         
-        return [row1, row2, row3, row4, row5, row6].filter(row => row.length > 0);
+        // Row 7: REI Direction, REI Sentiment, REI Notes
+        const row7 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Direction'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Notes')
+        ].filter(Boolean);
+        
+        // Row 8: Analysis
+        const row8 = analysis;
+        
+        return [row1, row2, row3, row4, row5, row6, row7, row8].filter(row => row.length > 0);
         
       } else if (timeframe === 'M15') {
-        // M15 layout: exact grouping as specified in TDA dialog
+        // M15 layout: flexible grouping based on actual questions
         const analysis = timeframeQuestions.filter(a => a.tda_questions?.question_text === 'Analysis');
         
-        // Row 1: Current 15 Minutes Trend, Today's Key Support / Resistance Levels, Cycle Pressure, Notes
-        const row1Questions = [
+        // Row 1: Current 15 Minutes Trend, Today's Key Support / Resistance Levels, Cycle Pressure
+        const row1 = [
           timeframeQuestions.find(a => a.tda_questions?.question_text === 'Current 15 Minutes Trend'),
           timeframeQuestions.find(a => a.tda_questions?.question_text === "Today's Key Support / Resistance Levels"),
           timeframeQuestions.find(a => a.tda_questions?.question_text === 'Cycle Pressure')
         ].filter(Boolean);
-        const row1Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 4);
-        const row1 = row1Notes ? [...row1Questions, row1Notes] : row1Questions;
         
         // Row 2: Most Relevant Trend Line, Price Location in Pivot Range, Drive or Exhaustion
         const row2 = [
@@ -374,132 +412,161 @@ export async function POST(request: NextRequest) {
           timeframeQuestions.find(a => a.tda_questions?.question_text === 'Fibonacci: Swing High')
         ].filter(Boolean);
         
-        // Row 4: MACD Lines group + Notes
-        const macdLinesQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('MACD Lines'));
-        const row4Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 15);
-        const row4 = row4Notes ? [...macdLinesQuestions, row4Notes] : macdLinesQuestions;
+        // Row 4: MACD Lines Position, MACD Lines Blue vs Red, MACD Lines Movement
+        const row4 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Position'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Blue vs Red'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Movement')
+        ].filter(Boolean);
         
-        // Row 5: MACD Histogram group + Notes
-        const macdHistogramQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('MACD Histogram'));
-        const row5Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 19);
-        const row5 = row5Notes ? [...macdHistogramQuestions, row5Notes] : macdHistogramQuestions;
+        // Row 5: MACD Lines Sentiment, MACD Lines Notes, MACD Histogram Position
+        const row5 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Lines: Notes'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Position')
+        ].filter(Boolean);
         
-        // Row 6: RSI group + Notes
-        const rsiQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('RSI'));
-        const row6Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 24);
-        const row6 = row6Notes ? [...rsiQuestions, row6Notes] : rsiQuestions;
+        // Row 6: MACD Histogram Movement, MACD Histogram Sentiment, MACD Histogram Notes
+        const row6 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Movement'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'MACD Histogram: Notes')
+        ].filter(Boolean);
         
-        // Row 7: REI group + Notes
-        const reiQuestions = timeframeQuestions.filter(a => a.tda_questions?.question_text.includes('REI'));
-        const row7Notes = timeframeQuestions.find(a => a.tda_questions?.question_text === 'Notes' && a.tda_questions?.order_index === 28);
-        const row7 = row7Notes ? [...reiQuestions, row7Notes] : reiQuestions;
+        // Row 7: RSI Condition, RSI Direction, RSI Black vs Yellow
+        const row7 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Condition'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Direction'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Black vs Yellow')
+        ].filter(Boolean);
         
-        // Row 8: Analysis
-        const row8 = analysis;
+        // Row 8: RSI Sentiment, RSI Notes, REI Condition
+        const row8 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'RSI: Notes'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Condition')
+        ].filter(Boolean);
         
-        return [row1, row2, row3, row4, row5, row6, row7, row8].filter(row => row.length > 0);
+        // Row 9: REI Direction, REI Sentiment, REI Notes
+        const row9 = [
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Direction'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Sentiment'),
+          timeframeQuestions.find(a => a.tda_questions?.question_text === 'REI: Notes')
+        ].filter(Boolean);
+        
+        // Row 10: Analysis
+        const row10 = analysis;
+        
+        return [row1, row2, row3, row4, row5, row6, row7, row8, row9, row10].filter(row => row.length > 0);
       }
       
       return [];
     };
 
-    // Helper function to create timeframe table for special timeframes (matching screenshot format)
-    const createTimeframeTable = (timeframe: string, timeframeDisplay: string, traderType: string) => {
+    // Helper function to create timeframe section with flexible layout (no table constraints)
+    const createTimeframeSection = (timeframe: string, timeframeDisplay: string, traderType: string) => {
       const organizedRows = getOrganizedQuestions(timeframe);
       
-      const rows: TableRow[] = [];
+      const elements: any[] = [];
       
-      // Header row - timeframe display (full width, centered, black, uppercase)
-      rows.push(new TableRow({
+      // Header - timeframe display (centered, black, uppercase)
+      elements.push(new Paragraph({
         children: [
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({ 
-                    text: timeframeDisplay.toUpperCase(), 
-                    bold: true,
-                    color: "000000" // Black color
-                  })
-                ],
-                alignment: AlignmentType.CENTER
-              })
-            ],
-            columnSpan: 4, // Span across all columns
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            margins: { top: 200, bottom: 200, left: 200, right: 200 }
+          new TextRun({ 
+            text: timeframeDisplay.toUpperCase(), 
+            bold: true,
+            color: "000000" // Black color
           })
-        ]
+        ],
+        heading: HeadingLevel.HEADING_2,
+        alignment: AlignmentType.CENTER
       }));
       
-      // Trader type row (full width, centered, black, uppercase)
-      rows.push(new TableRow({
+      // Trader type (centered, black, uppercase)
+      elements.push(new Paragraph({
         children: [
-          new TableCell({
-            children: [
-              new Paragraph({
-                children: [
-                  new TextRun({ 
-                    text: traderType.toUpperCase(), 
-                    bold: true,
-                    color: "000000" // Black color
-                  })
-                ],
-                alignment: AlignmentType.CENTER
-              })
-            ],
-            columnSpan: 4, // Span across all columns
-            width: { size: 100, type: WidthType.PERCENTAGE },
-            margins: { top: 200, bottom: 200, left: 200, right: 200 }
+          new TextRun({ 
+            text: traderType.toUpperCase(), 
+            bold: true,
+            color: "000000" // Black color
           })
-        ]
+        ],
+        heading: HeadingLevel.HEADING_3,
+        alignment: AlignmentType.CENTER
       }));
+      
+      elements.push(new Paragraph({ text: "" }));
 
-             // Create rows based on the organized structure
-       organizedRows.forEach(rowQuestions => {
-         if (rowQuestions.length === 0) return;
-         
-         const cells: TableCell[] = [];
-         
-         // Create cells based on actual questions in the row
-         rowQuestions.forEach(answer => {
-           const question = answer.tda_questions;
-           if (question) {
-             const value = getAnswerValue(answer);
-             
-             // Use mixed color cell for better keyword coloring
-             cells.push(createMixedColorCell(
-               `${question.question_text}: ${value || ""}`, 
-               true, 
-               AlignmentType.LEFT, 
-               100 / rowQuestions.length // Dynamic width based on number of questions
-             ));
-           }
-         });
-         
-         if (cells.length > 0) {
-           rows.push(new TableRow({ children: cells }));
-         }
-       });
-
-      return new Table({
-        rows,
-        width: { size: 100, type: WidthType.PERCENTAGE },
-        margins: {
-          top: 200,
-          bottom: 200,
-          left: 200,
-          right: 200
-        },
-        borders: {
-          top: { style: BorderStyle.SINGLE, size: 8, color: "1e40af" },
-          bottom: { style: BorderStyle.SINGLE, size: 8, color: "1e40af" },
-          left: { style: BorderStyle.SINGLE, size: 8, color: "1e40af" },
-          right: { style: BorderStyle.SINGLE, size: 8, color: "1e40af" },
-          insideHorizontal: { style: BorderStyle.NONE },
-          insideVertical: { style: BorderStyle.NONE }
+      // Create flexible rows based on the organized structure
+      organizedRows.forEach(rowQuestions => {
+        if (rowQuestions.length === 0) return;
+        
+        // Create a table row for this group of questions
+        const rowCells: TableCell[] = [];
+        
+        // Add each question/answer as a cell
+        rowQuestions.forEach(answer => {
+          const question = answer.tda_questions;
+          if (question) {
+            const value = getAnswerValue(answer);
+            const cellWidth = 100 / rowQuestions.length; // Dynamic width based on number of questions
+            
+            rowCells.push(new TableCell({
+              children: [
+                new Paragraph({
+                  children: [
+                    new TextRun({ 
+                      text: `${question.question_text}: ${value || ""}`, 
+                      bold: true,
+                      color: getTextColor(value) || "000000"
+                    })
+                  ],
+                  alignment: AlignmentType.LEFT,
+                  spacing: {
+                    before: 40,
+                    after: 40
+                  }
+                })
+              ],
+              width: { size: cellWidth, type: WidthType.PERCENTAGE },
+              margins: {
+                top: 60,
+                bottom: 60,
+                left: 60,
+                right: 60
+              }
+            }));
+          }
+        });
+        
+        if (rowCells.length > 0) {
+          // Create a table for this row with flexible columns
+          const rowTable = new Table({
+            rows: [
+              new TableRow({ children: rowCells })
+            ],
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            margins: {
+              top: 100,
+              bottom: 100,
+              left: 100,
+              right: 100
+            },
+            borders: {
+              top: { style: BorderStyle.NONE },
+              bottom: { style: BorderStyle.NONE },
+              left: { style: BorderStyle.NONE },
+              right: { style: BorderStyle.NONE },
+              insideHorizontal: { style: BorderStyle.NONE },
+              insideVertical: { style: BorderStyle.NONE }
+            }
+          });
+          
+          elements.push(rowTable);
         }
       });
+
+      return elements;
     };
 
     // Helper function to create simple timeframe section for other timeframes
@@ -648,7 +715,7 @@ export async function POST(request: NextRequest) {
               const traderType = getTraderType(timeframe);
               
               return [
-                createTimeframeTable(timeframe, timeframeDisplay, traderType),
+                createTimeframeSection(timeframe, timeframeDisplay, traderType),
                 new Paragraph({ text: "" })
               ];
             } else {
