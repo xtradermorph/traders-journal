@@ -42,8 +42,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to fetch timeframe analyses' }, { status: 500 });
     }
 
-    // Fetch Alpha Vantage market data
-    const alphaVantageData = await fetchAlphaVantageData(currencyPair);
+    // Fetch Alpha Vantage market data (historical for old TDAs, current for new)
+    const analysisDate = analysis.completed_at ? new Date(analysis.completed_at) : null;
+    const alphaVantageData = await fetchAlphaVantageData(currencyPair, analysisDate);
 
     // Generate enhanced reasoning with external data
     const enhancedReasoning = await generateEnhancedReasoning(timeframeAnalyses, alphaVantageData, currencyPair);
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function fetchAlphaVantageData(currencyPair: string) {
+async function fetchAlphaVantageData(currencyPair: string, analysisDate?: Date | null) {
   try {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
     if (!apiKey) {
@@ -70,7 +71,11 @@ async function fetchAlphaVantageData(currencyPair: string) {
       return null;
     }
 
-    // Fetch current market data
+    // Determine if we need historical data
+    const isHistorical = analysisDate && analysisDate < new Date(Date.now() - 24 * 60 * 60 * 1000); // More than 24 hours old
+    
+    // For historical data, we'll use the closest available date
+    // Alpha Vantage FX_DAILY provides daily data, so we'll use the date closest to analysisDate
     const response = await fetch(
       `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currencyPair.slice(0, 3)}&to_symbol=${currencyPair.slice(3, 6)}&apikey=${apiKey}`
     );
@@ -88,8 +93,24 @@ async function fetchAlphaVantageData(currencyPair: string) {
     }
 
     const dates = Object.keys(timeSeriesData).sort().reverse();
-    const latestData = timeSeriesData[dates[0]];
-    const previousData = timeSeriesData[dates[1]];
+    
+    let targetDate: string;
+    let latestData: any;
+    let previousData: any;
+    
+    if (isHistorical && analysisDate) {
+      // Find the closest date to the analysis date
+      const analysisDateStr = analysisDate.toISOString().split('T')[0];
+      targetDate = dates.find(date => date <= analysisDateStr) || dates[0];
+      const targetIndex = dates.indexOf(targetDate);
+      latestData = timeSeriesData[targetDate];
+      previousData = timeSeriesData[dates[targetIndex + 1]] || timeSeriesData[dates[0]];
+    } else {
+      // Use current data
+      targetDate = dates[0];
+      latestData = timeSeriesData[dates[0]];
+      previousData = timeSeriesData[dates[1]];
+    }
 
     // Calculate additional market metrics
     const currentPrice = parseFloat(latestData['4. close']);
@@ -129,6 +150,8 @@ async function fetchAlphaVantageData(currencyPair: string) {
       momentum,
       strength,
       marketSentiment,
+      dataSource: isHistorical ? 'historical' : 'current',
+      targetDate: targetDate,
       // Additional context for reasoning
       priceContext: `Current price at ${currentPrice.toFixed(5)} with ${dailyChange > 0 ? 'gain' : 'loss'} of ${Math.abs(dailyChange).toFixed(5)} (${Math.abs(dailyChangePercent).toFixed(2)}%)`,
       rangeContext: `Trading range: ${low.toFixed(5)} - ${high.toFixed(5)}`,

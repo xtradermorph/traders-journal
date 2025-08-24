@@ -148,6 +148,42 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
     }
   };
 
+  const handleFixSentiments = async () => {
+    try {
+      const response = await fetch('/api/tda/fix-sentiments', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          analysisId: analysisId
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fix sentiments');
+      }
+
+      const result = await response.json();
+      
+      toast({
+        title: "Success",
+        description: "Sentiments recalculated successfully",
+      });
+
+      // Refresh the data to show updated sentiments
+      await fetchAnalysisData();
+    } catch (error) {
+      console.error('Fix sentiments error:', error);
+      toast({
+        title: "Error",
+        description: error instanceof Error ? error.message : "Failed to fix sentiments",
+        variant: "destructive"
+      });
+    }
+  };
+
   const formatDateTime = (dateString: string, timeString?: string) => {
     if (!dateString) return 'N/A';
     

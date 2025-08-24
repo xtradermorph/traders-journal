@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function fetchAlphaVantageData(currencyPair: string) {
+async function fetchAlphaVantageData(currencyPair: string, analysisDate?: Date | null) {
   try {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;
     if (!apiKey) {
@@ -127,7 +127,11 @@ async function fetchAlphaVantageData(currencyPair: string) {
       return null;
     }
 
-    // Fetch current market data
+    // Determine if we need historical data
+    const isHistorical = analysisDate && analysisDate < new Date(Date.now() - 24 * 60 * 60 * 1000); // More than 24 hours old
+    
+    // For historical data, we'll use the closest available date
+    // Alpha Vantage FX_DAILY provides daily data, so we'll use the date closest to analysisDate
     const response = await fetch(
       `https://www.alphavantage.co/query?function=FX_DAILY&from_symbol=${currencyPair.slice(0, 3)}&to_symbol=${currencyPair.slice(3, 6)}&apikey=${apiKey}`
     );
@@ -145,8 +149,24 @@ async function fetchAlphaVantageData(currencyPair: string) {
     }
 
     const dates = Object.keys(timeSeriesData).sort().reverse();
-    const latestData = timeSeriesData[dates[0]];
-    const previousData = timeSeriesData[dates[1]];
+    
+    let targetDate: string;
+    let latestData: any;
+    let previousData: any;
+    
+    if (isHistorical && analysisDate) {
+      // Find the closest date to the analysis date
+      const analysisDateStr = analysisDate.toISOString().split('T')[0];
+      targetDate = dates.find(date => date <= analysisDateStr) || dates[0];
+      const targetIndex = dates.indexOf(targetDate);
+      latestData = timeSeriesData[targetDate];
+      previousData = timeSeriesData[dates[targetIndex + 1]] || timeSeriesData[dates[0]];
+    } else {
+      // Use current data
+      targetDate = dates[0];
+      latestData = timeSeriesData[dates[0]];
+      previousData = timeSeriesData[dates[1]];
+    }
 
     return {
       currentPrice: parseFloat(latestData['4. close']),
@@ -156,7 +176,9 @@ async function fetchAlphaVantageData(currencyPair: string) {
       high: parseFloat(latestData['2. high']),
       low: parseFloat(latestData['3. low']),
       volume: parseFloat(latestData['5. volume']),
-      marketTrend: parseFloat(latestData['4. close']) > parseFloat(previousData['4. close']) ? 'BULLISH' : 'BEARISH'
+      marketTrend: parseFloat(latestData['4. close']) > parseFloat(previousData['4. close']) ? 'BULLISH' : 'BEARISH',
+      dataSource: isHistorical ? 'historical' : 'current',
+      targetDate: targetDate
     };
   } catch (error) {
     console.error('Alpha Vantage fetch error:', error);
@@ -760,11 +782,17 @@ function analyzeTimeframe(timeframe: TimeframeType, answers: Record<string, unkn
   // Normalize score to 0-100 range
   score = Math.max(0, Math.min(100, score));
 
-  // Determine sentiment
+  // Determine sentiment with more flexible thresholds
   let sentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
-  if (bullishSignals > bearishSignals && score > 55) {
+  if (bullishSignals > bearishSignals && score >= 52) {
     sentiment = 'BULLISH';
-  } else if (bearishSignals > bullishSignals && score < 45) {
+  } else if (bearishSignals > bullishSignals && score <= 48) {
+    sentiment = 'BEARISH';
+  } else if (bullishSignals === bearishSignals && score === 50) {
+    sentiment = 'NEUTRAL';
+  } else if (score > 50) {
+    sentiment = 'BULLISH';
+  } else if (score < 50) {
     sentiment = 'BEARISH';
   } else {
     sentiment = 'NEUTRAL';
