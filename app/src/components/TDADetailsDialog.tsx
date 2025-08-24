@@ -338,24 +338,26 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                           hour: '2-digit', 
                           minute: '2-digit',
                           hour12: true 
-                        })
+                        }).replace(/:\d{2}\s/, ' ') // Remove seconds
                       ) : (
                         'N/A'
                       )}
                     </span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <TrendingUp className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-slate-700">Currency Pair:</span>
-                    <span className="text-sm text-slate-600">{data.analysis?.currency_pair}</span>
-                  </div>
                 </div>
                 
-                {/* Timeframes Analysed Section */}
+                {/* Timeframes Analysed and Currency Pair Section */}
                 <div className="mt-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Calendar className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-slate-700">Timeframes Analysed:</span>
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center space-x-2">
+                      <Calendar className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-slate-700">Timeframes Analysed:</span>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <TrendingUp className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-slate-700">Currency Pair:</span>
+                      <span className="text-sm text-slate-600">{data.analysis?.currency_pair}</span>
+                    </div>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {(() => {
@@ -387,7 +389,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                     <Brain className="h-4 w-4 text-blue-600" />
                     <span className="text-sm font-medium text-slate-700">Timeframes Sentiment:</span>
                   </div>
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     {(() => {
                       if (!data?.questions || data.questions.length === 0) {
                         return <span className="text-sm text-slate-500">No sentiment data available</span>;
@@ -404,41 +406,12 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
 
                       return timeframes.map((timeframe: string) => {
                         const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
-                        const timeframeQuestions = getTimeframeQuestions(timeframe);
-                        const timeframeAnswers = getTimeframeAnswers(timeframe);
                         
-                        // AI sentiment analysis based on questions and answers
-                        const analyzeSentiment = () => {
-                          if (timeframeAnalysis?.timeframe_sentiment) {
-                            return timeframeAnalysis.timeframe_sentiment;
-                          }
-                          
-                          // Fallback: analyze answers manually
-                          let bullishSignals = 0;
-                          let bearishSignals = 0;
-                          
-                          timeframeAnswers.forEach((answer: TDAAnswer) => {
-                            const answerText = (answer.answer_text || String(answer.answer_value || '')).toLowerCase();
-                            if (answerText.includes('bullish') || answerText.includes('long') || answerText.includes('up') || answerText.includes('strong') || answerText.includes('support')) {
-                              bullishSignals++;
-                            } else if (answerText.includes('bearish') || answerText.includes('short') || answerText.includes('down') || answerText.includes('weak') || answerText.includes('resistance')) {
-                              bearishSignals++;
-                            }
-                          });
-                          
-                          if (bullishSignals > bearishSignals) {
-                            return 'BULLISH';
-                          } else if (bearishSignals > bullishSignals) {
-                            return 'BEARISH';
-                          } else {
-                            return 'NEUTRAL';
-                          }
-                        };
-                        
-                        const sentiment = analyzeSentiment();
+                        // Use the actual AI-generated sentiment from the database (same as Timeframe Analysis Summary)
+                        const sentiment = timeframeAnalysis?.timeframe_sentiment || 'NEUTRAL';
                         
                         return (
-                          <div key={timeframe} className="flex items-center justify-between p-2 bg-white/50 rounded-lg">
+                          <div key={timeframe} className="flex items-center justify-between py-1 px-2 bg-white/50 rounded-lg">
                             <span className="text-sm font-medium text-slate-700">
                               {getTimeframeDisplayName(timeframe)}:
                             </span>
