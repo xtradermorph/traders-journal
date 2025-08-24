@@ -209,12 +209,35 @@ function analyzeTimeframeSentiment(
   let totalSignals = 0;
   const reasoning: string[] = [];
 
+  // Filter questions to only include those for the current timeframe
+  const timeframeQuestions = questions.filter(q => q.timeframe === timeframe);
+  
+  // Debug logging
+  console.log(`[Fix Sentiments] Analyzing timeframe ${timeframe}:`, {
+    totalAnswers: answers.length,
+    timeframeQuestions: timeframeQuestions.length,
+    answers: answers.map(a => ({
+      questionId: a.question_id,
+      answer: a.answer_text || a.answer_value,
+      questionText: timeframeQuestions.find(q => q.id === a.question_id)?.question_text
+    }))
+  });
+
   for (const answer of answers) {
-    const question = questions.find(q => q.id === answer.question_id);
-    if (!question) continue;
+    const question = timeframeQuestions.find(q => q.id === answer.question_id);
+    if (!question) {
+      console.log(`[Fix Sentiments] Question not found for answer:`, answer);
+      continue;
+    }
 
     totalSignals++;
     const answerValue = answer.answer_text || answer.answer_value;
+
+    console.log(`[Fix Sentiments] Processing answer for ${timeframe}:`, {
+      questionText: question.question_text,
+      questionType: question.question_type,
+      answerValue: answerValue
+    });
 
     switch (question.question_type) {
       case 'MULTIPLE_CHOICE':
@@ -284,21 +307,29 @@ function analyzeTimeframeSentiment(
     }
   }
 
+  console.log(`[Fix Sentiments] Timeframe ${timeframe} analysis results:`, {
+    score,
+    bullishSignals,
+    bearishSignals,
+    totalSignals,
+    reasoning
+  });
+
   // Normalize score to 0-100 range
   score = Math.max(0, Math.min(100, score));
 
-  // Improved sentiment determination with more flexible thresholds
+  // Much more aggressive sentiment determination based on actual signals
   let sentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
   
-  if (bullishSignals > bearishSignals && score >= 52) {
-    sentiment = 'BULLISH';
-  } else if (bearishSignals > bullishSignals && score <= 48) {
-    sentiment = 'BEARISH';
-  } else if (bullishSignals === bearishSignals && score === 50) {
+  if (totalSignals === 0) {
     sentiment = 'NEUTRAL';
-  } else if (score > 50) {
+  } else if (bullishSignals > bearishSignals) {
     sentiment = 'BULLISH';
-  } else if (score < 50) {
+  } else if (bearishSignals > bullishSignals) {
+    sentiment = 'BEARISH';
+  } else if (score > 55) {
+    sentiment = 'BULLISH';
+  } else if (score < 45) {
     sentiment = 'BEARISH';
   } else {
     sentiment = 'NEUTRAL';

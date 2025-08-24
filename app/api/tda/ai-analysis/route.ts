@@ -715,84 +715,127 @@ function analyzeTimeframe(timeframe: TimeframeType, answers: Record<string, unkn
   let totalSignals = 0;
   const reasoning: string[] = [];
 
+  // Filter questions to only include those for the current timeframe
+  const timeframeQuestions = questions.filter(q => q.timeframe === timeframe);
+  
+  // Debug logging
+  console.log(`Analyzing timeframe ${timeframe}:`, {
+    totalAnswers: answers.length,
+    timeframeQuestions: timeframeQuestions.length,
+    answers: answers.map(a => ({
+      questionId: a.question_id,
+      answer: a.answer_text || a.answer_value,
+      questionText: timeframeQuestions.find(q => q.id === a.question_id)?.question_text
+    }))
+  });
+
   for (const answer of answers) {
-    const question = questions.find(q => q.id === answer.question_id);
-    if (!question) continue;
+    const question = timeframeQuestions.find(q => q.id === answer.question_id);
+    if (!question) {
+      console.log(`Question not found for answer:`, answer);
+      continue;
+    }
 
     totalSignals++;
     const answerValue = answer.answer_text || answer.answer_value;
 
+    console.log(`Processing answer for ${timeframe}:`, {
+      questionText: question.question_text,
+      questionType: question.question_type,
+      answerValue: answerValue
+    });
+
     switch (question.question_type) {
       case 'MULTIPLE_CHOICE':
-        if (answerValue === 'Bullish') {
+        if (answerValue === 'Bullish' || answerValue === 'bullish') {
           bullishSignals++;
-          score += 15;
+          score += 20;
           reasoning.push(`Strong bullish signal from ${question.question_text}`);
-        } else if (answerValue === 'Bearish') {
+        } else if (answerValue === 'Bearish' || answerValue === 'bearish') {
           bearishSignals++;
-          score -= 15;
+          score -= 20;
           reasoning.push(`Strong bearish signal from ${question.question_text}`);
-        } else if (answerValue === 'Sideways') {
-          score -= 5;
+        } else if (answerValue === 'Sideways' || answerValue === 'sideways') {
+          score += 0; // Neutral
           reasoning.push(`Neutral/sideways signal from ${question.question_text}`);
         }
         break;
 
       case 'RATING':
         const rating = parseInt(String(answerValue));
-        if (rating >= 4) {
-          bullishSignals++;
-          score += 10;
-          reasoning.push(`High confidence (${rating}/5) in ${question.question_text}`);
-        } else if (rating <= 2) {
-          bearishSignals++;
-          score -= 10;
-          reasoning.push(`Low confidence (${rating}/5) in ${question.question_text}`);
+        if (!isNaN(rating)) {
+          if (rating >= 4) {
+            bullishSignals++;
+            score += 15;
+            reasoning.push(`High confidence (${rating}/5) in ${question.question_text}`);
+          } else if (rating <= 2) {
+            bearishSignals++;
+            score -= 15;
+            reasoning.push(`Low confidence (${rating}/5) in ${question.question_text}`);
+          } else {
+            score += 0; // Neutral
+            reasoning.push(`Moderate confidence (${rating}/5) in ${question.question_text}`);
+          }
         }
         break;
 
       case 'BOOLEAN':
-        if (answerValue === true || answerValue === 'true' || answerValue === 'yes') {
+        if (answerValue === true || answerValue === 'true' || answerValue === 'yes' || answerValue === 'Yes') {
           bullishSignals++;
-          score += 8;
+          score += 12;
           reasoning.push(`Positive confirmation for ${question.question_text}`);
-        } else {
+        } else if (answerValue === false || answerValue === 'false' || answerValue === 'no' || answerValue === 'No') {
           bearishSignals++;
-          score -= 8;
+          score -= 12;
           reasoning.push(`Negative confirmation for ${question.question_text}`);
         }
         break;
 
       case 'TEXT':
-        // Simple sentiment analysis for text answers
+        // Enhanced text sentiment analysis
         const text = String(answerValue).toLowerCase() || '';
-        if (text.includes('bullish') || text.includes('strong') || text.includes('support')) {
+        const bullishKeywords = ['bullish', 'strong', 'support', 'uptrend', 'buy', 'long', 'positive', 'good', 'stronger'];
+        const bearishKeywords = ['bearish', 'weak', 'resistance', 'downtrend', 'sell', 'short', 'negative', 'bad', 'weaker'];
+        
+        const bullishMatches = bullishKeywords.filter(keyword => text.includes(keyword)).length;
+        const bearishMatches = bearishKeywords.filter(keyword => text.includes(keyword)).length;
+        
+        if (bullishMatches > bearishMatches) {
           bullishSignals++;
-          score += 5;
+          score += 8;
           reasoning.push(`Positive text analysis: ${text.substring(0, 50)}...`);
-        } else if (text.includes('bearish') || text.includes('weak') || text.includes('resistance')) {
+        } else if (bearishMatches > bullishMatches) {
           bearishSignals++;
-          score -= 5;
+          score -= 8;
           reasoning.push(`Negative text analysis: ${text.substring(0, 50)}...`);
         }
         break;
     }
   }
 
+  console.log(`Timeframe ${timeframe} analysis results:`, {
+    score,
+    bullishSignals,
+    bearishSignals,
+    totalSignals,
+    reasoning
+  });
+
   // Normalize score to 0-100 range
   score = Math.max(0, Math.min(100, score));
 
-  // Determine sentiment with more flexible thresholds
+  // Much more aggressive sentiment determination based on actual signals
   let sentiment: 'BULLISH' | 'BEARISH' | 'NEUTRAL';
-  if (bullishSignals > bearishSignals && score >= 52) {
-    sentiment = 'BULLISH';
-  } else if (bearishSignals > bullishSignals && score <= 48) {
-    sentiment = 'BEARISH';
-  } else if (bullishSignals === bearishSignals && score === 50) {
+  
+  if (totalSignals === 0) {
     sentiment = 'NEUTRAL';
-  } else if (score > 50) {
+  } else if (bullishSignals > bearishSignals) {
     sentiment = 'BULLISH';
-  } else if (score < 50) {
+  } else if (bearishSignals > bullishSignals) {
+    sentiment = 'BEARISH';
+  } else if (score > 55) {
+    sentiment = 'BULLISH';
+  } else if (score < 45) {
     sentiment = 'BEARISH';
   } else {
     sentiment = 'NEUTRAL';

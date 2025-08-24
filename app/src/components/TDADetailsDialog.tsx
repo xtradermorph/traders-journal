@@ -372,6 +372,26 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                     </TooltipContent>
                   </Tooltip>
                 </TooltipProvider>
+                {/* Fix Sentiments Button - Only show if AI is enabled */}
+                {data?.analysis?.ai_enabled && (
+                  <TooltipProvider>
+                    <Tooltip delayDuration={300}>
+                      <TooltipTrigger asChild>
+                        <Button
+                          onClick={handleFixSentiments}
+                          variant="ghost"
+                          size="sm"
+                          className="text-white hover:bg-white/10 p-1 sm:p-2"
+                        >
+                          <Brain className="h-4 w-4 sm:h-5 sm:w-5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                        Fix Sentiments
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
                 <TooltipProvider>
                   <Tooltip delayDuration={300}>
                     <TooltipTrigger asChild>
@@ -462,40 +482,42 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                   </div>
                 </div>
 
-                {/* Timeframes Sentiment Section */}
-                <div className="mt-4">
-                  <div className="flex items-center space-x-2 mb-2">
-                    <Brain className="h-4 w-4 text-blue-600" />
-                    <span className="text-sm font-medium text-slate-700">Timeframes Sentiment:</span>
-                  </div>
-                  <div className="space-y-1">
-                    {(() => {
-                      const timeframes = getSelectedTimeframes();
-                      
-                      if (timeframes.length === 0) {
-                        return <span className="text-sm text-slate-500">No sentiment data available</span>;
-                      }
+                {/* Timeframes Sentiment Section - Only show if AI is enabled */}
+                {data.analysis?.ai_enabled && (
+                  <div className="mt-4">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <Brain className="h-4 w-4 text-blue-600" />
+                      <span className="text-sm font-medium text-slate-700">Timeframes Sentiment:</span>
+                    </div>
+                    <div className="space-y-1">
+                      {(() => {
+                        const timeframes = getSelectedTimeframes();
+                        
+                        if (timeframes.length === 0) {
+                          return <span className="text-sm text-slate-500">No sentiment data available</span>;
+                        }
 
-                      return timeframes.map((timeframe: string) => {
-                        const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
-                        
-                        // Use the actual AI-generated sentiment from the database (same as Timeframe Analysis Summary)
-                        const sentiment = timeframeAnalysis?.timeframe_sentiment || 'NEUTRAL';
-                        
-                        return (
-                          <div key={timeframe} className="flex items-center justify-between py-1 px-2 bg-white/50 rounded-lg">
-                            <span className="text-sm font-medium text-slate-700">
-                              {getTimeframeDisplayName(timeframe)}:
-                            </span>
-                            <Badge className={sentiment === 'BULLISH' ? 'bg-green-100 text-green-800' : sentiment === 'BEARISH' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}>
-                              {sentiment === 'BULLISH' ? 'Bullish' : sentiment === 'BEARISH' ? 'Bearish' : 'Neutral'}
-                            </Badge>
-                          </div>
-                        );
-                      });
-                    })()}
+                        return timeframes.map((timeframe: string) => {
+                          const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
+                          
+                          // Use the actual AI-generated sentiment from the database (same as Timeframe Analysis Summary)
+                          const sentiment = timeframeAnalysis?.timeframe_sentiment || 'NEUTRAL';
+                          
+                          return (
+                            <div key={timeframe} className="flex items-center justify-between py-1 px-2 bg-white/50 rounded-lg">
+                              <span className="text-sm font-medium text-slate-700">
+                                {getTimeframeDisplayName(timeframe)}:
+                              </span>
+                              <Badge className={sentiment === 'BULLISH' ? 'bg-green-100 text-green-800' : sentiment === 'BEARISH' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}>
+                                {sentiment === 'BULLISH' ? 'Bullish' : sentiment === 'BEARISH' ? 'Bearish' : 'Neutral'}
+                              </Badge>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
                   </div>
-                </div>
+                )}
               </CardContent>
             </Card>
 
@@ -683,8 +705,8 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
               </Card>
             )}
 
-            {/* AI Analysis Summary */}
-            {(data.analysis?.ai_summary || data.analysis?.ai_reasoning) && (
+            {/* AI Analysis Summary - Only show if AI is enabled */}
+            {data.analysis?.ai_enabled && (data.analysis?.ai_summary || data.analysis?.ai_reasoning) && (
               <Card className="bg-gradient-to-r from-indigo-50 to-blue-50 border-indigo-200">
                 <CardHeader className="pb-3">
                   <CardTitle className="flex items-center space-x-2 text-indigo-800">
