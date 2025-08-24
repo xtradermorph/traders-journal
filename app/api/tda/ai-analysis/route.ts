@@ -717,33 +717,15 @@ function analyzeTimeframe(timeframe: TimeframeType, answers: Record<string, unkn
 
   // Filter questions to only include those for the current timeframe
   const timeframeQuestions = questions.filter(q => q.timeframe === timeframe);
-  
-  // Debug logging
-  console.log(`Analyzing timeframe ${timeframe}:`, {
-    totalAnswers: answers.length,
-    timeframeQuestions: timeframeQuestions.length,
-    answers: answers.map(a => ({
-      questionId: a.question_id,
-      answer: a.answer_text || a.answer_value,
-      questionText: timeframeQuestions.find(q => q.id === a.question_id)?.question_text
-    }))
-  });
 
   for (const answer of answers) {
     const question = timeframeQuestions.find(q => q.id === answer.question_id);
     if (!question) {
-      console.log(`Question not found for answer:`, answer);
       continue;
     }
 
     totalSignals++;
     const answerValue = answer.answer_text || answer.answer_value;
-
-    console.log(`Processing answer for ${timeframe}:`, {
-      questionText: question.question_text,
-      questionType: question.question_type,
-      answerValue: answerValue
-    });
 
     switch (question.question_type) {
       case 'MULTIPLE_CHOICE':
@@ -813,13 +795,7 @@ function analyzeTimeframe(timeframe: TimeframeType, answers: Record<string, unkn
     }
   }
 
-  console.log(`Timeframe ${timeframe} analysis results:`, {
-    score,
-    bullishSignals,
-    bearishSignals,
-    totalSignals,
-    reasoning
-  });
+
 
   // Normalize score to 0-100 range
   score = Math.max(0, Math.min(100, score));
