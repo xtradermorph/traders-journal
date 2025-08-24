@@ -185,15 +185,19 @@ export async function POST(request: NextRequest) {
         children: [
           new Paragraph({
             children: textRuns,
-            alignment
+            alignment,
+            spacing: {
+              before: 100,
+              after: 100
+            }
           })
         ],
         width: { size: width, type: WidthType.PERCENTAGE },
         margins: {
-          top: 100,
-          bottom: 100,
-          left: 100,
-          right: 100
+          top: 150,
+          bottom: 150,
+          left: 150,
+          right: 150
         }
       });
     };
@@ -416,14 +420,44 @@ export async function POST(request: NextRequest) {
       // Header row - timeframe display (full width, centered, black, uppercase)
       rows.push(new TableRow({
         children: [
-          createCell(timeframeDisplay.toUpperCase(), true, AlignmentType.CENTER, 100, "000000") // Black color, uppercase
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({ 
+                    text: timeframeDisplay.toUpperCase(), 
+                    bold: true,
+                    color: "000000" // Black color
+                  })
+                ],
+                alignment: AlignmentType.CENTER
+              })
+            ],
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            margins: { top: 200, bottom: 200, left: 200, right: 200 }
+          })
         ]
       }));
       
       // Trader type row (full width, centered, black, uppercase)
       rows.push(new TableRow({
         children: [
-          createCell(traderType.toUpperCase(), true, AlignmentType.CENTER, 100, "000000") // Black color, uppercase
+          new TableCell({
+            children: [
+              new Paragraph({
+                children: [
+                  new TextRun({ 
+                    text: traderType.toUpperCase(), 
+                    bold: true,
+                    color: "000000" // Black color
+                  })
+                ],
+                alignment: AlignmentType.CENTER
+              })
+            ],
+            width: { size: 100, type: WidthType.PERCENTAGE },
+            margins: { top: 200, bottom: 200, left: 200, right: 200 }
+          })
         ]
       }));
 
@@ -464,10 +498,10 @@ export async function POST(request: NextRequest) {
           right: 200
         },
         borders: {
-          top: { style: BorderStyle.SINGLE, size: 3, color: "1e40af" },
-          bottom: { style: BorderStyle.SINGLE, size: 3, color: "1e40af" },
-          left: { style: BorderStyle.SINGLE, size: 3, color: "1e40af" },
-          right: { style: BorderStyle.SINGLE, size: 3, color: "1e40af" },
+          top: { style: BorderStyle.SINGLE, size: 4, color: "1e40af" },
+          bottom: { style: BorderStyle.SINGLE, size: 4, color: "1e40af" },
+          left: { style: BorderStyle.SINGLE, size: 4, color: "1e40af" },
+          right: { style: BorderStyle.SINGLE, size: 4, color: "1e40af" },
           insideHorizontal: { style: BorderStyle.NONE },
           insideVertical: { style: BorderStyle.NONE }
         }
