@@ -82,7 +82,8 @@ export async function POST(request: NextRequest) {
     }
 
          // Get unique timeframes from answers and sort from higher to lower timeframes
-     const timeframeOrder = ['DAILY', 'H4', 'H1', 'M30', 'M15', 'M5', 'M1'];
+     // Using only the timeframes that are actually used in the Top Down Analysis Setup dialog
+     const timeframeOrder = ['MN1', 'W1', 'DAILY', 'H8', 'H4', 'H2', 'H1', 'M30', 'M15', 'M10'];
      const selectedTimeframes = answers ? 
        Array.from(new Set(answers.map(a => a.tda_questions?.timeframe).filter(Boolean)))
          .sort((a, b) => {
@@ -94,33 +95,39 @@ export async function POST(request: NextRequest) {
     // Special timeframes that use the detailed table format
     const specialTimeframes: TimeframeType[] = ['DAILY', 'H1', 'M15'];
 
-    // Helper function to get timeframe display name
-    const getTimeframeDisplayName = (timeframe: string) => {
-      const mapping: Record<string, string> = {
-        'DAILY': 'Daily Candle Chart',
-        'H1': '1-Hour Candle Chart', 
-        'M15': '15-Minute Chart',
-        'H4': '4-Hour Chart',
-        'M30': '30-Minute Chart',
-        'M5': '5-Minute Chart',
-        'M1': '1-Minute Chart'
-      };
-      return mapping[timeframe] || timeframe;
-    };
+         // Helper function to get timeframe display name
+     const getTimeframeDisplayName = (timeframe: string) => {
+       const mapping: Record<string, string> = {
+         'MN1': 'Monthly Chart',
+         'W1': 'Weekly Chart',
+         'DAILY': 'Daily Candle Chart',
+         'H8': '8-Hour Chart',
+         'H4': '4-Hour Chart',
+         'H2': '2-Hour Chart',
+         'H1': '1-Hour Candle Chart', 
+         'M30': '30-Minute Chart',
+         'M15': '15-Minute Chart',
+         'M10': '10-Minute Chart'
+       };
+       return mapping[timeframe] || timeframe;
+     };
 
-    // Helper function to get trader type
-    const getTraderType = (timeframe: string) => {
-      const mapping: Record<string, string> = {
-        'DAILY': 'Position Trader Sentiment',
-        'H1': 'Swing / Day Trader Sentiment',
-        'M15': 'Intraday Trader Sentiment',
-        'H4': 'Swing Trader Sentiment',
-        'M30': 'Day Trader Sentiment',
-        'M5': 'Scalper Sentiment',
-        'M1': 'Scalper Sentiment'
-      };
-      return mapping[timeframe] || 'Trader Sentiment';
-    };
+         // Helper function to get trader type
+     const getTraderType = (timeframe: string) => {
+       const mapping: Record<string, string> = {
+         'MN1': 'Long-term Position Trader Sentiment',
+         'W1': 'Position Trader Sentiment',
+         'DAILY': 'Position Trader Sentiment',
+         'H8': 'Swing Trader Sentiment',
+         'H4': 'Swing Trader Sentiment',
+         'H2': 'Swing / Day Trader Sentiment',
+         'H1': 'Swing / Day Trader Sentiment',
+         'M30': 'Day Trader Sentiment',
+         'M15': 'Intraday Trader Sentiment',
+         'M10': 'Intraday Trader Sentiment'
+       };
+       return mapping[timeframe] || 'Trader Sentiment';
+     };
 
     // Helper function to create table cell with color coding
     const createCell = (text: string, bold: boolean = false, alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT, width: number = 20, color?: string) => {
