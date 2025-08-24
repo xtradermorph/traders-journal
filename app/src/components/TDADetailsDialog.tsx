@@ -135,10 +135,16 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
 
   const getTimeframeDisplayName = (timeframe: string) => {
     switch (timeframe) {
+      case 'MN1': return 'Monthly';
+      case 'W1': return 'Weekly';
       case 'DAILY': return 'Daily';
-      case 'H1': return '1 Hour';
+      case 'H8': return '8 Hour';
+      case 'H4': return '4 Hour';
       case 'H2': return '2 Hour';
-      case 'M15': return '15 Minutes';
+      case 'H1': return '1 Hour';
+      case 'M30': return '30 Minute';
+      case 'M15': return '15 Minute';
+      case 'M10': return '10 Minute';
       default: return timeframe;
     }
   };
@@ -343,17 +349,108 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                     <span className="text-sm font-medium text-slate-700">Currency Pair:</span>
                     <span className="text-sm text-slate-600">{data.analysis?.currency_pair}</span>
                   </div>
-                  <div className="flex items-center space-x-2">
-                    <Badge className={getRecommendationColor(data.analysis?.trade_recommendation)}>
-                      {data.analysis?.trade_recommendation || 'N/A'}
-                    </Badge>
+                </div>
+                
+                {/* Timeframes Analysed Section */}
+                <div className="mt-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Calendar className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-slate-700">Timeframes Analysed:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {(() => {
+                      if (!data?.questions || data.questions.length === 0) {
+                        return <span className="text-sm text-slate-500">No timeframes available</span>;
+                      }
+
+                      // Get unique timeframes from answers and sort from higher to lower timeframes
+                      const timeframes = [...new Set(data.answers.map(a => {
+                        const question = data.questions.find(q => q.id === a.question_id);
+                        return question?.timeframe;
+                      }).filter(Boolean))].sort((a, b) => {
+                        const order = { 'MN1': 1, 'W1': 2, 'DAILY': 3, 'H8': 4, 'H4': 5, 'H2': 6, 'H1': 7, 'M30': 8, 'M15': 9, 'M10': 10 };
+                        return (order[a as keyof typeof order] || 999) - (order[b as keyof typeof order] || 999);
+                      });
+
+                      return timeframes.map((timeframe: string) => (
+                        <Badge key={timeframe} variant="outline" className="text-blue-700 border-blue-300">
+                          {getTimeframeDisplayName(timeframe)}
+                        </Badge>
+                      ));
+                    })()}
                   </div>
                 </div>
-                {data.analysis?.notes && (
-                  <div className="mt-3 p-3 bg-white/50 rounded-lg">
-                    <p className="text-sm text-slate-700">{data.analysis.notes}</p>
+
+                {/* Timeframes Sentiment Section */}
+                <div className="mt-4">
+                  <div className="flex items-center space-x-2 mb-2">
+                    <Brain className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-slate-700">Timeframes Sentiment:</span>
                   </div>
-                )}
+                  <div className="space-y-2">
+                    {(() => {
+                      if (!data?.questions || data.questions.length === 0) {
+                        return <span className="text-sm text-slate-500">No sentiment data available</span>;
+                      }
+
+                      // Get unique timeframes from answers and sort from higher to lower timeframes
+                      const timeframes = [...new Set(data.answers.map(a => {
+                        const question = data.questions.find(q => q.id === a.question_id);
+                        return question?.timeframe;
+                      }).filter(Boolean))].sort((a, b) => {
+                        const order = { 'MN1': 1, 'W1': 2, 'DAILY': 3, 'H8': 4, 'H4': 5, 'H2': 6, 'H1': 7, 'M30': 8, 'M15': 9, 'M10': 10 };
+                        return (order[a as keyof typeof order] || 999) - (order[b as keyof typeof order] || 999);
+                      });
+
+                      return timeframes.map((timeframe: string) => {
+                        const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
+                        const timeframeQuestions = getTimeframeQuestions(timeframe);
+                        const timeframeAnswers = getTimeframeAnswers(timeframe);
+                        
+                        // AI sentiment analysis based on questions and answers
+                        const analyzeSentiment = () => {
+                          if (timeframeAnalysis?.timeframe_sentiment) {
+                            return timeframeAnalysis.timeframe_sentiment;
+                          }
+                          
+                          // Fallback: analyze answers manually
+                          let bullishSignals = 0;
+                          let bearishSignals = 0;
+                          
+                          timeframeAnswers.forEach((answer: TDAAnswer) => {
+                            const answerText = (answer.answer_text || String(answer.answer_value || '')).toLowerCase();
+                            if (answerText.includes('bullish') || answerText.includes('long') || answerText.includes('up') || answerText.includes('strong') || answerText.includes('support')) {
+                              bullishSignals++;
+                            } else if (answerText.includes('bearish') || answerText.includes('short') || answerText.includes('down') || answerText.includes('weak') || answerText.includes('resistance')) {
+                              bearishSignals++;
+                            }
+                          });
+                          
+                          if (bullishSignals > bearishSignals) {
+                            return 'BULLISH';
+                          } else if (bearishSignals > bullishSignals) {
+                            return 'BEARISH';
+                          } else {
+                            return 'NEUTRAL';
+                          }
+                        };
+                        
+                        const sentiment = analyzeSentiment();
+                        
+                        return (
+                          <div key={timeframe} className="flex items-center justify-between p-2 bg-white/50 rounded-lg">
+                            <span className="text-sm font-medium text-slate-700">
+                              {getTimeframeDisplayName(timeframe)}:
+                            </span>
+                            <Badge className={sentiment === 'BULLISH' ? 'bg-green-100 text-green-800' : sentiment === 'BEARISH' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-800'}>
+                              {sentiment === 'BULLISH' ? 'Bullish' : sentiment === 'BEARISH' ? 'Bearish' : 'Neutral'}
+                            </Badge>
+                          </div>
+                        );
+                      });
+                    })()}
+                  </div>
+                </div>
               </CardContent>
             </Card>
 
@@ -371,12 +468,12 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                     return <p className="text-slate-600 text-center py-4">No timeframe data available</p>;
                   }
 
-                  // Get unique timeframes from answers (which represent selected timeframes) and sort them
+                  // Get unique timeframes from answers (which represent selected timeframes) and sort them from higher to lower timeframes
                   const timeframes = [...new Set(data.answers.map(a => {
                     const question = data.questions.find(q => q.id === a.question_id);
                     return question?.timeframe;
                   }).filter(Boolean))].sort((a, b) => {
-                    const order = { 'DAILY': 1, 'H1': 2, 'M15': 3, 'H4': 4, 'H2': 5, 'M30': 6, 'M10': 7, 'H8': 8, 'W1': 9, 'MN1': 10 };
+                    const order = { 'MN1': 1, 'W1': 2, 'DAILY': 3, 'H8': 4, 'H4': 5, 'H2': 6, 'H1': 7, 'M30': 8, 'M15': 9, 'M10': 10 };
                     return (order[a as keyof typeof order] || 999) - (order[b as keyof typeof order] || 999);
                   });
 
