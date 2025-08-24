@@ -661,19 +661,12 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                     <h4 className="font-medium text-slate-800 mb-2">Summary</h4>
                     <p className="text-sm text-slate-700">
                       {(() => {
-                        // Use the original AI summary that was generated during TDA completion
-                        // This summary was created by analyzing ALL the questions, answers, and timeframe data
-                        if (data.analysis?.ai_summary) {
-                          return data.analysis.ai_summary;
-                        }
-
-                        // Fallback: Generate a basic summary if no AI summary exists
                         const timeframes = getSelectedTimeframes();
                         if (timeframes.length === 0) {
                           return 'No analysis data available.';
                         }
 
-                        // Get current sentiment data for each timeframe
+                        // Get current sentiment data for each timeframe (consistent with Timeframes Sentiment section)
                         const timeframeSentiments = timeframes.map(timeframe => {
                           const timeframeAnalysis = data.timeframe_analyses?.find((ta: TDATimeframeAnalysis) => ta.timeframe === timeframe);
                           return {
@@ -694,9 +687,9 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                           overallSentiment = 'bearish';
                         }
 
-                        // Generate summary text
+                        // Generate summary text with only selected timeframes
                         const timeframeText = timeframeSentiments.map(t => `${t.timeframe}: ${t.sentiment.toLowerCase()}`).join(', ');
-                        const probability = data.analysis?.overall_probability || 50;
+                        const probability = updatedMetrics?.overall_probability || data.analysis?.overall_probability || 50;
                         
                         return `Top Down Analysis for ${data.analysis?.currency_pair} shows a ${probability.toFixed(1)}% probability of a ${overallSentiment} move. Key timeframes: ${timeframeText}. Recommendation: ${data.analysis?.trade_recommendation === 'AVOID' ? 'Avoid trading at this time' : `Consider ${data.analysis?.trade_recommendation?.toLowerCase() || 'neutral'} position`}.`;
                       })()}
@@ -726,15 +719,16 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
                                         timeframeAnalysis?.analysis_data?.reasoning || 
                                         'Analysis completed based on user input and market conditions.';
                           
-                          // Clean up reasoning - remove technical indicators and make it brief
+                          // Clean up reasoning - remove technical indicators but keep detailed analysis
                           reasoning = reasoning
                             .replace(/RSI|MACD|Moving Average|Technical indicators?/gi, '')
                             .replace(/\s+/g, ' ')
                             .trim();
                           
-                          // Limit to brief opinion (max 100 characters)
-                          if (reasoning.length > 100) {
-                            reasoning = reasoning.substring(0, 100) + '...';
+                          // For enhanced reasoning, allow longer text (up to 300 characters)
+                          const maxLength = enhancedReasoningData?.reasoning ? 300 : 100;
+                          if (reasoning.length > maxLength) {
+                            reasoning = reasoning.substring(0, maxLength) + '...';
                           }
                           
                           return (

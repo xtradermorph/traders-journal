@@ -91,15 +91,48 @@ async function fetchAlphaVantageData(currencyPair: string) {
     const latestData = timeSeriesData[dates[0]];
     const previousData = timeSeriesData[dates[1]];
 
+    // Calculate additional market metrics
+    const currentPrice = parseFloat(latestData['4. close']);
+    const previousPrice = parseFloat(previousData['4. close']);
+    const dailyChange = currentPrice - previousPrice;
+    const dailyChangePercent = (dailyChange / previousPrice) * 100;
+    const high = parseFloat(latestData['2. high']);
+    const low = parseFloat(latestData['3. low']);
+    const volume = parseFloat(latestData['5. volume']);
+    const marketTrend = currentPrice > previousPrice ? 'BULLISH' : 'BEARISH';
+
+    // Calculate volatility and momentum
+    const volatility = Math.abs(dailyChangePercent);
+    const momentum = dailyChangePercent > 0 ? 'positive' : 'negative';
+    const strength = Math.abs(dailyChangePercent) > 1 ? 'strong' : Math.abs(dailyChangePercent) > 0.5 ? 'moderate' : 'weak';
+
+    // Generate market sentiment description
+    let marketSentiment = '';
+    if (volatility > 2) {
+      marketSentiment = `The market is experiencing high volatility with a ${strength} ${momentum} momentum.`;
+    } else if (volatility > 1) {
+      marketSentiment = `Moderate volatility observed with ${momentum} price movement.`;
+    } else {
+      marketSentiment = `Low volatility environment with minimal price movement.`;
+    }
+
     return {
-      currentPrice: parseFloat(latestData['4. close']),
-      previousPrice: parseFloat(previousData['4. close']),
-      dailyChange: parseFloat(latestData['4. close']) - parseFloat(previousData['4. close']),
-      dailyChangePercent: ((parseFloat(latestData['4. close']) - parseFloat(previousData['4. close'])) / parseFloat(previousData['4. close'])) * 100,
-      high: parseFloat(latestData['2. high']),
-      low: parseFloat(latestData['3. low']),
-      volume: parseFloat(latestData['5. volume']),
-      marketTrend: parseFloat(latestData['4. close']) > parseFloat(previousData['4. close']) ? 'BULLISH' : 'BEARISH'
+      currentPrice,
+      previousPrice,
+      dailyChange,
+      dailyChangePercent,
+      high,
+      low,
+      volume,
+      marketTrend,
+      volatility,
+      momentum,
+      strength,
+      marketSentiment,
+      // Additional context for reasoning
+      priceContext: `Current price at ${currentPrice.toFixed(5)} with ${dailyChange > 0 ? 'gain' : 'loss'} of ${Math.abs(dailyChange).toFixed(5)} (${Math.abs(dailyChangePercent).toFixed(2)}%)`,
+      rangeContext: `Trading range: ${low.toFixed(5)} - ${high.toFixed(5)}`,
+      trendContext: `${marketTrend.toLowerCase()} trend with ${strength} momentum`
     };
   } catch (error) {
     console.error('Alpha Vantage fetch error:', error);
@@ -122,15 +155,34 @@ async function generateEnhancedReasoning(timeframeAnalyses: any[], alphaVantageD
       reasoning: tf.analysis_data?.ai_reasoning || tf.analysis_data?.reasoning || 'Analysis completed.'
     }));
 
-    const prompt = `You are a professional forex analyst. Analyze the following Top Down Analysis data and provide brief, concise reasoning for each timeframe. 
+    const prompt = `You are a professional forex analyst. Analyze the following Top Down Analysis data and provide detailed, comprehensive reasoning for each timeframe that incorporates real-time market data.
 
 Currency Pair: ${currencyPair}
-Current Market Data: ${alphaVantageData ? `Price: ${alphaVantageData.currentPrice}, Daily Change: ${alphaVantageData.dailyChangePercent.toFixed(2)}%, Market Trend: ${alphaVantageData.marketTrend}` : 'Market data unavailable'}
+
+ALPHA VANTAGE MARKET DATA:
+${alphaVantageData ? `
+- Current Price: ${alphaVantageData.currentPrice.toFixed(5)}
+- Daily Change: ${alphaVantageData.dailyChange > 0 ? '+' : ''}${alphaVantageData.dailyChange.toFixed(5)} (${alphaVantageData.dailyChangePercent > 0 ? '+' : ''}${alphaVantageData.dailyChangePercent.toFixed(2)}%)
+- Market Trend: ${alphaVantageData.marketTrend}
+- Volatility: ${alphaVantageData.volatility.toFixed(2)}%
+- Momentum: ${alphaVantageData.momentum} (${alphaVantageData.strength})
+- Trading Range: ${alphaVantageData.low.toFixed(5)} - ${alphaVantageData.high.toFixed(5)}
+- Market Sentiment: ${alphaVantageData.marketSentiment}
+` : 'Market data unavailable'}
 
 Timeframe Analysis Data:
 ${timeframeData.map(tf => `- ${tf.timeframe}: ${tf.sentiment} (${tf.probability}% probability)`).join('\n')}
 
-Provide brief reasoning for each timeframe (max 100 characters each) that considers both the user's analysis and current market conditions. Focus on key insights without technical indicators.`;
+TASK: Provide detailed reasoning for each timeframe that combines the user's technical analysis with current market conditions. Each reasoning should be 2-3 sentences and include:
+
+1. How the current market conditions (price, trend, volatility) align with or contradict the user's analysis
+2. Specific insights about the timeframe's sentiment in relation to market momentum
+3. Risk considerations based on current volatility and market strength
+4. Actionable insights for trading decisions
+
+Format each timeframe response as: "TIMEFRAME: [detailed reasoning]"
+
+Focus on providing professional, actionable insights that help traders understand the relationship between their analysis and current market reality.`;
 
     const response = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
@@ -156,10 +208,20 @@ Provide brief reasoning for each timeframe (max 100 characters each) that consid
     // Parse AI response and map to timeframes
     const enhancedReasoning = timeframeAnalyses.map(tf => {
       const timeframeName = tf.timeframe.toLowerCase();
-      const reasoningMatch = aiReasoning.match(new RegExp(`${timeframeName}[^\\n]*`, 'i'));
+      // Look for the timeframe in the AI response with more flexible matching
+      const reasoningMatch = aiReasoning.match(new RegExp(`${timeframeName}[^\\n]*?([^\\n]+(?:\\n[^\\n]+)*)`, 'i'));
+      
+      let reasoning = 'Analysis considers current market conditions and user input.';
+      if (reasoningMatch) {
+        // Extract the reasoning part after the timeframe
+        reasoning = reasoningMatch[0].replace(new RegExp(`^${timeframeName}[^:]*:\\s*`, 'i'), '').trim();
+        // Clean up any remaining formatting
+        reasoning = reasoning.replace(/^[-•]\s*/, '').trim();
+      }
+      
       return {
         timeframe: tf.timeframe,
-        reasoning: reasoningMatch ? reasoningMatch[0].replace(/^[^:]*:\s*/, '').trim() : 'Analysis considers current market conditions and user input.'
+        reasoning: reasoning
       };
     });
 
