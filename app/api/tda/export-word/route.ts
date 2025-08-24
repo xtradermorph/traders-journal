@@ -137,6 +137,67 @@ export async function POST(request: NextRequest) {
       });
     };
 
+    // Helper function to create cell with mixed colored text
+    const createMixedColorCell = (text: string, bold: boolean = false, alignment: typeof AlignmentType[keyof typeof AlignmentType] = AlignmentType.LEFT, width: number = 20) => {
+      const textRuns: TextRun[] = [];
+      const words = text.split(' ');
+      
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const lowerWord = word.toLowerCase();
+        let color: string | undefined;
+        
+        // Check for exact keyword matches
+        if (lowerWord === 'bullish' || lowerWord === 'long' || lowerWord === 'oversold' || lowerWord === 'green') {
+          color = "008000"; // Green
+        } else if (lowerWord === 'bearish' || lowerWord === 'short' || lowerWord === 'overbought' || lowerWord === 'red') {
+          color = "ff0000"; // Red
+        } else if (lowerWord === 'nz' && i + 2 < words.length && words[i + 1].toLowerCase() === 'from' && words[i + 2].toLowerCase() === 'oversold') {
+          color = "008000"; // Green
+          // Add the next two words with the same color
+          textRuns.push(new TextRun({ 
+            text: word + ' ' + words[i + 1] + ' ' + words[i + 2] + (i + 2 < words.length - 1 ? ' ' : ''), 
+            bold, 
+            color: "008000"
+          }));
+          i += 2; // Skip the next two words
+          continue;
+        } else if (lowerWord === 'nz' && i + 2 < words.length && words[i + 1].toLowerCase() === 'from' && words[i + 2].toLowerCase() === 'overbought') {
+          color = "ff0000"; // Red
+          // Add the next two words with the same color
+          textRuns.push(new TextRun({ 
+            text: word + ' ' + words[i + 1] + ' ' + words[i + 2] + (i + 2 < words.length - 1 ? ' ' : ''), 
+            bold, 
+            color: "ff0000"
+          }));
+          i += 2; // Skip the next two words
+          continue;
+        }
+        
+        textRuns.push(new TextRun({ 
+          text: word + (i < words.length - 1 ? ' ' : ''), 
+          bold, 
+          color: color || "000000" // Default to black
+        }));
+      }
+      
+      return new TableCell({
+        children: [
+          new Paragraph({
+            children: textRuns,
+            alignment
+          })
+        ],
+        width: { size: width, type: WidthType.PERCENTAGE },
+        margins: {
+          top: 100,
+          bottom: 100,
+          left: 100,
+          right: 100
+        }
+      });
+    };
+
     // Helper function to create empty cell
     const createEmptyCell = (width: number = 20) => {
       return new TableCell({
@@ -171,13 +232,12 @@ export async function POST(request: NextRequest) {
       
       const lowerText = text.toLowerCase();
       
-      // Green colors for bullish terms
-      if (lowerText.includes('bullish') || lowerText.includes('long') || lowerText.includes('oversold') || lowerText.includes('nz from oversold') || lowerText.includes('green')) {
+      // Only color exact matches, not partial matches
+      if (lowerText === 'bullish' || lowerText === 'long' || lowerText === 'oversold' || lowerText === 'nz from oversold' || lowerText === 'green') {
         return "008000"; // Green
       }
       
-      // Red colors for bearish terms
-      if (lowerText.includes('bearish') || lowerText.includes('short') || lowerText.includes('overbought') || lowerText.includes('nz from overbought') || lowerText.includes('red')) {
+      if (lowerText === 'bearish' || lowerText === 'short' || lowerText === 'overbought' || lowerText === 'nz from overbought' || lowerText === 'red') {
         return "ff0000"; // Red
       }
       
@@ -380,15 +440,12 @@ export async function POST(request: NextRequest) {
           const value = getAnswerValue(answer);
           const cellWidth = 100 / rowQuestions.length;
           
-          // Use improved color coding function
-          const color = getTextColor(value);
-          
-          cells.push(createCell(
+          // Use mixed color cell for better keyword coloring
+          cells.push(createMixedColorCell(
             `${question.question_text}: ${value || ""}`, 
             true, 
             AlignmentType.LEFT, 
-            cellWidth,
-            color
+            cellWidth
           ));
         });
         
@@ -407,10 +464,10 @@ export async function POST(request: NextRequest) {
           right: 200
         },
         borders: {
-          top: { style: BorderStyle.SINGLE, size: 2, color: "1e40af" },
-          bottom: { style: BorderStyle.SINGLE, size: 2, color: "1e40af" },
-          left: { style: BorderStyle.SINGLE, size: 2, color: "1e40af" },
-          right: { style: BorderStyle.SINGLE, size: 2, color: "1e40af" },
+          top: { style: BorderStyle.SINGLE, size: 3, color: "1e40af" },
+          bottom: { style: BorderStyle.SINGLE, size: 3, color: "1e40af" },
+          left: { style: BorderStyle.SINGLE, size: 3, color: "1e40af" },
+          right: { style: BorderStyle.SINGLE, size: 3, color: "1e40af" },
           insideHorizontal: { style: BorderStyle.NONE },
           insideVertical: { style: BorderStyle.NONE }
         }
