@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { useUserProfile } from '../src/hooks/useAuth';
+import { useUserProfile } from '../src/components/UserProfileContext';
 import { useMessageStore } from '../src/lib/store/messageStore';
 import { useToast } from '../src/hooks/use-toast';
 import { PageHeader } from '../src/components/PageHeader';
