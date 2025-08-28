@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
 
 // Force dynamic rendering to prevent static generation errors
 export const dynamic = 'force-dynamic';
@@ -19,7 +20,7 @@ import { PageHeader } from '../src/components/PageHeader';
 import { UserProfile } from '../src/types';
 import { PublicProfileView } from '../src/components/PublicProfileView';
 import { sendFriendRequest, getFriendshipStatusString, acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from '../lib/friendsUtils';
-import { useChatStore } from '../src/lib/store/chatStore';
+import { useMessageStore } from '../src/lib/store/messageStore';
 import DashboardFooter from '../src/components/DashboardFooter';
 
 interface Trader {
@@ -257,8 +258,9 @@ const TraderCard = ({
 };
 
 const TradersPage = () => {
+  const router = useRouter();
   const { toast } = useToast();
-  const { openChat, setActiveConversation } = useChatStore();
+  const { setCurrentConversation } = useMessageStore();
   
   const [traders, setTraders] = useState<Trader[]>([]);
   const [loading, setLoading] = useState(true);
@@ -694,43 +696,35 @@ const TradersPage = () => {
         return;
       }
 
-      // Create a temporary conversation for the chat widget
-      const tempConversation = {
-        group_id: `temp_${recipientId}`,
-        name: trader.username || 'Unknown User',
-        is_direct: true,
-        members: [
-          { profile: { id: user.id, username: 'You', avatar_url: '' } },
-          { profile: { id: recipientId, username: trader.username, avatar_url: trader.avatar_url } }
-        ],
-        last_message: '',
-        last_message_at: new Date().toISOString(),
+      // Create a conversation object for the new messaging system
+      const conversation = {
+        id: recipientId,
+        user_id: user.id,
+        other_user_id: recipientId,
+        other_user: {
+          id: recipientId,
+          username: trader.username,
+          avatar_url: trader.avatar_url
+        },
+        last_message: undefined,
         unread_count: 0,
-        is_pinned: false,
-        is_muted: false,
-        creator_id: user.id
+        updated_at: new Date().toISOString()
       };
 
-      // Open the chat widget with the temporary conversation
-      // This will be handled by the ChatWidget component
-      // The actual chat creation will happen when the first message is sent
-      
-      // Import and use the chat store
-      const { openChat, setActiveConversation } = await import('../src/lib/store/chatStore').then(module => module.useChatStore.getState());
-      
-      setActiveConversation(tempConversation);
-      openChat(true);
+      // Set the current conversation and navigate to messages page
+      setCurrentConversation(conversation);
+      router.push('/messages');
 
       toast({
-        title: 'Chat Opened',
-        description: `Chat opened with ${trader.username}`,
+        title: 'Message',
+        description: `Opening conversation with ${trader.username}`,
       });
 
     } catch (error) {
-      console.error('Error opening chat:', error);
+      console.error('Error opening conversation:', error);
       toast({
         title: 'Error',
-        description: 'Failed to open chat. Please try again.',
+        description: 'Failed to open conversation. Please try again.',
         variant: 'destructive',
       });
     }
@@ -875,6 +869,7 @@ const TradersPage = () => {
                 profile={selectedProfile}
                 isOpen={isProfileModalOpen}
                 onClose={closeProfileModal}
+                onSendMessage={handleSendMessage}
               />
             )}
             <DashboardFooter />

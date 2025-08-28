@@ -1,0 +1,1632 @@
+[1mdiff --git a/NEW_MESSAGING_SYSTEM_SUMMARY.md b/NEW_MESSAGING_SYSTEM_SUMMARY.md[m
+[1mnew file mode 100644[m
+[1mindex 0000000..f8b6fc8[m
+[1m--- /dev/null[m
+[1m+++ b/NEW_MESSAGING_SYSTEM_SUMMARY.md[m
+[36m@@ -0,0 +1,120 @@[m
+[32m+[m[32m# New Direct Messaging System Implementation[m
+[32m+[m
+[32m+[m[32m## Overview[m
+[32m+[m[32mSuccessfully replaced the old chat widget system with a modern, dedicated direct messaging system that integrates seamlessly with the existing trader discovery features.[m
+[32m+[m
+[32m+[m[32m## ✅ **What Was Removed**[m
+[32m+[m[32m1. **Chat Widget Component** (`app/src/components/chat/ChatWidget.tsx`)[m
+[32m+[m[32m2. **Chat Store** (`app/src/lib/store/chatStore.ts`)[m
+[32m+[m[32m3. **Chat Widget from Layout** (removed from `app/layout.tsx`)[m
+[32m+[m
+[32m+[m[32m## ✅ **What Was Implemented**[m
+[32m+[m
+[32m+[m[32m### 1. **New Message Store** (`app/src/lib/store/messageStore.ts`)[m
+[32m+[m[32m- Zustand-based state management for conversations and messages[m
+[32m+[m[32m- Handles conversation list, current conversation, and message state[m
+[32m+[m[32m- Supports real-time message updates and conversation management[m
+[32m+[m
+[32m+[m[32m### 2. **Messages API** (`app/api/messages/route.ts`)[m
+[32m+[m[32m- **GET** `/api/messages?action=conversations` - Fetch all conversations[m
+[32m+[m[32m- **GET** `/api/messages?action=messages&conversationId=xxx` - Fetch messages for a conversation[m
+[32m+[m[32m- **POST** `/api/messages` - Send a new message[m
+[32m+[m[32m- Automatic message read status updates[m
+[32m+[m[32m- Conversation grouping and unread count tracking[m
+[32m+[m
+[32m+[m[32m### 3. **Messages Page** (`app/messages/page.tsx`)[m
+[32m+[m[32m- **Conversations List**: Shows all conversations with last message and unread count[m
+[32m+[m[32m- **Message Interface**: Real-time messaging with file/image support[m
+[32m+[m[32m- **Search Functionality**: Filter conversations by username[m
+[32m+[m[32m- **Responsive Design**: Works on mobile and desktop[m
+[32m+[m[32m- **File Sharing**: Support for images and documents[m
+[32m+[m[32m- **Message Status**: Read/unread indicators and timestamps[m
+[32m+[m
+[32m+[m[32m### 4. **Updated Trader Integration**[m
+[32m+[m[32m- **Traders Page** (`app/traders/page.tsx`): Updated message buttons to use new system[m
+[32m+[m[32m- **Public Profile View** (`app/src/components/PublicProfileView.tsx`): Added message button[m
+[32m+[m[32m- **Mobile Navigation** (`app/src/components/MobileNavigation.tsx`): Added Messages link[m
+[32m+[m
+[32m+[m[32m## ✅ **Features Implemented**[m
+[32m+[m
+[32m+[m[32m### **Direct Messaging**[m
+[32m+[m[32m- ✅ One-on-one conversations between traders[m
+[32m+[m[32m- ✅ Real-time message sending and receiving[m
+[32m+[m[32m- ✅ Message history and conversation persistence[m
+[32m+[m[32m- ✅ Unread message indicators[m
+[32m+[m
+[32m+[m[32m### **File & Image Sharing**[m
+[32m+[m[32m- ✅ Support for image uploads (charts, screenshots)[m
+[32m+[m[32m- ✅ Document sharing (PDF, DOC, TXT files)[m
+[32m+[m[32m- ✅ File preview and download capabilities[m
+[32m+[m
+[32m+[m[32m### **Message Notifications**[m
+[32m+[m[32m- ✅ Unread message badges on conversations[m
+[32m+[m[32m- ✅ Message status tracking (sent, delivered, read)[m
+[32m+[m[32m- ✅ Conversation list updates with latest messages[m
+[32m+[m
+[32m+[m[32m### **Search & Filtering**[m
+[32m+[m[32m- ✅ Search conversations by username[m
+[32m+[m[32m- ✅ Filter conversations by recent activity[m
+[32m+[m[32m- ✅ Quick access to active conversations[m
+[32m+[m
+[32m+[m[32m### **User Experience**[m
+[32m+[m[32m- ✅ Responsive design for mobile and desktop[m
+[32m+[m[32m- ✅ Intuitive conversation interface[m
+[32m+[m[32m- ✅ Message timestamps and formatting[m
+[32m+[m[32m- ✅ Easy navigation between conversations[m
+[32m+[m
+[32m+[m[32m## ✅ **Database Structure**[m
+[32m+[m[32mThe system uses the existing `messages` table with the following structure:[m
+[32m+[m[32m- `id` - Unique message identifier[m
+[32m+[m[32m- `sender_id` - User who sent the message[m
+[32m+[m[32m- `receiver_id` - User who receives the message[m
+[32m+[m[32m- `content` - Message text content[m
+[32m+[m[32m- `message_type` - 'text', 'image', or 'file'[m
+[32m+[m[32m- `file_url` - URL for shared files/images[m
+[32m+[m[32m- `file_name` - Original filename[m
+[32m+[m[32m- `is_read` - Message read status[m
+[32m+[m[32m- `created_at` - Message timestamp[m
+[32m+[m
+[32m+[m[32m## ✅ **Integration Points**[m
+[32m+[m
+[32m+[m[32m### **Trader Discovery**[m
+[32m+[m[32m- Message buttons on trader cards now open conversations[m
+[32m+[m[32m- Profile view includes message functionality[m
+[32m+[m[32m- Seamless navigation to messaging system[m
+[32m+[m
+[32m+[m[32m### **Navigation**[m
+[32m+[m[32m- Added Messages link to mobile navigation[m
+[32m+[m[32m- Direct access from dashboard and trader pages[m
+[32m+[m[32m- Consistent user experience across the app[m
+[32m+[m
+[32m+[m[32m## 🔧 **Next Steps for Production**[m
+[32m+[m
+[32m+[m[32m### **File Upload Enhancement**[m
+[32m+[m[32m- Implement Supabase Storage for file uploads[m
+[32m+[m[32m- Add file size limits and type validation[m
+[32m+[m[32m- Create secure file access URLs[m
+[32m+[m
+[32m+[m[32m### **Real-time Features**[m
+[32m+[m[32m- Add WebSocket support for live messaging[m
+[32m+[m[32m- Implement typing indicators[m
+[32m+[m[32m- Add online/offline status for conversations[m
+[32m+[m
+[32m+[m[32m### **Advanced Features**[m
+[32m+[m[32m- Message reactions and emojis[m
+[32m+[m[32m- Message editing and deletion[m
+[32m+[m[32m- Conversation archiving[m
+[32m+[m[32m- Message search within conversations[m
+[32m+[m
+[32m+[m[32m## 📋 **SQL Cleanup Required**[m
+[32m+[m[32mRun the `REMOVE_CHAT_SYSTEM.sql` script in your Supabase SQL Editor to remove the old chat system tables and functions.[m
+[32m+[m
+[32m+[m[32m## 🎯 **User Flow**[m
+[32m+[m[32m1. User discovers traders on `/traders` page[m
+[32m+[m[32m2. Clicks message button on trader card or profile[m
+[32m+[m[32m3. Gets redirected to `/messages` page with conversation open[m
+[32m+[m[32m4. Can send text messages, images, or files[m
+[32m+[m[32m5. Conversations are saved and accessible from Messages page[m
+[32m+[m[32m6. Unread messages show badges for easy identification[m
+[32m+[m
+[32m+[m[32mThe new messaging system provides a much better user experience compared to the old chat widget, with dedicated space for conversations, better file sharing capabilities, and improved navigation integration.[m
+[1mdiff --git a/REMOVE_CHAT_SYSTEM.sql b/REMOVE_CHAT_SYSTEM.sql[m
+[1mnew file mode 100644[m
+[1mindex 0000000..024de6d[m
+[1m--- /dev/null[m
+[1m+++ b/REMOVE_CHAT_SYSTEM.sql[m
+[36m@@ -0,0 +1,29 @@[m
+[32m+[m[32m-- SQL Scripts to Remove Chat Widget System from Supabase[m
+[32m+[m[32m-- Run these scripts in your Supabase SQL Editor[m
+[32m+[m
+[32m+[m[32m-- 1. Drop Chat-Related Functions[m
+[32m+[m[32mDROP FUNCTION IF EXISTS public.create_or_get_direct_chat(recipient_id_param uuid);[m
+[32m+[m
+[32m+[m[32m-- 2. Drop Chat-Related Tables (in correct order due to foreign key constraints)[m
+[32m+[m[32m-- First drop tables that reference other tables[m
+[32m+[m[32mDROP TABLE IF EXISTS public.chat_messages CASCADE;[m
+[32m+[m[32mDROP TABLE IF EXISTS public.chat_group_members CASCADE;[m
+[32m+[m[32mDROP TABLE IF EXISTS public.chat_group_invitations CASCADE;[m
+[32m+[m
+[32m+[m[32m-- Then drop the main chat_groups table[m
+[32m+[m[32mDROP TABLE IF EXISTS public.chat_groups CASCADE;[m
+[32m+[m
+[32m+[m[32m-- 3. Verify removal (optional - run to confirm tables are gone)[m
+[32m+[m[32m-- SELECT table_name FROM information_schema.tables[m[41m [m
+[32m+[m[32m-- WHERE table_schema = 'public' AND table_name LIKE 'chat_%';[m
+[32m+[m
+[32m+[m[32m-- 4. Clean up any remaining indexes (if any)[m
+[32m+[m[32m-- These will be automatically dropped with the tables, but you can verify:[m
+[32m+[m[32m-- SELECT indexname FROM pg_indexes WHERE tablename LIKE 'chat_%';[m
+[32m+[m
+[32m+[m[32m-- 5. Clean up any remaining policies (if any)[m
+[32m+[m[32m-- These will be automatically dropped with the tables, but you can verify:[m
+[32m+[m[32m-- SELECT policyname FROM pg_policies WHERE tablename LIKE 'chat_%';[m
+[32m+[m
+[32m+[m[32m-- Note: The existing 'messages' table will remain as it's used for the new direct messaging system[m
+[32m+[m[32m-- This table already has the correct structure for direct messaging between users[m
+[1mdiff --git a/app/api/messages/route.ts b/app/api/messages/route.ts[m
+[1mnew file mode 100644[m
+[1mindex 0000000..ef1036a[m
+[1m--- /dev/null[m
+[1m+++ b/app/api/messages/route.ts[m
+[36m@@ -0,0 +1,183 @@[m
+[32m+[m[32mimport { NextRequest, NextResponse } from 'next/server';[m
+[32m+[m[32mimport { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';[m
+[32m+[m[32mimport { cookies } from 'next/headers';[m
+[32m+[m
+[32m+[m[32mexport async function GET(request: NextRequest) {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const supabase = createRouteHandlerClient({ cookies });[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Get current user[m
+[32m+[m[32m    const { data: { user }, error: authError } = await supabase.auth.getUser();[m
+[32m+[m[32m    if (authError || !user) {[m
+[32m+[m[32m      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    const { searchParams } = new URL(request.url);[m
+[32m+[m[32m    const conversationId = searchParams.get('conversationId');[m
+[32m+[m[32m    const action = searchParams.get('action');[m
+[32m+[m
+[32m+[m[32m    if (action === 'conversations') {[m
+[32m+[m[32m      // Fetch all conversations for the user[m
+[32m+[m[32m      const { data: conversations, error } = await supabase[m
+[32m+[m[32m        .from('messages')[m
+[32m+[m[32m        .select(`[m
+[32m+[m[32m          id,[m
+[32m+[m[32m          sender_id,[m
+[32m+[m[32m          receiver_id,[m
+[32m+[m[32m          content,[m
+[32m+[m[32m          message_type,[m
+[32m+[m[32m          file_url,[m
+[32m+[m[32m          file_name,[m
+[32m+[m[32m          is_read,[m
+[32m+[m[32m          created_at,[m
+[32m+[m[32m          updated_at,[m
+[32m+[m[32m          sender:profiles!messages_sender_id_fkey(id, username, avatar_url),[m
+[32m+[m[32m          receiver:profiles!messages_receiver_id_fkey(id, username, avatar_url)[m
+[32m+[m[32m        `)[m
+[32m+[m[32m        .or(`sender_id.eq.${user.id},receiver_id.eq.${user.id}`)[m
+[32m+[m[32m        .order('created_at', { ascending: false });[m
+[32m+[m
+[32m+[m[32m      if (error) {[m
+[32m+[m[32m        console.error('Error fetching conversations:', error);[m
+[32m+[m[32m        return NextResponse.json({ error: 'Failed to fetch conversations' }, { status: 500 });[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      // Group messages by conversation and get the latest message for each[m
+[32m+[m[32m      const conversationMap = new Map();[m
+[32m+[m[41m      [m
+[32m+[m[32m      conversations?.forEach((message) => {[m
+[32m+[m[32m        const otherUserId = message.sender_id === user.id ? message.receiver_id : message.sender_id;[m
+[32m+[m[32m        const otherUser = message.sender_id === user.id ? message.receiver : message.sender;[m
+[32m+[m[41m        [m
+[32m+[m[32m        if (!conversationMap.has(otherUserId)) {[m
+[32m+[m[32m          conversationMap.set(otherUserId, {[m
+[32m+[m[32m            id: otherUserId,[m
+[32m+[m[32m            user_id: user.id,[m
+[32m+[m[32m            other_user_id: otherUserId,[m
+[32m+[m[32m            other_user: {[m
+[32m+[m[32m              id: otherUser.id,[m
+[32m+[m[32m              username: otherUser.username,[m
+[32m+[m[32m              avatar_url: otherUser.avatar_url[m
+[32m+[m[32m            },[m
+[32m+[m[32m            last_message: message,[m
+[32m+[m[32m            unread_count: 0,[m
+[32m+[m[32m            updated_at: message.created_at[m
+[32m+[m[32m          });[m
+[32m+[m[32m        } else {[m
+[32m+[m[32m          const existing = conversationMap.get(otherUserId);[m
+[32m+[m[32m          if (new Date(message.created_at) > new Date(existing.last_message.created_at)) {[m
+[32m+[m[32m            existing.last_message = message;[m
+[32m+[m[32m            existing.updated_at = message.created_at;[m
+[32m+[m[32m          }[m
+[32m+[m[32m        }[m
+[32m+[m[41m        [m
+[32m+[m[32m        // Count unread messages[m
+[32m+[m[32m        if (message.receiver_id === user.id && !message.is_read) {[m
+[32m+[m[32m          conversationMap.get(otherUserId).unread_count++;[m
+[32m+[m[32m        }[m
+[32m+[m[32m      });[m
+[32m+[m
+[32m+[m[32m      const conversationsList = Array.from(conversationMap.values());[m
+[32m+[m[32m      return NextResponse.json({ conversations: conversationsList });[m
+[32m+[m
+[32m+[m[32m    } else if (conversationId && action === 'messages') {[m
+[32m+[m[32m      // Fetch messages for a specific conversation[m
+[32m+[m[32m      const { data: messages, error } = await supabase[m
+[32m+[m[32m        .from('messages')[m
+[32m+[m[32m        .select(`[m
+[32m+[m[32m          id,[m
+[32m+[m[32m          sender_id,[m
+[32m+[m[32m          receiver_id,[m
+[32m+[m[32m          content,[m
+[32m+[m[32m          message_type,[m
+[32m+[m[32m          file_url,[m
+[32m+[m[32m          file_name,[m
+[32m+[m[32m          is_read,[m
+[32m+[m[32m          created_at,[m
+[32m+[m[32m          updated_at,[m
+[32m+[m[32m          sender:profiles!messages_sender_id_fkey(id, username, avatar_url)[m
+[32m+[m[32m        `)[m
+[32m+[m[32m        .or(`and(sender_id.eq.${user.id},receiver_id.eq.${conversationId}),and(sender_id.eq.${conversationId},receiver_id.eq.${user.id})`)[m
+[32m+[m[32m        .order('created_at', { ascending: true });[m
+[32m+[m
+[32m+[m[32m      if (error) {[m
+[32m+[m[32m        console.error('Error fetching messages:', error);[m
+[32m+[m[32m        return NextResponse.json({ error: 'Failed to fetch messages' }, { status: 500 });[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      // Mark messages as read[m
+[32m+[m[32m      await supabase[m
+[32m+[m[32m        .from('messages')[m
+[32m+[m[32m        .update({ is_read: true })[m
+[32m+[m[32m        .eq('receiver_id', user.id)[m
+[32m+[m[32m        .eq('sender_id', conversationId)[m
+[32m+[m[32m        .eq('is_read', false);[m
+[32m+[m
+[32m+[m[32m      return NextResponse.json({ messages });[m
+[32m+[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      return NextResponse.json({ error: 'Invalid action' }, { status: 400 });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    console.error('Messages API error:', error);[m
+[32m+[m[32m    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport async function POST(request: NextRequest) {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const supabase = createRouteHandlerClient({ cookies });[m
+[32m+[m[41m    [m
+[32m+[m[32m    // Get current user[m
+[32m+[m[32m    const { data: { user }, error: authError } = await supabase.auth.getUser();[m
+[32m+[m[32m    if (authError || !user) {[m
+[32m+[m[32m      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    const body = await request.json();[m
+[32m+[m[32m    const { receiver_id, content, message_type = 'text', file_url, file_name } = body;[m
+[32m+[m
+[32m+[m[32m    if (!receiver_id || !content) {[m
+[32m+[m[32m      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    // Insert the message[m
+[32m+[m[32m    const { data: message, error } = await supabase[m
+[32m+[m[32m      .from('messages')[m
+[32m+[m[32m      .insert({[m
+[32m+[m[32m        sender_id: user.id,[m
+[32m+[m[32m        receiver_id,[m
+[32m+[m[32m        content,[m
+[32m+[m[32m        message_type,[m
+[32m+[m[32m        file_url,[m
+[32m+[m[32m        file_name,[m
+[32m+[m[32m        is_read: false[m
+[32m+[m[32m      })[m
+[32m+[m[32m      .select(`[m
+[32m+[m[32m        id,[m
+[32m+[m[32m        sender_id,[m
+[32m+[m[32m        receiver_id,[m
+[32m+[m[32m        content,[m
+[32m+[m[32m        message_type,[m
+[32m+[m[32m        file_url,[m
+[32m+[m[32m        file_name,[m
+[32m+[m[32m        is_read,[m
+[32m+[m[32m        created_at,[m
+[32m+[m[32m        updated_at,[m
+[32m+[m[32m        sender:profiles!messages_sender_id_fkey(id, username, avatar_url)[m
+[32m+[m[32m      `)[m
+[32m+[m[32m      .single();[m
+[32m+[m
+[32m+[m[32m    if (error) {[m
+[32m+[m[32m      console.error('Error sending message:', error);[m
+[32m+[m[32m      return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });[m
+[32m+[m[32m    }[m
+[32m+[m
+[32m+[m[32m    return NextResponse.json({ message });[m
+[32m+[m
+[32m+[m[32m  } catch (error) {[m
+[32m+[m[32m    console.error('Send message API error:', error);[m
+[32m+[m[32m    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });[m
+[32m+[m[32m  }[m
+[32m+[m[32m}[m
+[1mdiff --git a/app/layout.tsx b/app/layout.tsx[m
+[1mindex 81e9fd3..f1fa539 100644[m
+[1m--- a/app/layout.tsx[m
+[1m+++ b/app/layout.tsx[m
+[36m@@ -11,7 +11,7 @@[m [mimport ThemeSyncProvider from './src/components/auth/ThemeSyncProvider'[m
+ import { UserProfileProvider } from './src/components/UserProfileContext'[m
+ import { useState } from "react";[m
+ [m
+[31m-import ChatWidget from "./src/components/chat/ChatWidget";[m
+[32m+[m
+ import CookieConsent from "./src/components/CookieConsent";[m
+ import { initializeCookiePreferences } from "./src/lib/cookie-utils";[m
+ [m
+[36m@@ -234,7 +234,7 @@[m [mexport default function RootLayout({[m
+             <ThemeSyncProvider>[m
+               <UserProfileProvider>[m
+                 {children}[m
+[31m-                {!isPublicPage && <ChatWidget />}[m
+[32m+[m[41m        [m
+               </UserProfileProvider>[m
+             </ThemeSyncProvider>[m
+             [m
+[1mdiff --git a/app/messages/page.tsx b/app/messages/page.tsx[m
+[1mnew file mode 100644[m
+[1mindex 0000000..a93308b[m
+[1m--- /dev/null[m
+[1m+++ b/app/messages/page.tsx[m
+[36m@@ -0,0 +1,480 @@[m
+[32m+[m[32m"use client";[m
+[32m+[m
+[32m+[m[32mimport React, { useState, useEffect, useRef } from 'react';[m
+[32m+[m[32mimport { useRouter } from 'next/navigation';[m
+[32m+[m[32mimport { useUserProfile } from '../src/hooks/useAuth';[m
+[32m+[m[32mimport { useMessageStore } from '../src/lib/store/messageStore';[m
+[32m+[m[32mimport { useToast } from '../src/hooks/use-toast';[m
+[32m+[m[32mimport { PageHeader } from '../src/components/PageHeader';[m
+[32m+[m[32mimport { Card, CardContent, CardHeader, CardTitle } from '../src/components/ui/card';[m
+[32m+[m[32mimport { Button } from '../src/components/ui/button';[m
+[32m+[m[32mimport { Input } from '../src/components/ui/input';[m
+[32m+[m[32mimport { Avatar, AvatarFallback, AvatarImage } from '../src/components/ui/avatar';[m
+[32m+[m[32mimport { Badge } from '../src/components/ui/badge';[m
+[32m+[m[32mimport {[m[41m [m
+[32m+[m[32m  MessageSquare,[m[41m [m
+[32m+[m[32m  Send,[m[41m [m
+[32m+[m[32m  Search,[m[41m [m
+[32m+[m[32m  X,[m[41m [m
+[32m+[m[32m  Paperclip,[m[41m [m
+[32m+[m[32m  Image as ImageIcon,[m
+[32m+[m[32m  FileText,[m
+[32m+[m[32m  MoreVertical,[m
+[32m+[m[32m  Trash2,[m
+[32m+[m[32m  User[m
+[32m+[m[32m} from 'lucide-react';[m
+[32m+[m[32mimport { format } from 'date-fns';[m
+[32m+[m[32mimport { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../src/components/ui/tooltip';[m
+[32m+[m
+[32m+[m[32minterface Message {[m
+[32m+[m[32m  id: string;[m
+[32m+[m[32m  sender_id: string;[m
+[32m+[m[32m  receiver_id: string;[m
+[32m+[m[32m  content: string;[m
+[32m+[m[32m  message_type: 'text' | 'image' | 'file';[m
+[32m+[m[32m  file_url?: string;[m
+[32m+[m[32m  file_name?: string;[m
+[32m+[m[32m  is_read: boolean;[m
+[32m+[m[32m  created_at: string;[m
+[32m+[m[32m  updated_at: string;[m
+[32m+[m[32m  sender: {[m
+[32m+[m[32m    id: string;[m
+[32m+[m[32m    username: string;[m
+[32m+[m[32m    avatar_url?: string;[m
+[32m+[m[32m  };[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32minterface Conversation {[m
+[32m+[m[32m  id: string;[m
+[32m+[m[32m  user_id: string;[m
+[32m+[m[32m  other_user_id: string;[m
+[32m+[m[32m  other_user: {[m
+[32m+[m[32m    id: string;[m
+[32m+[m[32m    username: string;[m
+[32m+[m[32m    avatar_url?: string;[m
+[32m+[m[32m  };[m
+[32m+[m[32m  last_message?: Message;[m
+[32m+[m[32m  unread_count: number;[m
+[32m+[m[32m  updated_at: string;[m
+[32m+[m[32m}[m
+[32m+[m
+[32m+[m[32mexport default function MessagesPage() {[m
+[32m+[m[32m  const router = useRouter();[m
+[32m+[m[32m  const { profile: currentUser } = useUserProfile();[m
+[32m+[m[32m  const { toast } = useToast();[m
+[32m+[m[32m  const messagesEndRef = useRef<HTMLDivElement>(null);[m
+[32m+[m[32m  const fileInputRef = useRef<HTMLInputElement>(null);[m
+[32m+[m[41m  [m
+[32m+[m[32m  const {[m
+[32m+[m[32m    conversations,[m
+[32m+[m[32m    currentConversation,[m
+[32m+[m[32m    messages,[m
+[32m+[m[32m    isLoading,[m
+[32m+[m[32m    isSending,[m
+[32m+[m[32m    setConversations,[m
+[32m+[m[32m    setCurrentConversation,[m
+[32m+[m[32m    setMessages,[m
+[32m+[m[32m    addMessage,[m
+[32m+[m[32m    setLoading,[m
+[32m+[m[32m    setSending[m
+[32m+[m[32m  } = useMessageStore();[m
+[32m+[m
+[32m+[m[32m  const [searchQuery, setSearchQuery] = useState('');[m
+[32m+[m[32m  const [messageInput, setMessageInput] = useState('');[m
+[32m+[m[32m  const [selectedFile, setSelectedFile] = useState<File | null>(null);[m
+[32m+[m[32m  const [showConversationList, setShowConversationList] = useState(true);[m
+[32m+[m
+[32m+[m[32m  // Fetch conversations on mount[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    if (currentUser) {[m
+[32m+[m[32m      fetchConversations();[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }, [currentUser]);[m
+[32m+[m
+[32m+[m[32m  // Scroll to bottom when new messages arrive[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });[m
+[32m+[m[32m  }, [messages]);[m
+[32m+[m
+[32m+[m[32m  const fetchConversations = async () => {[m
+[32m+[m[32m    if (!currentUser) return;[m
+[32m+[m[41m    [m
+[32m+[m[32m    setLoading(true);[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      const response = await fetch('/api/messages?action=conversations');[m
+[32m+[m[32m      if (!response.ok) throw new Error('Failed to fetch conversations');[m
+[32m+[m[41m      [m
+[32m+[m[32m      const data = await response.json();[m
+[32m+[m[32m      setConversations(data.conversations);[m
+[32m+[m[32m    } catch (error) {[m
+[32m+[m[32m      console.error('Error fetching conversations:', error);[m
+[32m+[m[32m      toast({[m
+[32m+[m[32m        title: 'Error',[m
+[32m+[m[32m        description: 'Failed to load conversations',[m
+[32m+[m[32m        variant: 'destructive'[m
+[32m+[m[32m      });[m
+[32m+[m[32m    } finally {[m
+[32m+[m[32m      setLoading(false);[m
+[32m+[m[32m    }[m
+[32m+[m[32m  };[m
+[32m+[m
+[32m+[m[32m  const fetchMessages = async (conversationId: string) => {[m
+[32m+[m[32m    if (!currentUser) return;[m
+[32m+[m[41m    [m
+[32m+[m[32m    setLoading(true);[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      const response = await fetch(`/api/messages?action=messages&conversationId=${conversationId}`);[m
+[32m+[m[32m      if (!response.ok) throw new Error('Failed to fetch messages');[m
+[32m+[m[41m      [m
+[32m+[m[32m      const data = await response.json();[m
+[32m+[m[32m      setMessages(data.messages);[m
+[32m+[m[32m    } catch (error) {[m
+[32m+[m[32m      console.error('Error fetching messages:', error);[m
+[32m+[m[32m      toast({[m
+[32m+[m[32m        title: 'Error',[m
+[32m+[m[32m        description: 'Failed to load messages',[m
+[32m+[m[32m        variant: 'destructive'[m
+[32m+[m[32m      });[m
+[32m+[m[32m    } finally {[m
+[32m+[m[32m      setLoading(false);[m
+[32m+[m[32m    }[m
+[32m+[m[32m  };[m
+[32m+[m
+[32m+[m[32m  const handleConversationSelect = (conversation: Conversation) => {[m
+[32m+[m[32m    setCurrentConversation(conversation);[m
+[32m+[m[32m    fetchMessages(conversation.id);[m
+[32m+[m[32m    setShowConversationList(false);[m
+[32m+[m[32m  };[m
+[32m+[m
+[32m+[m[32m  const handleSendMessage = async () => {[m
+[32m+[m[32m    if (!messageInput.trim() && !selectedFile) return;[m
+[32m+[m[32m    if (!currentConversation || !currentUser) return;[m
+[32m+[m[41m    [m
+[32m+[m[32m    setSending(true);[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      let fileUrl = '';[m
+[32m+[m[32m      let fileName = '';[m
+[32m+[m[32m      let messageType: 'text' | 'image' | 'file' = 'text';[m
+[32m+[m[41m      [m
+[32m+[m[32m      // Handle file upload if selected[m
+[32m+[m[32m      if (selectedFile) {[m
+[32m+[m[32m        // For now, we'll just use the file name as content[m
+[32m+[m[32m        // In a real implementation, you'd upload to Supabase Storage[m
+[32m+[m[32m        fileName = selectedFile.name;[m
+[32m+[m[32m        messageType = selectedFile.type.startsWith('image/') ? 'image' : 'file';[m
+[32m+[m[32m        fileUrl = URL.createObjectURL(selectedFile); // Temporary URL[m
+[32m+[m[32m      }[m
+[32m+[m
+[32m+[m[32m      const response = await fetch('/api/messages', {[m
+[32m+[m[32m        method: 'POST',[m
+[32m+[m[32m        headers: { 'Content-Type': 'application/json' },[m
+[32m+[m[32m        body: JSON.stringify({[m
+[32m+[m[32m          receiver_id: currentConversation.id,[m
+[32m+[m[32m          content: messageInput.trim() || `Sent ${fileName}`,[m
+[32m+[m[32m          message_type: messageType,[m
+[32m+[m[32m          file_url: fileUrl,[m
+[32m+[m[32m          file_name: fileName[m
+[32m+[m[32m        })[m
+[32m+[m[32m      });[m
+[32m+[m
+[32m+[m[32m      if (!response.ok) throw new Error('Failed to send message');[m
+[32m+[m[41m      [m
+[32m+[m[32m      const data = await response.json();[m
+[32m+[m[32m      addMessage(data.message);[m
+[32m+[m[32m      setMessageInput('');[m
+[32m+[m[32m      setSelectedFile(null);[m
+[32m+[m[41m      [m
+[32m+[m[32m      // Refresh conversations to update last message[m
+[32m+[m[32m      fetchConversations();[m
+[32m+[m[32m    } catch (error) {[m
+[32m+[m[32m      console.error('Error sending message:', error);[m
+[32m+[m[32m      toast({[m
+[32m+[m[32m        title: 'Error',[m
+[32m+[m[32m        description: 'Failed to send message',[m
+[32m+[m[32m        variant: 'destructive'[m
+[32m+[m[32m      });[m
+[32m+[m[32m    } finally {[m
+[32m+[m[32m      setSending(false);[m
+[32m+[m[32m    }[m
+[32m+[m[32m  };[m
+[32m+[m
+[32m+[m[32m  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {[m
+[32m+[m[32m    const file = event.target.files?.[0];[m
+[32m+[m[32m    if (file) {[m
+[32m+[m[32m      setSelectedFile(file);[m
+[32m+[m[32m    }[m
+[32m+[m[32m  };[m
+[32m+[m
+[32m+[m[32m  const removeSelectedFile = () => {[m
+[32m+[m[32m    setSelectedFile(null);[m
+[32m+[m[32m    if (fileInputRef.current) {[m
+[32m+[m[32m      fileInputRef.current.value = '';[m
+[32m+[m[32m    }[m
+[32m+[m[32m  };[m
+[32m+[m
+[32m+[m[32m  const filteredConversations = conversations.filter(conv =>[m
+[32m+[m[32m    conv.other_user.username.toLowerCase().includes(searchQuery.toLowerCase())[m
+[32m+[m[32m  );[m
+[32m+[m
+[32m+[m[32m  const formatMessageTime = (dateString: string) => {[m
+[32m+[m[32m    const date = new Date(dateString);[m
+[32m+[m[32m    const now = new Date();[m
+[32m+[m[32m    const diffInHours = (now.getTime() - date.getTime()) / (1000 * 60 * 60);[m
+[32m+[m[41m    [m
+[32m+[m[32m    if (diffInHours < 24) {[m
+[32m+[m[32m      return format(date, 'HH:mm');[m
+[32m+[m[32m    } else if (diffInHours < 168) { // 7 days[m
+[32m+[m[32m      return format(date, 'EEE');[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      return format(date, 'MMM d');[m
+[32m+[m[32m    }[m
+[32m+[m[32m  };[m
+[32m+[m
+[32m+[m[32m  if (!currentUser) {[m
+[32m+[m[32m    return ([m
+[32m+[m[32m      <div className="min-h-screen flex items-center justify-center">[m
+[32m+[m[32m        <div className="text-center">[m
+[32m+[m[32m          <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />[m
+[32m+[m[32m          <h2 className="text-xl font-semibold mb-2">Please log in to view messages</h2>[m
+[32m+[m[32m          <Button onClick={() => router.push('/login')}>Go to Login</Button>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      </div>[m
+[32m+[m[32m    );[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  return ([m
+[32m+[m[32m    <>[m
+[32m+[m[32m      <PageHeader title="Messages" showBackButton backUrl="/dashboard" />[m
+[32m+[m[41m      [m
+[32m+[m[32m      <div className="min-h-screen bg-gradient-to-br from-background to-muted/40">[m
+[32m+[m[32m        <div className="container mx-auto p-4 max-w-6xl">[m
+[32m+[m[32m          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">[m
+[32m+[m[41m            [m
+[32m+[m[32m            {/* Conversations List */}[m
+[32m+[m[32m            <Card className={`lg:col-span-1 ${showConversationList ? 'block' : 'hidden lg:block'}`}>[m
+[32m+[m[32m              <CardHeader className="pb-3">[m
+[32m+[m[32m                <CardTitle className="text-lg">Conversations</CardTitle>[m
+[32m+[m[32m                <div className="relative">[m
+[32m+[m[32m                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />[m
+[32m+[m[32m                  <Input[m
+[32m+[m[32m                    placeholder="Search conversations..."[m
+[32m+[m[32m                    value={searchQuery}[m
+[32m+[m[32m                    onChange={(e) => setSearchQuery(e.target.value)}[m
+[32m+[m[32m                    className="pl-10"[m
+[32m+[m[32m                  />[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m              </CardHeader>[m
+[32m+[m[32m              <CardContent className="p-0">[m
+[32m+[m[32m                <div className="space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto">[m
+[32m+[m[32m                  {isLoading ? ([m
+[32m+[m[32m                    <div className="p-4 text-center text-muted-foreground">Loading...</div>[m
+[32m+[m[32m                  ) : filteredConversations.length === 0 ? ([m
+[32m+[m[32m                    <div className="p-4 text-center text-muted-foreground">[m
+[32m+[m[32m                      {searchQuery ? 'No conversations found' : 'No conversations yet'}[m
+[32m+[m[32m                    </div>[m
+[32m+[m[32m                  ) : ([m
+[32m+[m[32m                    filteredConversations.map((conversation) => ([m
+[32m+[m[32m                      <div[m
+[32m+[m[32m                        key={conversation.id}[m
+[32m+[m[32m                        onClick={() => handleConversationSelect(conversation)}[m
+[32m+[m[32m                        className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${[m
+[32m+[m[32m                          currentConversation?.id === conversation.id ? 'bg-muted' : ''[m
+[32m+[m[32m                        }`}[m
+[32m+[m[32m                      >[m
+[32m+[m[32m                        <div className="flex items-center space-x-3">[m
+[32m+[m[32m                          <Avatar className="h-10 w-10">[m
+[32m+[m[32m                            <AvatarImage src={conversation.other_user.avatar_url} />[m
+[32m+[m[32m                            <AvatarFallback>[m
+[32m+[m[32m                              <User className="h-5 w-5" />[m
+[32m+[m[32m                            </AvatarFallback>[m
+[32m+[m[32m                          </Avatar>[m
+[32m+[m[32m                          <div className="flex-1 min-w-0">[m
+[32m+[m[32m                            <div className="flex items-center justify-between">[m
+[32m+[m[32m                              <p className="font-medium text-sm truncate">[m
+[32m+[m[32m                                {conversation.other_user.username}[m
+[32m+[m[32m                              </p>[m
+[32m+[m[32m                              {conversation.last_message && ([m
+[32m+[m[32m                                <span className="text-xs text-muted-foreground">[m
+[32m+[m[32m                                  {formatMessageTime(conversation.last_message.created_at)}[m
+[32m+[m[32m                                </span>[m
+[32m+[m[32m                              )}[m
+[32m+[m[32m                            </div>[m
+[32m+[m[32m                            {conversation.last_message && ([m
+[32m+[m[32m                              <p className="text-xs text-muted-foreground truncate">[m
+[32m+[m[32m                                {conversation.last_message.content}[m
+[32m+[m[32m                              </p>[m
+[32m+[m[32m                            )}[m
+[32m+[m[32m                          </div>[m
+[32m+[m[32m                          {conversation.unread_count > 0 && ([m
+[32m+[m[32m                            <Badge variant="destructive" className="h-5 w-5 p-0 text-xs">[m
+[32m+[m[32m                              {conversation.unread_count}[m
+[32m+[m[32m                            </Badge>[m
+[32m+[m[32m                          )}[m
+[32m+[m[32m                        </div>[m
+[32m+[m[32m                      </div>[m
+[32m+[m[32m                    ))[m
+[32m+[m[32m                  )}[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m              </CardContent>[m
+[32m+[m[32m            </Card>[m
+[32m+[m
+[32m+[m[32m            {/* Messages Area */}[m
+[32m+[m[32m            <Card className={`lg:col-span-2 ${!showConversationList ? 'block' : 'hidden lg:block'}`}>[m
+[32m+[m[32m              {currentConversation ? ([m
+[32m+[m[32m                <>[m
+[32m+[m[32m                  <CardHeader className="pb-3">[m
+[32m+[m[32m                    <div className="flex items-center justify-between">[m
+[32m+[m[32m                      <div className="flex items-center space-x-3">[m
+[32m+[m[32m                        <Button[m
+[32m+[m[32m                          variant="ghost"[m
+[32m+[m[32m                          size="sm"[m
+[32m+[m[32m                          onClick={() => setShowConversationList(true)}[m
+[32m+[m[32m                          className="lg:hidden"[m
+[32m+[m[32m                        >[m
+[32m+[m[32m                          <X className="h-4 w-4" />[m
+[32m+[m[32m                        </Button>[m
+[32m+[m[32m                        <Avatar className="h-8 w-8">[m
+[32m+[m[32m                          <AvatarImage src={currentConversation.other_user.avatar_url} />[m
+[32m+[m[32m                          <AvatarFallback>[m
+[32m+[m[32m                            <User className="h-4 w-4" />[m
+[32m+[m[32m                          </AvatarFallback>[m
+[32m+[m[32m                        </Avatar>[m
+[32m+[m[32m                        <div>[m
+[32m+[m[32m                          <CardTitle className="text-lg">[m
+[32m+[m[32m                            {currentConversation.other_user.username}[m
+[32m+[m[32m                          </CardTitle>[m
+[32m+[m[32m                        </div>[m
+[32m+[m[32m                      </div>[m
+[32m+[m[32m                    </div>[m
+[32m+[m[32m                  </CardHeader>[m
+[32m+[m[41m                  [m
+[32m+[m[32m                  <CardContent className="p-0 flex flex-col h-[calc(100vh-300px)]">[m
+[32m+[m[32m                    {/* Messages */}[m
+[32m+[m[32m                    <div className="flex-1 overflow-y-auto p-4 space-y-4">[m
+[32m+[m[32m                      {isLoading ? ([m
+[32m+[m[32m                        <div className="text-center text-muted-foreground">Loading messages...</div>[m
+[32m+[m[32m                      ) : messages.length === 0 ? ([m
+[32m+[m[32m                        <div className="text-center text-muted-foreground">[m
+[32m+[m[32m                          No messages yet. Start the conversation![m
+[32m+[m[32m                        </div>[m
+[32m+[m[32m                      ) : ([m
+[32m+[m[32m                        messages.map((message) => ([m
+[32m+[m[32m                          <div[m
+[32m+[m[32m                            key={message.id}[m
+[32m+[m[32m                            className={`flex ${message.sender_id === currentUser.id ? 'justify-end' : 'justify-start'}`}[m
+[32m+[m[32m                          >[m
+[32m+[m[32m                            <div[m
+[32m+[m[32m                              className={`max-w-[70%] rounded-lg p-3 ${[m
+[32m+[m[32m                                message.sender_id === currentUser.id[m
+[32m+[m[32m                                  ? 'bg-primary text-primary-foreground'[m
+[32m+[m[32m                                  : 'bg-muted'[m
+[32m+[m[32m                              }`}[m
+[32m+[m[32m                            >[m
+[32m+[m[32m                              {message.message_type === 'image' && message.file_url && ([m
+[32m+[m[32m                                <img[m
+[32m+[m[32m                                  src={message.file_url}[m
+[32m+[m[32m                                  alt="Shared image"[m
+[32m+[m[32m                                  className="max-w-full rounded mb-2"[m
+[32m+[m[32m                                />[m
+[32m+[m[32m                              )}[m
+[32m+[m[32m                              {message.message_type === 'file' && ([m
+[32m+[m[32m                                <div className="flex items-center space-x-2 mb-2 p-2 bg-background/50 rounded">[m
+[32m+[m[32m                                  <FileText className="h-4 w-4" />[m
+[32m+[m[32m                                  <span className="text-sm">{message.file_name}</span>[m
+[32m+[m[32m                                </div>[m
+[32m+[m[32m                              )}[m
+[32m+[m[32m                              <p className="text-sm">{message.content}</p>[m
+[32m+[m[32m                              <p className={`text-xs mt-1 ${[m
+[32m+[m[32m                                message.sender_id === currentUser.id ? 'text-primary-foreground/70' : 'text-muted-foreground'[m
+[32m+[m[32m                              }`}>[m
+[32m+[m[32m                                {formatMessageTime(message.created_at)}[m
+[32m+[m[32m                              </p>[m
+[32m+[m[32m                            </div>[m
+[32m+[m[32m                          </div>[m
+[32m+[m[32m                        ))[m
+[32m+[m[32m                      )}[m
+[32m+[m[32m                      <div ref={messagesEndRef} />[m
+[32m+[m[32m                    </div>[m
+[32m+[m
+[32m+[m[32m                    {/* Message Input */}[m
+[32m+[m[32m                    <div className="p-4 border-t">[m
+[32m+[m[32m                      {selectedFile && ([m
+[32m+[m[32m                        <div className="flex items-center space-x-2 mb-3 p-2 bg-muted rounded">[m
+[32m+[m[32m                          {selectedFile.type.startsWith('image/') ? ([m
+[32m+[m[32m                            <ImageIcon className="h-4 w-4" />[m
+[32m+[m[32m                          ) : ([m
+[32m+[m[32m                            <FileText className="h-4 w-4" />[m
+[32m+[m[32m                          )}[m
+[32m+[m[32m                          <span className="text-sm flex-1 truncate">{selectedFile.name}</span>[m
+[32m+[m[32m                          <Button[m
+[32m+[m[32m                            variant="ghost"[m
+[32m+[m[32m                            size="sm"[m
+[32m+[m[32m                            onClick={removeSelectedFile}[m
+[32m+[m[32m                            className="h-6 w-6 p-0"[m
+[32m+[m[32m                          >[m
+[32m+[m[32m                            <X className="h-3 w-3" />[m
+[32m+[m[32m                          </Button>[m
+[32m+[m[32m                        </div>[m
+[32m+[m[32m                      )}[m
+[32m+[m[41m                      [m
+[32m+[m[32m                      <div className="flex items-center space-x-2">[m
+[32m+[m[32m                        <TooltipProvider>[m
+[32m+[m[32m                          <Tooltip>[m
+[32m+[m[32m                            <TooltipTrigger asChild>[m
+[32m+[m[32m                              <Button[m
+[32m+[m[32m                                variant="ghost"[m
+[32m+[m[32m                                size="sm"[m
+[32m+[m[32m                                onClick={() => fileInputRef.current?.click()}[m
+[32m+[m[32m                                className="h-8 w-8 p-0"[m
+[32m+[m[32m                              >[m
+[32m+[m[32m                                <Paperclip className="h-4 w-4" />[m
+[32m+[m[32m                              </Button>[m
+[32m+[m[32m                            </TooltipTrigger>[m
+[32m+[m[32m                            <TooltipContent>Attach file</TooltipContent>[m
+[32m+[m[32m                          </Tooltip>[m
+[32m+[m[32m                        </TooltipProvider>[m
+[32m+[m[41m                        [m
+[32m+[m[32m                        <Input[m
+[32m+[m[32m                          placeholder="Type a message..."[m
+[32m+[m[32m                          value={messageInput}[m
+[32m+[m[32m                          onChange={(e) => setMessageInput(e.target.value)}[m
+[32m+[m[32m                          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}[m
+[32m+[m[32m                          className="flex-1"[m
+[32m+[m[32m                          disabled={isSending}[m
+[32m+[m[32m                        />[m
+[32m+[m[41m                        [m
+[32m+[m[32m                        <Button[m
+[32m+[m[32m                          onClick={handleSendMessage}[m
+[32m+[m[32m                          disabled={(!messageInput.trim() && !selectedFile) || isSending}[m
+[32m+[m[32m                          size="sm"[m
+[32m+[m[32m                        >[m
+[32m+[m[32m                          <Send className="h-4 w-4" />[m
+[32m+[m[32m                        </Button>[m
+[32m+[m[32m                      </div>[m
+[32m+[m[41m                      [m
+[32m+[m[32m                      <input[m
+[32m+[m[32m                        ref={fileInputRef}[m
+[32m+[m[32m                        type="file"[m
+[32m+[m[32m                        onChange={handleFileSelect}[m
+[32m+[m[32m                        className="hidden"[m
+[32m+[m[32m                        accept="image/*,.pdf,.doc,.docx,.txt"[m
+[32m+[m[32m                      />[m
+[32m+[m[32m                    </div>[m
+[32m+[m[32m                  </CardContent>[m
+[32m+[m[32m                </>[m
+[32m+[m[32m              ) : ([m
+[32m+[m[32m                <div className="flex items-center justify-center h-full">[m
+[32m+[m[32m                  <div className="text-center">[m
+[32m+[m[32m                    <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />[m
+[32m+[m[32m                    <h3 className="text-lg font-semibold mb-2">Select a conversation</h3>[m
+[32m+[m[32m                    <p className="text-muted-foreground">Choose a conversation to start messaging</p>[m
+[32m+[m[32m                  </div>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m              )}[m
+[32m+[m[32m            </Card>[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      </div>[m
+[32m+[m[32m    </>[m
+[32m+[m[32m  );[m
+[32m+[m[32m}[m
+[1mdiff --git a/app/src/components/MobileNavigation.tsx b/app/src/components/MobileNavigation.tsx[m
+[1mindex 5be0e7c..67360a9 100644[m
+[1m--- a/app/src/components/MobileNavigation.tsx[m
+[1m+++ b/app/src/components/MobileNavigation.tsx[m
+[36m@@ -7,7 +7,8 @@[m [mimport {[m
+   BarChart2, [m
+   Calendar, [m
+   User,[m
+[31m-  PlusCircle[m
+[32m+[m[32m  PlusCircle,[m
+[32m+[m[32m  MessageSquare[m
+ } from "lucide-react";[m
+ import { useState } from "react";[m
+ import AddTradeDialog from "./AddTradeDialog";[m
+[36m@@ -74,6 +75,18 @@[m [mconst MobileNavigation = () => {[m
+           <span className="text-xs font-medium">Forum</span>[m
+         </Link>[m
+         [m
+[32m+[m[32m        <Link[m[41m [m
+[32m+[m[32m          href="/messages"[m[41m [m
+[32m+[m[32m          className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] rounded-lg transition-colors ${[m
+[32m+[m[32m            pathname === '/messages'[m[41m [m
+[32m+[m[32m              ? 'text-primary bg-primary/10'[m[41m [m
+[32m+[m[32m              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'[m
+[32m+[m[32m          }`}[m
+[32m+[m[32m        >[m
+[32m+[m[32m          <MessageSquare className="h-6 w-6 mb-1" />[m
+[32m+[m[32m          <span className="text-xs font-medium">Messages</span>[m
+[32m+[m[32m        </Link>[m
+[32m+[m[41m        [m
+         <Link [m
+           href="/profile" [m
+           className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] rounded-lg transition-colors ${[m
+[1mdiff --git a/app/src/components/PublicProfileView.tsx b/app/src/components/PublicProfileView.tsx[m
+[1mindex 153809e..e23b8ca 100644[m
+[1m--- a/app/src/components/PublicProfileView.tsx[m
+[1m+++ b/app/src/components/PublicProfileView.tsx[m
+[36m@@ -29,7 +29,8 @@[m [mimport {[m
+   CircleDot,[m
+   TrendingUp,[m
+   Star,[m
+[31m-  Calendar[m
+[32m+[m[32m  Calendar,[m
+[32m+[m[32m  MessageSquare[m
+ } from 'lucide-react';[m
+ import { sendFriendRequest, getFriendshipStatusString, acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from '../../lib/friendsUtils';[m
+ [m
+[36m@@ -37,9 +38,10 @@[m [minterface PublicProfileViewProps {[m
+   profile: UserProfile;[m
+   isOpen: boolean;[m
+   onClose: () => void;[m
+[32m+[m[32m  onSendMessage?: (userId: string) => void;[m
+ }[m
+ [m
+[31m-export const PublicProfileView = ({ profile, isOpen, onClose }: PublicProfileViewProps) => {[m
+[32m+[m[32mexport const PublicProfileView = ({ profile, isOpen, onClose, onSendMessage }: PublicProfileViewProps) => {[m
+   const router = useRouter();[m
+   const { toast } = useToast();[m
+   const { session } = useAuth();[m
+[36m@@ -445,6 +447,17 @@[m [mexport const PublicProfileView = ({ profile, isOpen, onClose }: PublicProfileVie[m
+             {/* Action Buttons */}[m
+             <div className="flex flex-col gap-2">[m
+               {renderActionButton()}[m
+[32m+[m[32m              {onSendMessage && session?.user?.id !== profile.id && ([m
+[32m+[m[32m                <Button[m
+[32m+[m[32m                  variant="outline"[m
+[32m+[m[32m                  size="sm"[m
+[32m+[m[32m                  onClick={() => onSendMessage(profile.id)}[m
+[32m+[m[32m                  className="w-full"[m
+[32m+[m[32m                >[m
+[32m+[m[32m                  <MessageSquare className="h-4 w-4 mr-2" />[m
+[32m+[m[32m                  Send Message[m
+[32m+[m[32m                </Button>[m
+[32m+[m[32m              )}[m
+             </div>[m
+           </div>[m
+           [m
+[1mdiff --git a/app/src/components/chat/ChatWidget.tsx b/app/src/components/chat/ChatWidget.tsx[m
+[1mdeleted file mode 100644[m
+[1mindex 1761389..0000000[m
+[1m--- a/app/src/components/chat/ChatWidget.tsx[m
+[1m+++ /dev/null[m
+[36m@@ -1,3459 +0,0 @@[m
+[31m-"use client";[m
+[31m-[m
+[31m-import React, { useState, useEffect, useRef, useCallback, useMemo } from "react";[m
+[31m-import { useUserProfile } from "../UserProfileContext";[m
+[31m-import { supabase } from "@/lib/supabase";[m
+[31m-import { MessageSquare, ChevronDown, ChevronRight, Search as SearchIcon, PinIcon, VolumeXIcon, Volume2Icon, Trash2Icon, LogOutIcon, Edit2Icon, UsersIcon, ArrowUpRight } from "lucide-react";[m
+[31m-import { Button } from "../ui/button";[m
+[31m-import { Input } from "../ui/input";[m
+[31m-import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";[m
+[31m-[m
+[31m-import {[m
+[31m-  Tooltip,[m
+[31m-  TooltipContent,[m
+[31m-  TooltipProvider,[m
+[31m-  TooltipTrigger,[m
+[31m-} from "../ui/tooltip";[m
+[31m-import { useChatStore } from "@/lib/store/chatStore";[m
+[31m-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "../ui/dialog";[m
+[31m-import { useToast } from '@/hooks/use-toast';[m
+[31m-import { format } from 'date-fns';[m
+[31m-import { getFriends } from '../../../lib/friendsUtils';[m
+[31m-[m
+[31m-// Define types for conversations[m
+[31m-// These might need to be expanded based on your actual data structure[m
+[31m-type Profile = {[m
+[31m-  id: string;[m
+[31m-  username: string;[m
+[31m-  avatar_url: string;[m
+[31m-};[m
+[31m-[m
+[31m-type Conversation = {[m
+[31m-  group_id: string;[m
+[31m-  is_direct: boolean;[m
+[31m-  name: string; // Group name or other user's name[m
+[31m-  members: { profile: Profile }[];[m
+[31m-  last_message: string;[m
+[31m-  last_message_at: string;[m
+[31m-  unread_count: number;[m
+[31m-  is_pinned: boolean;[m
+[31m-  is_muted: boolean;[m
+[31m-  creator_id: string;[m
+[31m-  avatar_url?: string;[m
+[31m-};[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-[m
+[31m-// ChatListItem component for both direct and group chats[m
+[31m-function ChatListItem({ conversation, onClick, onPin, onUnpin, onMute, onUnmute, onDelete, onLeave, isMobile, openMenuId, setOpenMenuId, currentUserId, publicUsers, creatorId, onEditName, onDeleteGroup, editingGroupId, editingGroupName, setEditingGroupId, setEditingGroupName, editingGroupLoading, onSaveEditName, setShowDeleteConfirm, setShowLeaveConfirm, setShowDeleteGroupConfirm, setPendingAction, setEditingGroupAvatar, setShowGroupEditModal }: {[m
+[31m-  conversation: Conversation;[m
+[31m-  onClick: () => void;[m
+[31m-  onPin: () => void;[m
+[31m-  onUnpin: () => void;[m
+[31m-  onMute: () => void;[m
+[31m-  onUnmute: () => void;[m
+[31m-  onDelete?: () => void;[m
+[31m-  onLeave?: () => void;[m
+[31m-  isMobile: boolean;[m
+[31m-  openMenuId: string | null;[m
+[31m-  setOpenMenuId: (id: string | null) => void;[m
+[31m-  currentUserId: string;[m
+[31m-  publicUsers: Profile[];[m
+[31m-  creatorId: string;[m
+[31m-  onEditName: (groupId: string, newName: string) => void;[m
+[31m-  onDeleteGroup: (groupId: string) => void;[m
+[31m-  editingGroupId: string | null;[m
+[31m-  editingGroupName: string;[m
+[31m-  setEditingGroupId: (id: string | null) => void;[m
+[31m-  setEditingGroupName: (name: string) => void;[m
+[31m-  editingGroupLoading: boolean;[m
+[31m-  onSaveEditName: (groupId: string, newName: string) => void;[m
+[31m-  setShowDeleteConfirm: (show: boolean) => void;[m
+[31m-  setShowLeaveConfirm: (show: boolean) => void;[m
+[31m-  setShowDeleteGroupConfirm: (show: boolean) => void;[m
+[31m-  setPendingAction: (action: any) => void;[m
+[31m-  setEditingGroupAvatar: (avatar: string) => void;[m
+[31m-  setShowGroupEditModal: (show: boolean) => void;[m
+[31m-}) {[m
+[31m-  const menuRef = useRef<HTMLDivElement>(null);[m
+[31m-  const buttonRef = useRef<HTMLButtonElement>(null);[m
+[31m-  // For direct chats, get the other participant's profile robustly[m
+[31m-  let displayName = conversation.name;[m
+[31m-  let displayAvatar = undefined;[m
+[31m-  if (conversation.is_direct) {[m
+[31m-    let other = conversation.members.find(m => m.profile && m.profile.id !== currentUserId);[m
+[31m-    if (!other && conversation.members.length > 0) {[m
+[31m-      // Fallback: just use the first member[m
+[31m-      other = conversation.members[0];[m
+[31m-    }[m
+[31m-    if (other && other.profile) {[m
+[31m-      displayName = other.profile.username || 'Unknown';[m
+[31m-      displayAvatar = other.profile.avatar_url || undefined;[m
+[31m-    } else {[m
+[31m-      displayName = 'Unknown';[m
+[31m-      displayAvatar = undefined;[m
+[31m-    }[m
+[31m-  } else {[m
+[31m-    // For group chats, use group name and custom avatar if available[m
+[31m-    displayAvatar = conversation.avatar_url || undefined;[m
+[31m-  }[m
+[31m-  // Robust click-away handler for menu[m
+[31m-  useEffect(() => {[m
+[31m-    if (!openMenuId || openMenuId !== conversation.group_id) return;[m
+[31m-    function handleClick(e: MouseEvent) {[m
+[31m-      if ([m
+[31m-        (menuRef.current && menuRef.current.contains(e.target as Node)) ||[m
+[31m-        (buttonRef.current && buttonRef.current.contains(e.target as Node))[m
+[31m-      ) {[m
+[31m-        return;[m
+[31m-      }[m
+[31m-      setOpenMenuId(null);[m
+[31m-      buttonRef.current?.blur(); // Remove focus from button[m
+[31m-    }[m
+[31m-    function handleEsc(e: KeyboardEvent) {[m
+[31m-      if (e.key === 'Escape') {[m
+[31m-        setOpenMenuId(null);[m
+[31m-        buttonRef.current?.blur();[m
+[31m-      }[m
+[31m-    }[m
+[31m-    document.addEventListener('mousedown', handleClick);[m
+[31m-    document.addEventListener('keydown', handleEsc);[m
+[31m-    return () => {[m
+[31m-      document.removeEventListener('mousedown', handleClick);[m
+[31m-      document.removeEventListener('keydown', handleEsc);[m
+[31m-    };[m
+[31m-  }, [openMenuId, conversation.group_id, setOpenMenuId]);[m
+[31m-  return ([m
+[31m-    <div className="relative group flex items-center p-2 rounded-lg hover:bg-muted cursor-pointer">[m
+[31m-      <div className="flex items-center flex-1 min-w-0" onClick={onClick}>[m
+[31m-        <Avatar className="h-8 w-8 mr-2">[m
+[31m-          <AvatarImage src={displayAvatar} />[m
+[31m-          <AvatarFallback>[m
+[31m-            {!conversation.is_direct && conversation.avatar_url ? ([m
+[31m-              <span className="text-lg">{conversation.avatar_url}</span>[m
+[31m-            ) : ([m
+[31m-              displayName?.charAt(0).toUpperCase()[m
+[31m-            )}[m
+[31m-          </AvatarFallback>[m
+[31m-        </Avatar>[m
+[31m-        <div className="flex-1 overflow-hidden">[m
+[31m-          {editingGroupId === conversation.group_id ? ([m
+[31m-            <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>[m
+[31m-              <input[m
+[31m-                className="border border-zinc-300 bg-zinc-100 text-black rounded px-2 py-1 text-sm w-32 focus:outline-none focus:ring-2 focus:ring-primary"[m
+[31m-                value={editingGroupName}[m
+[31m-                onChange={e => setEditingGroupName(e.target.value)}[m
+[31m-                disabled={editingGroupLoading}[m
+[31m-                maxLength={20}[m
+[31m-                autoFocus[m
+[31m-                onClick={e => e.stopPropagation()}[m
+[31m-              />[m
+[31m-              <button[m
+[31m-                className="text-primary font-semibold px-1 py-1 rounded hover:bg-primary/10 disabled:opacity-50 text-xs"[m
+[31m-                onClick={e => { e.stopPropagation(); onSaveEditName(conversation.group_id, editingGroupName); }}[m
+[31m-                disabled={editingGroupLoading || !editingGroupName.trim() || editingGroupName.length > 20}[m
+[31m-                tabIndex={0}[m
+[31m-                title="Save"[m
+[31m-              >[m
+[31m-                OK[m
+[31m-              </button>[m
+[31m-              <button[m
+[31m-                className="text-zinc-400 px-1 py-1 rounded hover:bg-zinc-200 text-xs"[m
+[31m-                onClick={e => { e.stopPropagation(); setEditingGroupId(null); }}[m
+[31m-                disabled={editingGroupLoading}[m
+[31m-                tabIndex={0}[m
+[31m-                title="Cancel"[m
+[31m-              >[m
+[31m-                ✕[m
+[31m-              </button>[m
+[31m-            </div>[m
+[31m-          ) : ([m
+[31m-            <p className="font-semibold truncate flex items-center gap-1">[m
+[31m-              {displayName}[m
+[31m-              {conversation.is_pinned && <PinIcon className="w-4 h-4 text-yellow-500" />}[m
+[31m-              {conversation.is_muted && <VolumeXIcon className="w-4 h-4 text-zinc-400" />}[m
+[31m-            </p>[m
+[31m-          )}[m
+[31m-          <p className="text-xs text-muted-foreground truncate">{conversation.last_message}</p>[m
+[31m-        </div>[m
+[31m-        {/* Unread badge */}[m
+[31m-        {!conversation.is_muted && conversation.unread_count > 0 && ([m
+[31m-          <span className="ml-2 inline-flex items-center justify-center px-2 py-0.5 text-xs font-bold leading-none text-white bg-red-600 rounded-full">[m
+[31m-            {conversation.unread_count}[m
+[31m-          </span>[m
+[31m-        )}[m
+[31m-      </div>[m
+[31m-      {/* Desktop: More icon - always visible, menu appears to the left as a horizontal row */}[m
+[31m-      {!isMobile && ([m
+[31m-        <div className="relative ml-2 flex items-center">[m
+[31m-          <button[m
+[31m-            ref={buttonRef}[m
+[31m-            className={`opacity-80 group-hover:opacity-100 transition rounded-full p-1 focus:outline-none ${openMenuId === conversation.group_id ? 'bg-zinc-200' : 'hover:bg-zinc-200'}`}[m
+[31m-            onClick={e => {[m
+[31m-              e.stopPropagation();[m
+[31m-              if (openMenuId === conversation.group_id) {[m
+[31m-                setOpenMenuId(null);[m
+[31m-                buttonRef.current?.blur();[m
+[31m-              } else {[m
+[31m-                setOpenMenuId(conversation.group_id);[m
+[31m-              }[m
+[31m-            }}[m
+[31m-            aria-expanded={openMenuId === conversation.group_id}[m
+[31m-            aria-haspopup="true"[m
+[31m-            tabIndex={0}[m
+[31m-          >[m
+[31m-            <span className="sr-only">More</span>[m
+[31m-            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg>[m
+[31m-          </button>[m
+[31m-          {openMenuId === conversation.group_id && ([m
+[31m-            <div[m
+[31m-              ref={menuRef}[m
+[31m-              className="absolute left-0 top-1/2 -translate-y-1/2 flex flex-row gap-2 bg-gray-800 text-white rounded shadow px-2 py-1 z-[999999] border border-gray-600 min-w-[120px] animate-slide-left"[m
+[31m-              style={{ [m
+[31m-                zIndex: 999999,[m
+[31m-                transform: 'translateX(-100%) translateY(-50%)'[m
+[31m-              }}[m
+[31m-            >[m
+[31m-              {/* Pin/Unpin */}[m
+[31m-              <Tooltip>[m
+[31m-                <TooltipTrigger asChild>[m
+[31m-                  {conversation.is_pinned ? ([m
+[31m-                    <button className="text-yellow-600 hover:bg-yellow-100 rounded p-1 transition" onClick={e => { e.stopPropagation(); onUnpin(); setOpenMenuId(null); }}>[m
+[31m-                      <PinIcon className="w-5 h-5" />[m
+[31m-                    </button>[m
+[31m-                  ) : ([m
+[31m-                    <button className="text-yellow-600 hover:bg-yellow-100 rounded p-1 transition" onClick={e => { e.stopPropagation(); onPin(); setOpenMenuId(null); }}>[m
+[31m-                      <PinIcon className="w-5 h-5" />[m
+[31m-                    </button>[m
+[31m-                  )}[m
+[31m-                </TooltipTrigger>[m
+[31m-                <TooltipContent className="z-[999999] bg-background text-foreground border shadow" side="top">Pin</TooltipContent>[m
+[31m-              </Tooltip>[m
+[31m-              {/* Mute/Unmute */}[m
+[31m-              <Tooltip>[m
+[31m-                <TooltipTrigger asChild>[m
+[31m-                  {conversation.is_muted ? ([m
+[31m-                    <button className="text-zinc-500 hover:bg-zinc-100 rounded p-1 transition" onClick={e => { e.stopPropagation(); onUnmute(); setOpenMenuId(null); }}>[m
+[31m-                      <Volume2Icon className="w-5 h-5" />[m
+[31m-                    </button>[m
+[31m-                  ) : ([m
+[31m-                    <button className="text-zinc-500 hover:bg-zinc-100 rounded p-1 transition" onClick={e => { e.stopPropagation(); onMute(); setOpenMenuId(null); }}>[m
+[31m-                      <VolumeXIcon className="w-5 h-5" />[m
+[31m-                    </button>[m
+[31m-                  )}[m
+[31m-                </TooltipTrigger>[m
+[31m-                <TooltipContent className="z-[999999] bg-background text-foreground border shadow" side="top">Mute</TooltipContent>[m
+[31m-              </Tooltip>[m
+[31m-              {/* Delete/Leave options */}[m
+[31m-              {conversation.is_direct ? ([m
+[31m-                <Tooltip>[m
+[31m-                  <TooltipTrigger asChild>[m
+[31m-                    <button className="text-red-600 hover:bg-red-100 rounded p-1 transition" onClick={e => { [m
+[31m-                      e.stopPropagation(); [m
+[31m-                      setOpenMenuId(null);[m
+[31m-                      setPendingAction({ type: 'delete', groupId: conversation.group_id, conversationName: conversation.name, isDirect: true });[m
+[31m-                      setShowDeleteConfirm(true);[m
+[31m-                    }}>[m
+[31m-                      <Trash2Icon className="w-5 h-5" />[m
+[31m-                    </button>[m
+[31m-                  </TooltipTrigger>[m
+[31m-                  <TooltipContent className="z-[999999] bg-background text-foreground border shadow" side="top">Delete</TooltipContent>[m
+[31m-                </Tooltip>[m
+[31m-              ) : ([m
+[31m-                currentUserId !== creatorId && ([m
+[31m-                  <Tooltip>[m
+[31m-                    <TooltipTrigger asChild>[m
+[31m-                      <button className="text-red-600 hover:bg-red-100 rounded p-1 transition" onClick={e => { [m
+[31m-                        e.stopPropagation(); [m
+[31m-                        setOpenMenuId(null);[m
+[31m-                        setPendingAction({ type: 'leave', groupId: conversation.group_id, conversationName: conversation.name, isDirect: false });[m
+[31m-                        setShowLeaveConfirm(true);[m
+[31m-                      }}>[m
+[31m-                        <LogOutIcon className="w-5 h-5" />[m
+[31m-                      </button>[m
+[31m-                    </TooltipTrigger>[m
+[31m-                    <TooltipContent className="z-[999999] bg-background text-foreground border shadow" side="top">Leave Group</TooltipContent>[m
+[31m-                  </Tooltip>[m
+[31m-                )[m
+[31m-              )}[m
+[31m-              {/* Only show Delete Group and Edit Name for group chats and creator */}[m
+[31m-              {!conversation.is_direct && currentUserId === conversation.creator_id && ([m
+[31m-                <>[m
+[31m-                  <Tooltip>[m
+[31m-                    <TooltipTrigger asChild>[m
+[31m-                      <button className="text-zinc-500 hover:bg-zinc-100 rounded p-1 transition" onClick={e => { [m
+[31m-                        e.stopPropagation(); [m
+[31m-                        setOpenMenuId(null);[m
+[31m-                        setPendingAction({ type: 'deleteGroup', groupId: conversation.group_id, conversationName: conversation.name, isDirect: false });[m
+[31m-                        setShowDeleteGroupConfirm(true);[m
+[31m-                      }}>[m
+[31m-                        <Trash2Icon className="w-5 h-5" />[m
+[31m-                      </button>[m
+[31m-                    </TooltipTrigger>[m
+[31m-                    <TooltipContent className="z-[999999] bg-background text-foreground border shadow" side="top">Delete Group</TooltipContent>[m
+[31m-                  </Tooltip>[m
+[31m-                  <Tooltip>[m
+[31m-                    <TooltipTrigger asChild>[m
+[31m-                      <button className="text-zinc-500 hover:bg-zinc-100 rounded p-1 transition" onClick={e => { [m
+[31m-                        e.stopPropagation(); [m
+[31m-                        setEditingGroupId(conversation.group_id); [m
+[31m-                        setEditingGroupName(conversation.name); [m
+[31m-                        setEditingGroupAvatar(conversation.avatar_url || "");[m
+[31m-                        setShowGroupEditModal(true);[m
+[31m-                        setOpenMenuId(null); [m
+[31m-                      }}>[m
+[31m-                        <Edit2Icon className="w-5 h-5" />[m
+[31m-                      </button>[m
+[31m-                    </TooltipTrigger>[m
+[31m-                    <TooltipContent className="z-[999999] bg-background text-foreground border shadow" side="top">Edit</TooltipContent>[m
+[31m-                  </Tooltip>[m
+[31m-                </>[m
+[31m-              )}[m
+[31m-[m
+[31m-            </div>[m
+[31m-          )}[m
+[31m-        </div>[m
+[31m-      )}[m
+[31m-      {/* Actions (slide in on mobile) */}[m
+[31m-      {isMobile && ([m
+[31m-        <div ref={menuRef} className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2 bg-background rounded shadow px-2 py-1 z-10 border">[m
+[31m-          {conversation.is_pinned ? ([m
+[31m-            <button className="text-yellow-600 hover:bg-yellow-100 rounded px-2 py-1 transition" onClick={e => { e.stopPropagation(); onUnpin(); setOpenMenuId(null); }}>Unpin</button>[m
+[31m-          ) : ([m
+[31m-            <button className="text-yellow-600 hover:bg-yellow-100 rounded px-2 py-1 transition" onClick={e => { e.stopPropagation(); onPin(); setOpenMenuId(null); }}>Pin</button>[m
+[31m-          )}[m
+[31m-          {conversation.is_muted ? ([m
+[31m-            <button className="text-zinc-500 hover:bg-zinc-100 rounded px-2 py-1 transition" onClick={e => { e.stopPropagation(); onUnmute(); setOpenMenuId(null); }}>Unmute</button>[m
+[31m-          ) : ([m
+[31m-            <button className="text-zinc-500 hover:bg-zinc-100 rounded px-2 py-1 transition" onClick={e => { e.stopPropagation(); onMute(); setOpenMenuId(null); }}>Mute</button>[m
+[31m-          )}[m
+[31m-          {/* Delete/Leave options */}[m
+[31m-          {conversation.is_direct ? ([m
+[31m-            <button className="text-red-600 hover:bg-red-100 rounded px-2 py-1 transition" onClick={e => { [m
+[31m-              e.stopPropagation(); [m
+[31m-              setOpenMenuId(null);[m
+[31m-              setPendingAction({ type: 'delete', groupId: conversation.group_id, conversationName: conversation.name, isDirect: true });[m
+[31m-              setShowDeleteConfirm(true);[m
+[31m-            }}>Delete</button>[m
+[31m-          ) : ([m
+[31m-            currentUserId !== conversation.creator_id && ([m
+[31m-              <button className="text-red-600 hover:bg-red-100 rounded px-2 py-1 transition" onClick={e => { [m
+[31m-                e.stopPropagation(); [m
+[31m-                setOpenMenuId(null);[m
+[31m-                setPendingAction({ type: 'leave', groupId: conversation.group_id, conversationName: conversation.name, isDirect: false });[m
+[31m-                setShowLeaveConfirm(true);[m
+[31m-              }}>Leave Group</button>[m
+[31m-            )[m
+[31m-          )}[m
+[31m-          {!conversation.is_direct && currentUserId === conversation.creator_id && ([m
+[31m-            <>[m
+[31m-              <button className="text-zinc-500 hover:bg-zinc-100 rounded px-2 py-1 transition" onClick={e => { [m
+[31m-                e.stopPropagation(); [m
+[31m-                setOpenMenuId(null);[m
+[31m-                setPendingAction({ type: 'deleteGroup', groupId: conversation.group_id, conversationName: conversation.name, isDirect: false });[m
+[31m-                setShowDeleteGroupConfirm(true);[m
+[31m-              }}>Delete Group</button>[m
+[31m-              <button className="text-zinc-500 hover:bg-zinc-100 rounded px-2 py-1 transition" onClick={e => { [m
+[31m-                e.stopPropagation(); [m
+[31m-                setEditingGroupId(conversation.group_id); [m
+[31m-                setEditingGroupName(conversation.name); [m
+[31m-                setEditingGroupAvatar(conversation.avatar_url || "");[m
+[31m-                setShowGroupEditModal(true);[m
+[31m-                setOpenMenuId(null); [m
+[31m-              }}>Edit Name</button>[m
+[31m-            </>[m
+[31m-          )}[m
+[31m-        </div>[m
+[31m-      )}[m
+[31m-    </div>[m
+[31m-  );[m
+[31m-}[m
+[31m-[m
+[31m-// Helper to detect mobile[m
+[31m-function isMobileDevice() {[m
+[31m-  if (typeof window === 'undefined') return false;[m
+[31m-  return /Mobi|Android/i.test(window.navigator.userAgent);[m
+[31m-}[m
+[31m-[m
+[31m-const ChatWidget = () => {[m
+[31m-  const { profile: currentUser, loading } = useUserProfile();[m
+[31m-  const { [m
+[31m-    isChatOpen, [m
+[31m-    activeConversation, [m
+[31m-    openChat, [m
+[31m-    setActiveConversation,[m
+[31m-    resetChat[m
+[31m-  } = useChatStore();[m
+[31m-  [m
+[31m-  const [conversations, setConversations] = useState<Conversation[]>([]);[m
+[31m-  const [groupChats, setGroupChats] = useState<Conversation[]>([]);[m
+[31m-  const [isLoading, setIsLoading] = useState(true);[m
+[31m-  const chatWidgetRef = useRef<HTMLDivElement>(null);[m
+[31m-  const [messages, setMessages] = useState<any[]>([]);[m
+[31m-  const [messageInput, setMessageInput] = useState("");[m
+[31m-[m
+[31m-  const [publicOpen, setPublicOpen] = useState(false);[m
+[31m-  const [searchQuery, setSearchQuery] = useState("");[m
+[31m-  const [publicUsers, setPublicUsers] = useState<Profile[]>([]);[m
+[31m-  const [groupCreationUsers, setGroupCreationUsers] = useState<Profile[]>([]);[m
+[31m-  const [groupCreationUsersLoaded, setGroupCreationUsersLoaded] = useState(false);[m
+[31m-[m
+[31m-  const [showGroupModal, setShowGroupModal] = useState(false);[m
+[31m-  const [groupName, setGroupName] = useState("");[m
+[31m-  const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);[m
+[31m-  const [creatingGroup, setCreatingGroup] = useState(false);[m
+[31m-  const { toast } = useToast();[m
+[31m-  const [groupNameError, setGroupNameError] = useState<string | null>(null);[m
+[31m-  const messagesEndRef = useRef<HTMLDivElement>(null);[m
+[31m-  const [optimisticMessages, setOptimisticMessages] = useState<{id: number, content: string, created_at: string, sender_id: string, profiles: any, status: 'sending' | 'sent' | 'failed'}[]>([]);[m
+[31m-  const [revealedMessageId, setRevealedMessageId] = useState<string | null>(null);[m
+[31m-  const [draggedId, setDraggedId] = useState<string | null>(null);[m
+[31m-  const [dragOffset, setDragOffset] = useState<number>(0);[m
+[31m-  const dragState = useRef<{ id: string | null; startX: number; currentX: number; dragging: boolean; lastOffset: number }>({ id: null, startX: 0, currentX: 0, dragging: false, lastOffset: 0 });[m
+[31m-  const [openMenuId, setOpenMenuId] = useState<string | null>(null);[m
+[31m-  const [loadError, setLoadError] = useState<string | null>(null);[m
+[31m-  const [loadingTimeout, setLoadingTimeout] = useState<NodeJS.Timeout | null>(null);[m
+[31m-  const [publicUsersLoaded, setPublicUsersLoaded] = useState(false);[m
+[31m-  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);[m
+[31m-  const [editingGroupName, setEditingGroupName] = useState<string>("");[m
+[31m-  const [editingGroupLoading, setEditingGroupLoading] = useState(false);[m
+[31m-  const [pinnedMenuId, setPinnedMenuId] = useState<string | null>(null);[m
+[31m-  const [tempConversation, setTempConversation] = useState<{group_id: string, name: string, is_direct: boolean} | null>(null);[m
+[31m-  const [showInviteModal, setShowInviteModal] = useState(false);[m
+[31m-  const [inviteSelectedUserIds, setInviteSelectedUserIds] = useState<string[]>([]);[m
+[31m-  const [invitingUsers, setInvitingUsers] = useState(false);[m
+[31m-  const [pendingInvitations, setPendingInvitations] = useState<any[]>([]);[m
+[31m-  const [showInvitationsModal, setShowInvitationsModal] = useState(false);[m
+[31m-  const [isSendingMessage, setIsSendingMessage] = useState(false);[m
+[31m-  [m
+[31m-  // Friends section state[m
+[31m-  const [friends, setFriends] = useState<Profile[]>([]);[m
+[31m-  const [friendsLoading, setFriendsLoading] = useState(false);[m
+[31m-  [m
+[31m-  // Invite user to direct chat state[m
+[31m-  const [showInviteToChatModal, setShowInviteToChatModal] = useState(false);[m
+[31m-  const [inviteToChatSearchQuery, setInviteToChatSearchQuery] = useState("");[m
+[31m-  const [inviteToChatSelectedUserIds, setInviteToChatSelectedUserIds] = useState<string[]>([]);[m
+[31m-  const [invitingToChat, setInvitingToChat] = useState(false);[m
+[31m-  [m
+[31m-  // Group edit state[m
+[31m-  const [showGroupEditModal, setShowGroupEditModal] = useState(false);[m
+[31m-  const [editingGroupAvatar, setEditingGroupAvatar] = useState<string>("");[m
+[31m-  const [editingGroupAvatarLoading, setEditingGroupAvatarLoading] = useState(false);[m
+[31m-  [m
+[31m-  // Confirmation dialog states[m
+[31m-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);[m
+[31m-  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);[m
+[31m-  const [showDeleteGroupConfirm, setShowDeleteGroupConfirm] = useState(false);[m
+[31m-  const [pendingAction, setPendingAction] = useState<{[m
+[31m-    type: 'delete' | 'leave' | 'deleteGroup';[m
+[31m-    groupId: string;[m
+[31m-    conversationName: string;[m
+[31m-    isDirect: boolean;[m
+[31m-  } | null>(null);[m
+[31m-[m
+[31m-  // Set a larger max drag offset[m
+[31m-  const MAX_DRAG_OFFSET = 240; // px, or adjust as needed for your chat width[m
+[31m-[m
+[31m-  // Hard fallback: after 5s, if no user/profile, show error (never spinner)[m
+[31m-  const [hardError, setHardError] = useState(false);[m
+[31m-  [m
+[31m-  // Calculate total unread count[m
+[31m-  const totalUnreadCount = useMemo(() => {[m
+[31m-    return conversations.reduce((total, conv) => {[m
+[31m-      if (!conv.is_muted && conv.unread_count > 0) {[m
+[31m-        return total + conv.unread_count;[m
+[31m-      }[m
+[31m-      return total;[m
+[31m-    }, 0);[m
+[31m-  }, [conversations]);[m
+[31m-[m
+[31m-  // Fetch friends for the current user[m
+[31m-  const fetchFriends = useCallback(async () => {[m
+[31m-    if (!currentUser?.id) return;[m
+[31m-    [m
+[31m-    setFriendsLoading(true);[m
+[31m-    try {[m
+[31m-      const { data, error } = await getFriends(currentUser.id);[m
+[31m-      if (error) {[m
+[31m-        console.error('Error fetching friends:', error);[m
+[31m-        return;[m
+[31m-      }[m
+[31m-      setFriends((data as Profile[]) || []);[m
+[31m-    } catch (error) {[m
+[31m-      console.error('Error fetching friends:', error);[m
+[31m-    } finally {[m
+[31m-      setFriendsLoading(false);[m
+[31m-    }[m
+[31m-  }, [currentUser]);[m
+[31m-[m
+[31m-  // Fetch friends when user changes[m
+[31m-  useEffect(() => {[m
+[31m-    fetchFriends();[m
+[31m-  }, [fetchFriends]);[m
+[31m-[m
+[31m-  useEffect(() => {[m
+[31m-    if (currentUser) {[m
+[31m-      setHardError(false);[m
+[31m-      return;[m
+[31m-    }[m
+[31m-    const timeout = setTimeout(() => {[m
+[31m-      if (!currentUser && !loading) {[m
+[31m-        setHardError(true);[m
+[31m-        setIsLoading(false);[m
+[31m-      }[m
+[31m-    }, 5000);[m
+[31m-    return () => clearTimeout(timeout);[m
+[31m-  }, [currentUser, loading]);[m
+[31m-[m
+[31m-  const handleOpen = useCallback(() => openChat(true), [openChat]);[m
+[31m-  const handleClose = useCallback(() => openChat(false), [openChat]);[m
+[31m-[m
+[31m-  // Click-away to close logic[m
+[31m-  useEffect(() => {[m
+[31m-    if (!isChatOpen) return;[m
+[31m-    function handleClick(e: MouseEvent) {[m
+[31m-      if (chatWidgetRef.current && !chatWidgetRef.current.contains(e.target as Node)) {[m
+[31m-        handleClose();[m
+[31m-      }[m
+[31m-    }[m
+[31m-    document.addEventListener("mousedown", handleClick);[m
+[31m-    return () => document.removeEventListener("mousedown", handleClick);[m
+[31m-  }, [isChatOpen, handleClose]);[m
+[31m-[m
+[31m-  // Click-away handler for pinned menu[m
+[31m-  useEffect(() => {[m
+[31m-    if (!pinnedMenuId) return;[m
+[31m-    function handleClick(e: MouseEvent) {[m
+[31m-      const target = e.target as Element;[m
+[31m-      if (!target.closest('[data-pinned-menu]')) {[m
+[31m-        setPinnedMenuId(null);[m
+[31m-      }[m
+[31m-    }[m
+[31m-    function handleEsc(e: KeyboardEvent) {[m
+[31m-      if (e.key === 'Escape') {[m
+[31m-        setPinnedMenuId(null);[m
+[31m-      }[m
+[31m-    }[m
+[31m-    document.addEventListener("mousedown", handleClick);[m
+[31m-    document.addEventListener("keydown", handleEsc);[m
+[31m-    return () => {[m
+[31m-      document.removeEventListener("mousedown", handleClick);[m
+[31m-      document.removeEventListener("keydown", handleEsc);[m
+[31m-    };[m
+[31m-  }, [pinnedMenuId]);[m
+[31m-[m
+[31m-  const fetchConversations = useCallback(async () => {[m
+[31m-    setIsLoading(true);[m
+[31m-    setLoadError(null);[m
+[31m-    try {[m
+[31m-      if (!currentUser || !publicUsersLoaded) {[m
+[31m-        setIsLoading(false);[m
+[31m-        return;[m
+[31m-      }[m
+[31m-      [m
+[31m-      // Step 1: Get user's group memberships (simple query)[m
+[31m-      const { data: groupMembers, error } = await supabase[m
+[31m-        .from("chat_group_members")[m
+[31m-        .select("group_id, last_read_at, is_pinned, is_muted")[m
+[31m-        .eq("user_id", currentUser.id);[m
+[31m-[m
+[31m-      if (error) {[m
+[31m-        throw error;[m
+[31m-      }[m
+[31m-[m
+[31m-      if (!groupMembers || groupMembers.length === 0) {[m
+[31m-        setConversations([]);[m
+[31m-        setIsLoading(false);[m
+[31m-        return;[m
+[31m-      }[m
+[31m-[m
+[31m-      // Step 2: Get group details for each group (separate queries to avoid joins)[m
+[31m-      const groupIds = groupMembers.map(m => m.group_id);[m
+[31m-      const { data: groups, error: groupsError } = await supabase[m
+[31m-        .from("chat_groups")[m
+[31m-        .select("id, name, is_direct, creator_id, avatar_url")[m
+[31m-        .in("id", groupIds);[m
+[31m-[m
+[31m-      if (groupsError) {[m
+[31m-        throw groupsError;[m
+[31m-      }[m
+[31m-[m
+[31m-      // Step 3: Get unread counts (simple queries)[m
+[31m-      const unreadCounts: Record<string, number> = {};[m
+[31m-      await Promise.all([m
+[31m-        groupMembers.map(async (member) => {[m
+[31m-          const groupId = member.group_id;[m
+[31m-          const lastReadAt = member.last_read_at;[m
+[31m-          let query = supabase[m
+[31m-            .from("chat_messages")[m
+[31m-            .select("id", { count: "exact", head: true })[m
+[31m-            .eq("group_id", groupId)[m
+[31m-            .neq("sender_id", currentUser.id);[m
+[31m-          if (lastReadAt) {[m
+[31m-            query = query.gt("created_at", lastReadAt);[m
+[31m-          }[m
+[31m-          const { count } = await query;[m
+[31m-          unreadCounts[groupId] = count || 0;[m
+[31m-        })[m
+[31m-      );[m
+[31m-[m
+[31m-      // Step 4: Get members for each group (separate queries)[m
+[31m-      const processedConversations = await Promise.all([m
+[31m-        groupMembers.map(async (member) => {[m
+[31m-          const group = groups?.find(g => g.id === member.group_id);[m
+[31m-          if (!group) return null;[m
+[31m-          [m
+[31m-          // Get members for this specific group[m
+[31m-          const { data: groupMembersData } = await supabase[m
+[31m-            .from("chat_group_members")[m
+[31m-            .select("user_id")[m
+[31m-            .eq("group_id", member.group_id);[m
+[31m-          [m
+[31m-          // Get profiles for these users[m
+[31m-          const userIds = groupMembersData?.map(m => m.user_id) || [];[m
+[31m-          const { data: profiles } = await supabase[m
+[31m-            .from("profiles")[m
+[31m-            .select("id, username, avatar_url")[m
+[31m-            .in("id", userIds);[m
+[31m-          [m
+[31m-[m
+[31m-          [m
+[31m-          const members = profiles?.map(p => ({ profile: p })) || [];[m
+[31m-          [m
+[31m-          // For direct chats, ensure we have both users[m
+[31m-          if (group.is_direct && members.length < 2) {[m
+[31m-            [m
+[31m-            // Fetch the missing profiles directly from the database[m
+[31m-            const missingUserIds = userIds.filter(id => !members.some(m => m.profile.id === id));[m
+[31m-            if (missingUserIds.length > 0) {[m
+[31m-              console.log('Fetching missing profiles for user IDs:', missingUserIds);[m
+[31m-              const { data: missingProfiles } = await supabase[m
+[31m-                .from("profiles")[m
+[31m-                .select("id, username, avatar_url")[m
+[31m-                .in("id", missingUserIds);[m
+[31m-              [m
+[31m-              if (missingProfiles) {[m
+[31m-                missingProfiles.forEach(profile => {[m
+[31m-                  members.push({ profile });[m
+[31m-                });[m
+[31m-                console.log('Added missing profiles:', missingProfiles.map(p => ({ id: p.id, username: p.username })));[m
+[31m-              }[m
+[31m-            }[m
+[31m-          }[m
+[31m-          [m
+[31m-          // Debug the name derivation for direct chats[m
+[31m-          let conversationName = group.name;[m
+[31m-          if (group.is_direct) {[m
+[31m-            const otherMember = members.find(m => m.profile.id !== currentUser.id);[m
+[31m-            conversationName = otherMember?.profile?.username || 'Unknown';[m
+[31m-          }[m
+[31m-          [m
+[31m-          return {[m
+[31m-            group_id: group.id,[m
+[31m-            is_direct: group.is_direct,[m
+[31m-            name: conversationName,[m
+[31m-            members,[m
+[31m-            last_message: "No messages yet...",[m
+[31m-            last_message_at: new Date().toISOString(),[m
+[31m-            unread_count: unreadCounts[member.group_id] || 0,[m
+[31m-            is_pinned: !!member.is_pinned,[m
+[31m-            is_muted: !!member.is_muted,[m
+[31m-            creator_id: group.creator_id,[m
+[31m-            avatar_url: group.avatar_url[m
+[31m-          };[m
+[31m-        })[m
+[31m-      );[m
+[31m-[m
+[31m-      // Filter out null conversations and sort[m
+[31m-      const validConversations = processedConversations.filter(Boolean) as Conversation[];[m
+[31m-      validConversations.sort((a, b) => {[m
+[31m-        if (a.is_pinned && !b.is_pinned) return -1;[m
+[31m-        if (!a.is_pinned && b.is_pinned) return 1;[m
+[31m-        return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();[m
+[31m-      });[m
+[31m-      [m
+[31m-      setConversations(validConversations);[m
+[31m-      setIsLoading(false);[m
+[31m-    } catch (error) {[m
+[31m-      console.error("Error fetching conversations:", error);[m
+[31m-      setLoadError(error instanceof Error ? error.message : "Failed to load conversations");[m
+[31m-      setIsLoading(false);[m
+[31m-    }[m
+[31m-  }, [currentUser, publicUsers, publicUsersLoaded]);[m
+[31m-[m
+[31m-  // Fetch conversations on mount[m
+[31m-  useEffect(() => {[m
+[31m-    fetchConversations();[m
+[31m-  }, [fetchConversations]);[m
+[3

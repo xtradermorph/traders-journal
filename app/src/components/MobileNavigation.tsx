@@ -7,7 +7,8 @@ import {
   BarChart2, 
   Calendar, 
   User,
-  PlusCircle
+  PlusCircle,
+  MessageSquare
 } from "lucide-react";
 import { useState } from "react";
 import AddTradeDialog from "./AddTradeDialog";
@@ -72,6 +73,18 @@ const MobileNavigation = () => {
         >
           <Calendar className="h-6 w-6 mb-1" />
           <span className="text-xs font-medium">Forum</span>
+        </Link>
+        
+        <Link 
+          href="/messages" 
+          className={`flex flex-col items-center justify-center min-h-[44px] min-w-[44px] rounded-lg transition-colors ${
+            pathname === '/messages' 
+              ? 'text-primary bg-primary/10' 
+              : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
+          }`}
+        >
+          <MessageSquare className="h-6 w-6 mb-1" />
+          <span className="text-xs font-medium">Messages</span>
         </Link>
         
         <Link 

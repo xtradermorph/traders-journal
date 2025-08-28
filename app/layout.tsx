@@ -11,7 +11,7 @@ import ThemeSyncProvider from './src/components/auth/ThemeSyncProvider'
 import { UserProfileProvider } from './src/components/UserProfileContext'
 import { useState } from "react";
 
-import ChatWidget from "./src/components/chat/ChatWidget";
+
 import CookieConsent from "./src/components/CookieConsent";
 import { initializeCookiePreferences } from "./src/lib/cookie-utils";
 
@@ -234,7 +234,7 @@ export default function RootLayout({
             <ThemeSyncProvider>
               <UserProfileProvider>
                 {children}
-                {!isPublicPage && <ChatWidget />}
+        
               </UserProfileProvider>
             </ThemeSyncProvider>
             

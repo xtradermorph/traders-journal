@@ -29,7 +29,8 @@ import {
   CircleDot,
   TrendingUp,
   Star,
-  Calendar
+  Calendar,
+  MessageSquare
 } from 'lucide-react';
 import { sendFriendRequest, getFriendshipStatusString, acceptFriendRequest, declineFriendRequest, cancelFriendRequest } from '../../lib/friendsUtils';
 
@@ -37,9 +38,10 @@ interface PublicProfileViewProps {
   profile: UserProfile;
   isOpen: boolean;
   onClose: () => void;
+  onSendMessage?: (userId: string) => void;
 }
 
-export const PublicProfileView = ({ profile, isOpen, onClose }: PublicProfileViewProps) => {
+export const PublicProfileView = ({ profile, isOpen, onClose, onSendMessage }: PublicProfileViewProps) => {
   const router = useRouter();
   const { toast } = useToast();
   const { session } = useAuth();
@@ -445,6 +447,17 @@ export const PublicProfileView = ({ profile, isOpen, onClose }: PublicProfileVie
             {/* Action Buttons */}
             <div className="flex flex-col gap-2">
               {renderActionButton()}
+              {onSendMessage && session?.user?.id !== profile.id && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onSendMessage(profile.id)}
+                  className="w-full"
+                >
+                  <MessageSquare className="h-4 w-4 mr-2" />
+                  Send Message
+                </Button>
+              )}
             </div>
           </div>
           
