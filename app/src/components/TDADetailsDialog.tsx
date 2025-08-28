@@ -3,7 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Calendar, Clock, TrendingUp, User, Download, X, ImageIcon, Bell, Brain, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, Clock, TrendingUp, User, Download, X, ImageIcon, Bell, Brain, ChevronDown, ChevronUp, Maximize2, Minimize2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 
@@ -37,6 +37,7 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
   const [selectedScreenshot, setSelectedScreenshot] = useState<TDAScreenshot | null>(null);
   const [screenshotModalOpen, setScreenshotModalOpen] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isScreenshotFullscreen, setIsScreenshotFullscreen] = useState(false);
   const [enhancedReasoning, setEnhancedReasoning] = useState<any[]>([]);
   const [updatedMetrics, setUpdatedMetrics] = useState<any>(null);
   const [isLoadingEnhanced, setIsLoadingEnhanced] = useState(false);
@@ -907,30 +908,71 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
       </Dialog>
 
       {/* Screenshot Modal */}
-      <ScreenshotDialog open={screenshotModalOpen} onOpenChange={setScreenshotModalOpen}>
-        <ScreenshotDialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-          <ScreenshotDialogHeader>
-            <div className="flex items-center justify-between">
-              <ScreenshotDialogTitle className="text-lg font-semibold">
-                Chart Screenshot - {selectedScreenshot && getTimeframeDisplayName(selectedScreenshot.timeframe)}
-              </ScreenshotDialogTitle>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setScreenshotModalOpen(false)}
-                className="h-8 w-8 p-0"
-              >
-                <X className="h-4 w-4" />
-              </Button>
+      <ScreenshotDialog open={screenshotModalOpen} onOpenChange={(open) => {
+        setScreenshotModalOpen(open);
+        if (!open) {
+          setIsScreenshotFullscreen(false);
+        }
+      }}>
+        <ScreenshotDialogContent 
+          className={`${isScreenshotFullscreen ? 'fixed inset-0 z-[9999] max-w-none w-screen h-screen rounded-none' : 'max-w-4xl max-h-[90vh]'} overflow-y-auto`}
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <ScreenshotDialogHeader className="flex items-center justify-between p-4 border-b">
+            <ScreenshotDialogTitle className="text-lg font-semibold">
+              Chart Screenshot - {selectedScreenshot && getTimeframeDisplayName(selectedScreenshot.timeframe)}
+            </ScreenshotDialogTitle>
+            <div className="flex items-center space-x-2">
+              <TooltipProvider>
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setIsScreenshotFullscreen(!isScreenshotFullscreen)}
+                      className="h-8 w-8 p-0"
+                    >
+                      {isScreenshotFullscreen ? (
+                        <Minimize2 className="h-4 w-4" />
+                      ) : (
+                        <Maximize2 className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                    {isScreenshotFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+              <TooltipProvider>
+                <Tooltip delayDuration={300}>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => {
+                        setScreenshotModalOpen(false);
+                        setIsScreenshotFullscreen(false);
+                      }}
+                      className="h-8 w-8 p-0"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                    Close
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
           </ScreenshotDialogHeader>
-          <div className="p-4">
+          <div className={`${isScreenshotFullscreen ? 'flex-1 overflow-y-auto p-6' : 'p-4'}`}>
             {selectedScreenshot && (
               <div className="flex justify-center">
                 <img
                   src={selectedScreenshot.file_url}
                   alt={`Chart screenshot for ${selectedScreenshot.timeframe}`}
-                  className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-lg"
+                  className={`${isScreenshotFullscreen ? 'max-w-full max-h-full' : 'max-w-full max-h-[70vh]'} object-contain rounded-lg shadow-lg`}
                   onError={(e) => {
                     console.error('Failed to load screenshot in modal:', selectedScreenshot);
                     e.currentTarget.style.display = 'none';
