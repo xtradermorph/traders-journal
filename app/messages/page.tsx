@@ -205,7 +205,7 @@ export default function MessagesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           receiver_id: currentConversation.other_user_id,
-          content: messageInput.trim() || `Sent ${fileName}`,
+          content: messageInput.trim() || (selectedFile ? '' : ''),
           message_type: messageType,
           file_url: fileUrl,
           file_name: fileName
@@ -358,36 +358,50 @@ export default function MessagesPage() {
                             : 'border-transparent'
                         }`}
                       >
-                        <div className="flex items-center space-x-3">
-                          <Avatar className="h-12 w-12 ring-2 ring-blue-200 dark:ring-slate-600">
-                            <AvatarImage src={conversation.other_user.avatar_url} />
-                            <AvatarFallback className="bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
-                              <User className="h-6 w-6" />
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between">
-                              <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
-                                {conversation.other_user.username}
-                              </p>
-                              {conversation.last_message && (
-                                <span className="text-xs text-slate-500 dark:text-slate-400">
-                                  {formatMessageTime(conversation.last_message.created_at)}
-                                </span>
-                              )}
-                            </div>
-                            {conversation.last_message && (
-                              <p className="text-sm text-slate-600 dark:text-slate-300 truncate mt-1">
-                                {conversation.last_message.content}
-                              </p>
-                            )}
-                          </div>
-                          {conversation.unread_count > 0 && (
-                            <Badge className="h-6 w-6 p-0 text-xs bg-red-500 hover:bg-red-600 text-white">
-                              {conversation.unread_count}
-                            </Badge>
-                          )}
-                        </div>
+                                                 <div className="flex items-center space-x-3">
+                           <Avatar className="h-12 w-12 ring-2 ring-blue-200 dark:ring-slate-600">
+                             <AvatarImage src={conversation.other_user.avatar_url} />
+                             <AvatarFallback className="bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
+                               <User className="h-6 w-6" />
+                             </AvatarFallback>
+                           </Avatar>
+                           <div className="flex-1 min-w-0">
+                             <div className="flex items-center justify-between">
+                               <div className="flex items-center space-x-2">
+                                 <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                                   {conversation.other_user.username}
+                                 </p>
+                                 <DropdownMenu>
+                                   <DropdownMenuTrigger asChild>
+                                     <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+                                       <MoreVertical className="h-3 w-3" />
+                                     </Button>
+                                   </DropdownMenuTrigger>
+                                   <DropdownMenuContent align="start" className="w-48">
+                                     <DropdownMenuItem onClick={() => {
+                                       setCurrentConversation(conversation);
+                                       setShowDeleteDialog(true);
+                                     }} className="text-red-600 focus:text-red-600">
+                                       <Trash2 className="h-4 w-4 mr-2" />
+                                       Delete Conversation
+                                     </DropdownMenuItem>
+                                   </DropdownMenuContent>
+                                 </DropdownMenu>
+                               </div>
+                               {conversation.last_message && (
+                                 <span className="text-xs text-slate-500 dark:text-slate-400">
+                                   {formatMessageTime(conversation.last_message.created_at)}
+                                 </span>
+                               )}
+                             </div>
+                             
+                           </div>
+                           {conversation.unread_count > 0 && (
+                             <Badge className="h-6 w-6 p-0 text-xs bg-red-500 hover:bg-red-600 text-white">
+                               {conversation.unread_count}
+                             </Badge>
+                           )}
+                         </div>
                       </div>
                     ))
                   )}
@@ -418,22 +432,20 @@ export default function MessagesPage() {
                         </Avatar>
                         <div>
                           <h3 className="font-semibold text-white">{currentConversation.other_user.username}</h3>
-                          <p className="text-xs text-white/80">Active now</p>
                         </div>
                       </div>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
-                            <MoreVertical className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-48">
-                          <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600 focus:text-red-600">
-                            <Trash2 className="h-4 w-4 mr-2" />
-                            Delete Conversation
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
+                                             <Button
+                         variant="ghost"
+                         size="sm"
+                         onClick={() => {
+                           setCurrentConversation(null);
+                           setMessages([]);
+                           setShowConversationList(true);
+                         }}
+                         className="text-white hover:bg-white/20"
+                       >
+                         <X className="h-4 w-4" />
+                       </Button>
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
@@ -490,7 +502,9 @@ export default function MessagesPage() {
                                   </Button>
                                 </div>
                               )}
-                              <p className="text-sm leading-relaxed">{message.content}</p>
+                              {message.content && message.content.trim() && (
+                                <p className="text-sm leading-relaxed">{message.content}</p>
+                              )}
                               <p className="text-xs opacity-70 mt-2 text-right">
                                 {formatMessageTime(message.created_at)}
                               </p>

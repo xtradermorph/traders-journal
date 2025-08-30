@@ -19,10 +19,10 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Conversation ID required' }, { status: 400 });
     }
 
-    // Soft delete all messages in the conversation for the current user
+    // Hard delete all messages in the conversation for the current user
     const { error } = await supabase
       .from('messages')
-      .update({ deleted_at: new Date().toISOString() })
+      .delete()
       .or(`and(sender_id.eq.${user.id},receiver_id.eq.${conversationId}),and(sender_id.eq.${conversationId},receiver_id.eq.${user.id})`);
 
     if (error) {
