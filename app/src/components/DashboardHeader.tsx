@@ -24,6 +24,7 @@ import {
   Clock,
   TrendingUp,
   MessagesSquare, // Added MessagesSquare
+  MessageSquare, // Added MessageSquare for Messages
   BarChart3, // Added BarChart3
   ListOrdered, // Added ListOrdered
 
@@ -59,6 +60,7 @@ import { MedalType } from '../types/user';
 import { useTheme } from 'next-themes';
 
 import { useAuth } from '../hooks/useAuth';
+import { useMessageStore } from '../lib/store/messageStore';
 
 // This type might need to be adjusted based on the actual structure of your user object
 interface UserData {
@@ -118,6 +120,7 @@ interface DashboardHeaderProps {
 const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHeaderProps) => {
   const { profile: currentUser, isOnline } = useUserProfile();
   const { user: authUser } = useAuth();
+  const { hasUnreadMessages, totalUnreadCount, refreshUnreadCount } = useMessageStore();
   const [isAdmin, setIsAdmin] = useState(false);
   const router = useRouter();
   const { toast } = useToast();
@@ -674,6 +677,17 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
     return () => clearInterval(interval);
   }, []);
 
+  // Refresh unread message count periodically
+  useEffect(() => {
+    if (currentUser?.id) {
+      refreshUnreadCount();
+      const interval = setInterval(() => {
+        refreshUnreadCount();
+      }, 30000); // Refresh every 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [currentUser?.id, refreshUnreadCount]);
+
   // Close mobile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -754,6 +768,8 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
               <span className="dashboard-header-tooltip-text" style={{ color: '#222', fontWeight: 500 }}>Social Forum</span>
             </div>
           </Button>
+
+          
           
           {/* Traders Button and Dropdown */}
           <div className="relative" ref={tradersDropdownRef}>
@@ -1171,18 +1187,31 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
                       <span>Trade Records</span>
                     </Link>
                   </Button>
-                  <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                    <Link href="/shared-trades" className="flex items-center w-full">
-                      <Share2 className="mr-2 h-4 w-4" />
-                      <span>Shared Trades</span>
-                    </Link>
-                  </Button>
-                  <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                    <Link href="/settings" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </Link>
-                  </Button>
+                                     <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
+                     <Link href="/shared-trades" className="flex items-center w-full">
+                       <Share2 className="mr-2 h-4 w-4" />
+                       <span>Shared Trades</span>
+                     </Link>
+                   </Button>
+                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2 relative">
+                     <Link href="/messages" className="flex items-center w-full">
+                       <MessageSquare className="mr-2 h-4 w-4" />
+                       <span>Messages</span>
+                       {hasUnreadMessages && (
+                         <div className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                           <span className="text-xs text-white font-bold">
+                             {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                           </span>
+                         </div>
+                       )}
+                     </Link>
+                   </Button>
+                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
+                     <Link href="/settings" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
+                       <Settings className="mr-2 h-4 w-4" />
+                       <span>Settings</span>
+                     </Link>
+                   </Button>
                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
                     <Link href="/support" className="flex items-center w-full" onClick={() => { setUserMenuOpen(false); try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
                       <LifeBuoy className="mr-2 h-4 w-4" />
@@ -1257,18 +1286,31 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
                       <span>Trade Records</span>
                     </Link>
                   </Button>
-                  <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                    <Link href="/shared-trades" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
-                      <Share2 className="mr-2 h-4 w-4" />
-                      <span>Shared Trades</span>
-                    </Link>
-                  </Button>
-                  <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                    <Link href="/settings" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
-                      <Settings className="mr-2 h-4 w-4" />
-                      <span>Settings</span>
-                    </Link>
-                  </Button>
+                                     <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
+                     <Link href="/shared-trades" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
+                       <Share2 className="mr-2 h-4 w-4" />
+                       <span>Shared Trades</span>
+                     </Link>
+                   </Button>
+                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2 relative">
+                     <Link href="/messages" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
+                       <MessageSquare className="mr-2 h-4 w-4" />
+                       <span>Messages</span>
+                       {hasUnreadMessages && (
+                         <div className="absolute -top-1 -right-1 h-4 w-4 bg-red-500 rounded-full flex items-center justify-center">
+                           <span className="text-xs text-white font-bold">
+                             {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
+                           </span>
+                         </div>
+                       )}
+                     </Link>
+                   </Button>
+                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
+                     <Link href="/settings" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
+                       <Settings className="mr-2 h-4 w-4" />
+                       <span>Settings</span>
+                     </Link>
+                   </Button>
                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
                     <Link href="/support" className="flex items-center w-full" onClick={() => { setUserMenuOpen(false); try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
                       <LifeBuoy className="mr-2 h-4 w-4" />

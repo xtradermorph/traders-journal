@@ -1,3 +1,7 @@
+# SUPABASE SCHEMA - TRADER'S JOURNAL APPLICATION
+# Last Updated: January 2025
+# This file contains the complete database schema for the Trader's Journal app
+
 1. SUPABASE SCHEMA - All foreign key relationships
 
 | table_name                    | column_name        | foreign_table_name    | foreign_column_name | constraint_name                               |
@@ -1160,233 +1164,457 @@ trade_setups tabe structure:
 
 trader_friends table structure:
 
-| column_name    | data_type                | is_nullable | column_default    | character_maximum_length | numeric_precision | numeric_scale |
-| -------------- | ------------------------ | ----------- | ----------------- | ------------------------ | ----------------- | ------------- |
-| id             | uuid                     | NO          | gen_random_uuid() | null                     | null              | null          |
-| user1_id       | uuid                     | NO          | null              | null                     | null              | null          |
-| user2_id       | uuid                     | NO          | null              | null                     | null              | null          |
-| status         | text                     | NO          | 'PENDING'::text   | null                     | null              | null          |
-| created_at     | timestamp with time zone | YES         | now()             | null                     | null              | null          |
-| updated_at     | timestamp with time zone | YES         | now()             | null                     | null              | null          |
-| action_user_id | uuid                     | YES         | null              | null                     | null              | null          |
-
-shared_trades table structure:
-
-| column_name         | data_type                | is_nullable | column_default    | character_maximum_length | numeric_precision | numeric_scale |
-| ------------------- | ------------------------ | ----------- | ----------------- | ------------------------ | ----------------- | ------------- |
-| id                  | uuid                     | NO          | gen_random_uuid() | null                     | null              | null          |
-| original_trade_id   | uuid                     | NO          | null              | null                     | null              | null          |
-| shared_by_user_id   | uuid                     | NO          | null              | null                     | null              | null          |
-| shared_with_user_id | uuid                     | YES         | null              | null                     | null              | null          |
-| share_type          | character varying        | NO          | null              | 20                       | null              | null          |
-| forum_id            | character varying        | YES         | null              | 50                       | null              | null          |
-| is_active           | boolean                  | YES         | true              | null                     | null              | null          |
-| created_at          | timestamp with time zone | YES         | now()             | null                     | null              | null          |
-| updated_at          | timestamp with time zone | YES         | now()             | null                     | null              | null          |
-| trade_id            | uuid                     | YES         | null              | null                     | null              | null          |
-| sharer_id           | uuid                     | YES         | null              | null                     | null              | null          |
-| recipient_id        | uuid                     | YES         | null              | null                     | null              | null          |
 
 
 16. Supabase all functions
-
-| schema | function_name                     | arguments                                                                                                                                                                                          | result_type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| ------ | --------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| public | bytea_to_text                     | data bytea                                                                                                                                                                                         | text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | call_monthly_reports              |                                                                                                                                                                                                    | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | call_weekly_reports               |                                                                                                                                                                                                    | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | check_cron_jobs                   | job_name text DEFAULT NULL::text, hours_threshold integer DEFAULT 24                                                                                                                               | boolean                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | cleanup_old_messages              |                                                                                                                                                                                                    | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | cleanup_user_data                 | user_id_param uuid                                                                                                                                                                                 | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | complete_tda_analysis             | p_analysis_id uuid, p_overall_probability numeric, p_trade_recommendation trade_recommendation, p_confidence_level numeric, p_risk_level character varying, p_ai_summary text, p_ai_reasoning text | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | create_or_get_direct_chat         | recipient_id_param uuid                                                                                                                                                                            | TABLE(group_id uuid)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | create_tda_analysis               | p_user_id uuid, p_currency_pair character varying, p_notes text DEFAULT NULL::text                                                                                                                 | uuid                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | decrement_comments_count          | p_trade_setup_id uuid                                                                                                                                                                              | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | decrement_likes_count             | p_trade_setup_id uuid                                                                                                                                                                              | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | enable_user_reports               | user_id uuid, weekly boolean DEFAULT false, monthly boolean DEFAULT false, quarterly boolean DEFAULT false, yearly boolean DEFAULT false                                                           | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | get_comment_with_reactions        | comment_id uuid                                                                                                                                                                                    | TABLE(id uuid, trade_setup_id uuid, user_id uuid, content text, created_at timestamp with time zone, updated_at timestamp with time zone, parent_id uuid, likes_count integer, dislikes_count integer, is_edited boolean, edited_at timestamp with time zone, user_reaction text, user_username text, user_avatar_url text)                                                                                                                                                                                                                                           |
-| public | get_shared_trades                 | p_user_id uuid DEFAULT NULL::uuid, p_share_type character varying DEFAULT NULL::character varying, p_forum_id character varying DEFAULT NULL::character varying                                    | TABLE(shared_trade_id uuid, original_trade_id uuid, shared_by_user_id uuid, shared_by_username character varying, shared_by_avatar_url text, share_type character varying, forum_id character varying, created_at timestamp with time zone, likes_count bigint, comments_count bigint, currency_pair character varying, trade_type character varying, entry_price numeric, exit_price numeric, entry_time timestamp with time zone, exit_time timestamp with time zone, duration integer, pips numeric, lot_size numeric, profit_loss numeric, date date, notes text) |
-| public | get_shared_trades_for_user        | p_user_id uuid DEFAULT auth.uid()                                                                                                                                                                  | TABLE(shared_trade_id uuid, trade_id uuid, sharer_id uuid, sharer_username text, sharer_avatar_url text, recipient_id uuid, recipient_username text, recipient_avatar_url text, shared_at timestamp with time zone, trade_currency_pair text, trade_direction text, trade_entry_price numeric, trade_exit_price numeric, trade_pnl numeric, trade_status text, trade_date timestamp with time zone, likes_count bigint, comments_count bigint, is_liked boolean, is_friend boolean, share_type text)                                                                  |
-| public | get_user_profile                  | user_id uuid                                                                                                                                                                                       | TABLE(id uuid, username text, email text, avatar_url text, bio text, website text, role text, performance_rank integer, win_rate numeric, created_at timestamp with time zone, updated_at timestamp with time zone, trader_status text, trader_type text, years_experience text, trading_frequency text, markets text, trading_goal text, trading_challenges text, first_name text, last_name text)                                                                                                                                                                   |
-| public | get_users_with_reports_enabled    | report_type text                                                                                                                                                                                   | TABLE(user_id uuid, email text, username text)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
-| public | handle_comment_edit               |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | handle_comment_inserted           |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | handle_message_status             |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | handle_new_user                   |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | handle_new_user_profile           |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | handle_profile_changes            |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | handle_support_changes            |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | handle_trade_changes              |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | handle_user_deletion              |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | handle_user_update                |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | http                              | request http_request                                                                                                                                                                               | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_delete                       | uri character varying                                                                                                                                                                              | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_delete                       | uri character varying, content character varying, content_type character varying                                                                                                                   | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_get                          | uri character varying, data jsonb                                                                                                                                                                  | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_get                          | uri character varying                                                                                                                                                                              | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_head                         | uri character varying                                                                                                                                                                              | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_header                       | field character varying, value character varying                                                                                                                                                   | http_header                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| public | http_list_curlopt                 |                                                                                                                                                                                                    | TABLE(curlopt text, value text)                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       |
-| public | http_patch                        | uri character varying, content character varying, content_type character varying                                                                                                                   | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_post                         | uri character varying, data jsonb                                                                                                                                                                  | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_post                         | uri character varying, content character varying, content_type character varying                                                                                                                   | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_put                          | uri character varying, content character varying, content_type character varying                                                                                                                   | http_response                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
-| public | http_reset_curlopt                |                                                                                                                                                                                                    | boolean                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | http_set_curlopt                  | curlopt character varying, value character varying                                                                                                                                                 | boolean                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | increment_comments_count          | row_id uuid                                                                                                                                                                                        | integer                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | increment_likes_count             | p_trade_setup_id uuid                                                                                                                                                                              | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | mark_inactive_users               |                                                                                                                                                                                                    | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | share_trade                       | p_trade_id uuid, p_share_type character varying, p_shared_with_user_id uuid DEFAULT NULL::uuid, p_forum_id character varying DEFAULT NULL::character varying                                       | uuid                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | share_trade_with_user             | p_trade_id uuid, p_recipient_username text                                                                                                                                                         | uuid                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | text_to_bytea                     | data text                                                                                                                                                                                          | bytea                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| public | trigger_periodic_trade_reports    |                                                                                                                                                                                                    | void                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | unshare_trade                     | p_trade_id uuid, p_share_type character varying, p_shared_with_user_id uuid DEFAULT NULL::uuid, p_forum_id character varying DEFAULT NULL::character varying                                       | boolean                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | update_comment_reaction_counts    |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | update_modified_column            |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | update_trade_setup_dislikes_count |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | update_updated_at_column          |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | update_user_presence              |                                                                                                                                                                                                    | trigger                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
-| public | update_user_profile               | user_id uuid, profile_data jsonb                                                                                                                                                                   | jsonb                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
-| public | urlencode                         | data jsonb                                                                                                                                                                                         | text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | urlencode                         | string character varying                                                                                                                                                                           | text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| public | urlencode                         | string bytea                                                                                                                                                                                       | text                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-
+All custom functions in your database
 17. Supabase all triggers
-
-| trigger_name                            | event_manipulation | event_object_table            | action_statement                                     | action_timing |
-| --------------------------------------- | ------------------ | ----------------------------- | ---------------------------------------------------- | ------------- |
-| before_message_update                   | UPDATE             | messages                      | EXECUTE FUNCTION handle_message_status()             | BEFORE        |
-| after_profile_delete                    | DELETE             | profiles                      | EXECUTE FUNCTION handle_profile_changes()            | AFTER         |
-| after_profile_update                    | UPDATE             | profiles                      | EXECUTE FUNCTION handle_profile_changes()            | AFTER         |
-| update_shared_trade_comments_updated_at | UPDATE             | shared_trade_comments         | EXECUTE FUNCTION update_updated_at_column()          | BEFORE        |
-| update_shared_trades_updated_at         | UPDATE             | shared_trades                 | EXECUTE FUNCTION update_updated_at_column()          | BEFORE        |
-| update_support_replies_modtime          | UPDATE             | support_replies               | EXECUTE FUNCTION update_modified_column()            | BEFORE        |
-| after_support_update                    | UPDATE             | support_requests              | EXECUTE FUNCTION handle_support_changes()            | AFTER         |
-| update_support_requests_modtime         | UPDATE             | support_requests              | EXECUTE FUNCTION update_modified_column()            | BEFORE        |
-| trigger_update_comment_reaction_counts  | INSERT             | trade_setup_comment_reactions | EXECUTE FUNCTION update_comment_reaction_counts()    | AFTER         |
-| trigger_update_comment_reaction_counts  | UPDATE             | trade_setup_comment_reactions | EXECUTE FUNCTION update_comment_reaction_counts()    | AFTER         |
-| trigger_update_comment_reaction_counts  | DELETE             | trade_setup_comment_reactions | EXECUTE FUNCTION update_comment_reaction_counts()    | AFTER         |
-| on_comment_inserted                     | INSERT             | trade_setup_comments          | EXECUTE FUNCTION handle_comment_inserted()           | AFTER         |
-| trigger_handle_comment_edit             | UPDATE             | trade_setup_comments          | EXECUTE FUNCTION handle_comment_edit()               | BEFORE        |
-| trade_setup_dislikes_count_trigger      | INSERT             | trade_setup_dislikes          | EXECUTE FUNCTION update_trade_setup_dislikes_count() | AFTER         |
-| trade_setup_dislikes_count_trigger      | DELETE             | trade_setup_dislikes          | EXECUTE FUNCTION update_trade_setup_dislikes_count() | AFTER         |
-| after_trade_delete                      | DELETE             | trades                        | EXECUTE FUNCTION handle_trade_changes()              | AFTER         |
-| after_trade_insert                      | INSERT             | trades                        | EXECUTE FUNCTION handle_trade_changes()              | AFTER         |
-| after_trade_update                      | UPDATE             | trades                        | EXECUTE FUNCTION handle_trade_changes()              | AFTER         |
-| trades_audit_trigger                    | INSERT             | trades                        | EXECUTE FUNCTION handle_trade_changes()              | AFTER         |
-| trades_audit_trigger                    | UPDATE             | trades                        | EXECUTE FUNCTION handle_trade_changes()              | AFTER         |
-| trades_audit_trigger                    | DELETE             | trades                        | EXECUTE FUNCTION handle_trade_changes()              | AFTER         |
-
 All database triggers
 
-| schemaname | tablename              | attname               | n_distinct | correlation |
-| ---------- | ---------------------- | --------------------- | ---------- | ----------- |
-| public     | audit_logs             | action                | 2          | 1           |
-| public     | audit_logs             | created_at            | -0.647059  | 1           |
-| public     | audit_logs             | entity_id             | -0.0196078 | null        |
-| public     | audit_logs             | entity_type           | -0.0196078 | null        |
-| public     | audit_logs             | event_type            | -0.137255  | -0.326579   |
-| public     | audit_logs             | id                    | -1         | 0.0501357   |
-| public     | audit_logs             | ip_address            | 0          | null        |
-| public     | audit_logs             | new_data              | -0.372549  | 0.400427    |
-| public     | audit_logs             | new_values            | -0.0196078 | null        |
-| public     | audit_logs             | old_data              | -0.333333  | 0.725592    |
-| public     | audit_logs             | old_values            | 0          | null        |
-| public     | audit_logs             | record_id             | -0.254902  | -0.0971429  |
-| public     | audit_logs             | table_name            | 3          | 0.848163    |
-| public     | audit_logs             | user_agent            | 0          | null        |
-| public     | audit_logs             | user_id               | 5          | -0.179832   |
-| public     | profiles               | avatar_url            | -0.5       | null        |
-| public     | profiles               | bio                   | -1         | 1           |
-| public     | profiles               | created_at            | -1         | -1          |
-| public     | profiles               | email                 | -1         | 1           |
-| public     | profiles               | first_name            | -0.5       | null        |
-| public     | profiles               | id                    | -1         | -1          |
-| public     | profiles               | last_name             | -0.5       | null        |
-| public     | profiles               | markets               | -0.5       | 1           |
-| public     | profiles               | performance_rank      | 0          | null        |
-| public     | profiles               | role                  | -1         | -1          |
-| public     | profiles               | trader_status         | -0.5       | 1           |
-| public     | profiles               | trader_type           | -0.5       | 1           |
-| public     | profiles               | trading_challenges    | -0.5       | 1           |
-| public     | profiles               | trading_frequency     | -0.5       | 1           |
-| public     | profiles               | trading_goal          | -0.5       | 1           |
-| public     | profiles               | updated_at            | -1         | 1           |
-| public     | profiles               | username              | -1         | -1          |
-| public     | profiles               | website               | 0          | null        |
-| public     | profiles               | win_rate              | 0          | null        |
-| public     | profiles               | years_experience      | -0.5       | null        |
-| public     | tda_analysis_history   | action                | -0.111111  | 0.96904     |
-| public     | tda_analysis_history   | analysis_id           | -0.944444  | 0.0650155   |
-| public     | tda_analysis_history   | changes               | -0.0555556 | null        |
-| public     | tda_analysis_history   | id                    | -1         | 0.389061    |
-| public     | tda_analysis_history   | performed_at          | -1         | 0.719298    |
-| public     | tda_analysis_history   | performed_by          | 1          | 1           |
-| public     | tda_answers            | analysis_id           | 3          | 0.674052    |
-| public     | tda_answers            | answer_text           | -0.304878  | 0.0196586   |
-| public     | tda_answers            | answer_value          | -0.304878  | 0.0196586   |
-| public     | tda_answers            | created_at            | 9          | 0.625767    |
-| public     | tda_answers            | id                    | -1         | -0.0533796  |
-| public     | tda_answers            | question_id           | -0.333333  | 0.0603418   |
-| public     | tda_questions          | created_at            | 1          | 1           |
-| public     | tda_questions          | id                    | -1         | -0.155814   |
-| public     | tda_questions          | is_active             | 1          | 1           |
-| public     | tda_questions          | options               | -0.104839  | 0.171101    |
-| public     | tda_questions          | order_index           | -0.241935  | -0.356633   |
-| public     | tda_questions          | question_text         | -0.370968  | 0.153208    |
-| public     | tda_questions          | question_type         | 3          | 0.864132    |
-| public     | tda_questions          | required              | 2          | 0.905731    |
-| public     | tda_questions          | timeframe             | 10         | 0.544478    |
-| public     | tda_timeframe_analyses | analysis_data         | -0.333333  | 0.435373    |
-| public     | tda_timeframe_analyses | analysis_id           | 3          | -0.23337    |
-| public     | tda_timeframe_analyses | created_at            | 3          | 0.683204    |
-| public     | tda_timeframe_analyses | id                    | -1         | -0.0380423  |
-| public     | tda_timeframe_analyses | timeframe             | -0.333333  | 0.321913    |
-| public     | tda_timeframe_analyses | timeframe_probability | 1          | 1           |
-| public     | tda_timeframe_analyses | timeframe_sentiment   | 1          | 1           |
-| public     | tda_timeframe_analyses | timeframe_strength    | 1          | 1           |
-| public     | tda_timeframe_analyses | updated_at            | 3          | 0.683204    |
-| public     | top_down_analyses      | ai_reasoning          | 0          | null        |
-| public     | top_down_analyses      | ai_summary            | 0          | null        |
-| public     | top_down_analyses      | analysis_date         | -0.357143  | 0.894506    |
-| public     | top_down_analyses      | analysis_time         | -0.214286  | 1           |
-| public     | top_down_analyses      | completed_at          | 0          | null        |
-| public     | top_down_analyses      | confidence_level      | 0          | null        |
-| public     | top_down_analyses      | created_at            | -1         | 0.894506    |
-| public     | top_down_analyses      | currency_pair         | -0.142857  | -0.0285714  |
-| public     | top_down_analyses      | id                    | -1         | 0.243956    |
-| public     | top_down_analyses      | notes                 | 0          | null        |
-| public     | top_down_analyses      | overall_probability   | 0          | null        |
-| public     | top_down_analyses      | risk_level            | 0          | null        |
-| public     | top_down_analyses      | status                | 1          | 1           |
-| public     | top_down_analyses      | tags                  | 0          | null        |
-| public     | top_down_analyses      | trade_recommendation  | 0          | null        |
-| public     | top_down_analyses      | updated_at            | -1         | 0.894506    |
-| public     | top_down_analyses      | user_id               | 1          | 1           |
-| public     | user_presence          | created_at            | -1         | -0.5        |
-| public     | user_presence          | id                    | -1         | 0.5         |
-| public     | user_presence          | last_seen_at          | -1         | 1           |
-| public     | user_presence          | status                | -0.333333  | 1           |
-| public     | user_presence          | updated_at            | -1         | -0.5        |
-| public     | user_presence          | user_id               | -1         | -0.5        |
-| public     | user_settings          | ai_api_key            | -1         | null        |
-| public     | user_settings          | chart_timeframe       | -1         | null        |
-| public     | user_settings          | created_at            | -1         | null        |
-| public     | user_settings          | default_currency      | -1         | null        |
-| public     | user_settings          | email_notifications   | -1         | null        |
-| public     | user_settings          | email_project_updates | -1         | null        |
-| public     | user_settings          | id                    | -1         | null        |
-| public     | user_settings          | monthly_reports       | -1         | null        |
-| public     | user_settings          | monthly_trade_checkup | -1         | null        |
-| public     | user_settings          | notifications_enabled | -1         | null        |
-| public     | user_settings          | pips_or_percentage    | -1         | null        |
-| public     | user_settings          | public_profile        | -1         | null        |
-| public     | user_settings          | quarterly_reports     | -1         | null        |
-| public     | user_settings          | recent_trades_count   | -1         | null        |
-| public     | user_settings          | share_statistics      | -1         | null        |
-| public     | user_settings          | theme                 | -1         | null        |
-| public     | user_settings          | timezone              | 0          | null        |
-| public     | user_settings          | updated_at            | -1         | null        |
-| public     | user_settings          | user_id               | -1         | null        |
-| public     | user_settings          | weekly_reports        | -1         | null        |
-| public     | user_settings          | yearly_reports        | -1         | null        |
+
+================================================================================
+CORE TABLES
+================================================================================
+
+1. PROFILES TABLE
+   - Primary user profile information
+   - Links to Supabase Auth users
+   
+   Columns:
+   - id (UUID, PRIMARY KEY) - Supabase auth user ID
+   - username (TEXT, NOT NULL, UNIQUE) - User's display name
+   - email (TEXT, NOT NULL, UNIQUE) - User's email address
+   - avatar_url (TEXT) - URL to user's avatar image
+   - profession (TEXT) - User's profession
+   - trader_status (TEXT) - Current trading status
+   - trader_type (TEXT) - Type of trader (e.g., "Day Trader", "Swing Trader")
+   - bio (TEXT) - User's biography
+   - years_experience (TEXT) - Years of trading experience
+   - trading_frequency (TEXT) - How often they trade
+   - markets (TEXT) - Markets they trade in
+   - trading_goal (TEXT) - Their trading goals
+   - trading_challenges (TEXT) - Challenges they face
+   - created_at (TIMESTAMP WITH TIME ZONE, NOT NULL, DEFAULT NOW())
+   - updated_at (TIMESTAMP WITH TIME ZONE, NOT NULL, DEFAULT NOW())
+
+2. TRADES TABLE
+   - Individual trade records
+   - Links to user profiles
+   
+   Columns:
+   - id (TEXT, PRIMARY KEY) - Unique trade identifier
+   - user_id (TEXT, NOT NULL, REFERENCES profiles(id)) - User who made the trade
+   - currency_pair (TEXT, NOT NULL) - Currency pair traded (e.g., "EURUSD")
+   - trade_type (TEXT, NOT NULL) - "LONG" or "SHORT"
+   - entry_price (DOUBLE PRECISION, NOT NULL) - Entry price
+   - exit_price (DOUBLE PRECISION, NOT NULL) - Exit price
+   - entry_time (TIMESTAMP, NOT NULL) - When trade was opened
+   - exit_time (TIMESTAMP, NOT NULL) - When trade was closed
+   - duration (INTEGER, NOT NULL) - Duration in minutes
+   - pips (DOUBLE PRECISION, NOT NULL) - Pips gained/lost
+   - lot_size (DOUBLE PRECISION, NOT NULL) - Size of the trade
+   - profit_loss (DOUBLE PRECISION, NOT NULL) - Profit/loss amount
+   - currency (TEXT, NOT NULL, DEFAULT "AUD") - Currency for P&L
+   - date (TIMESTAMP, NOT NULL, DEFAULT NOW()) - Trade date
+   - notes (TEXT) - Additional notes
+   - created_at (TIMESTAMP, NOT NULL, DEFAULT NOW()) - Record creation time
+   - tags (TEXT) - Optional tags (max 20 chars, alphanumeric)
+
+================================================================================
+SOCIAL FEATURES TABLES
+================================================================================
+
+3. TRADE_SETUPS TABLE
+   - Social trade setup posts
+   - Users can share their trading setups with the community
+   
+   Columns:
+   - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+   - user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+   - title (TEXT, NOT NULL)
+   - description (TEXT)
+   - chart_image_url (TEXT)
+   - is_public (BOOLEAN, DEFAULT true)
+   - likes_count (INTEGER, DEFAULT 0)
+   - dislikes_count (INTEGER, DEFAULT 0)
+   - comments_count (INTEGER, DEFAULT 0)
+   - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+   - updated_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+
+4. TRADE_SETUP_COMMENTS TABLE
+   - Comments on trade setups
+   - Supports nested replies
+   
+   Columns:
+   - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+   - trade_setup_id (UUID, NOT NULL, REFERENCES trade_setups(id) ON DELETE CASCADE)
+   - user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+   - content (TEXT, NOT NULL)
+   - parent_id (UUID, REFERENCES trade_setup_comments(id) ON DELETE CASCADE)
+   - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+   - updated_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+   - likes_count (INTEGER, DEFAULT 0)
+   - dislikes_count (INTEGER, DEFAULT 0)
+   - is_edited (BOOLEAN, DEFAULT FALSE)
+   - edited_at (TIMESTAMP WITH TIME ZONE)
+   - edit_history (JSONB, DEFAULT '[]'::jsonb)
+
+5. TRADE_SETUP_LIKES TABLE
+   - Likes on trade setups
+   
+   Columns:
+   - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+   - trade_setup_id (UUID, NOT NULL, REFERENCES trade_setups(id) ON DELETE CASCADE)
+   - user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+   - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+   - UNIQUE(trade_setup_id, user_id)
+
+6. TRADE_SETUP_DISLIKES TABLE
+   - Dislikes on trade setups
+   
+   Columns:
+   - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+   - trade_setup_id (UUID, NOT NULL, REFERENCES trade_setups(id) ON DELETE CASCADE)
+   - user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+   - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+   - UNIQUE(trade_setup_id, user_id)
+
+7. TRADE_SETUP_COMMENT_REACTIONS TABLE
+   - Likes/dislikes on comments
+   
+   Columns:
+   - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+   - comment_id (UUID, NOT NULL, REFERENCES trade_setup_comments(id) ON DELETE CASCADE)
+   - user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+   - reaction_type (TEXT, NOT NULL, CHECK (reaction_type IN ('like', 'dislike')))
+   - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+   - updated_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+   - UNIQUE(comment_id, user_id)
+
+8. TRADE_SETUP_TAGS TABLE
+   - Tags for trade setups
+   
+   Columns:
+   - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+   - setup_id (UUID, NOT NULL, REFERENCES trade_setups(id) ON DELETE CASCADE)
+   - tag_name (TEXT, NOT NULL)
+   - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+
+================================================================================
+MESSAGING SYSTEM TABLES
+================================================================================
+
+9. MESSAGES TABLE
+   - Direct messages between users
+   
+   Columns:
+   - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+   - sender_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+   - receiver_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+   - content (TEXT, NOT NULL)
+   - message_type (TEXT, DEFAULT 'text', CHECK (message_type IN ('text', 'image', 'file')))
+   - file_url (TEXT)
+   - file_name (TEXT)
+   - status (message_status, DEFAULT 'SENT') - ENUM: 'SENT', 'DELIVERED', 'READ', 'DELETED'
+   - is_read (BOOLEAN, DEFAULT false)
+   - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+   - updated_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+   - deleted_at (TIMESTAMP WITH TIME ZONE)
+   - CONSTRAINT: receiver_id != sender_id
+
+================================================================================
+FRIENDSHIP SYSTEM TABLES
+================================================================================
+
+10. FRIEND_REQUESTS TABLE
+    - Friend request management
+    
+    Columns:
+    - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+    - sender_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+    - recipient_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+    - status (TEXT, DEFAULT 'pending', CHECK (status IN ('pending', 'accepted', 'declined')))
+    - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+    - updated_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+    - UNIQUE(sender_id, recipient_id)
+
+11. TRADER_FRIENDS TABLE
+    - Confirmed friend relationships
+    
+    Columns:
+    - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+    - user1_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+    - user2_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+    - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+    - UNIQUE(user1_id, user2_id)
+
+12. USER_BLOCKS TABLE
+    - User blocking functionality
+    
+    Columns:
+    - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+    - blocker_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+    - blocked_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+    - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+    - UNIQUE(blocker_id, blocked_id)
+
+================================================================================
+USER SETTINGS & PRESENCE TABLES
+================================================================================
+
+13. USER_SETTINGS TABLE
+    - User preferences and settings
+    
+    Columns:
+    - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+    - user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE, UNIQUE)
+    - email_friend_requests (BOOLEAN, DEFAULT false)
+    - email_trade_shared (BOOLEAN, DEFAULT false)
+    - email_medal_achievement (BOOLEAN, DEFAULT false)
+    - push_friend_requests (BOOLEAN, DEFAULT false)
+    - push_trade_shared (BOOLEAN, DEFAULT false)
+    - push_medal_achievement (BOOLEAN, DEFAULT false)
+    - monthly_trade_checkup (BOOLEAN, DEFAULT false)
+    - weekly_reports (BOOLEAN, DEFAULT false)
+    - monthly_reports (BOOLEAN, DEFAULT false)
+    - quarterly_reports (BOOLEAN, DEFAULT false)
+    - yearly_reports (BOOLEAN, DEFAULT false)
+    - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+    - updated_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+
+14. USER_PRESENCE TABLE
+    - Online status tracking
+    
+    Columns:
+    - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+    - user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE, UNIQUE)
+    - status (TEXT, DEFAULT 'offline', CHECK (status IN ('online', 'offline', 'away')))
+    - last_seen_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+    - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+    - updated_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+
+================================================================================
+SUPPORT & SHARED TRADES TABLES
+================================================================================
+
+15. SUPPORT_REQUESTS TABLE
+    - Support ticket system
+    
+    Columns:
+    - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+    - user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+    - subject (TEXT, NOT NULL)
+    - message (TEXT, NOT NULL)
+    - status (TEXT, DEFAULT 'open', CHECK (status IN ('open', 'in_progress', 'resolved', 'closed')))
+    - priority (TEXT, DEFAULT 'medium', CHECK (priority IN ('low', 'medium', 'high', 'urgent')))
+    - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+    - updated_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+
+16. SHARED_TRADES TABLE
+    - Shared trade records between users
+    
+    Columns:
+    - id (UUID, PRIMARY KEY, DEFAULT gen_random_uuid())
+    - original_trade_id (TEXT, NOT NULL, REFERENCES trades(id) ON DELETE CASCADE)
+    - shared_by_user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+    - shared_with_user_id (UUID, NOT NULL, REFERENCES profiles(id) ON DELETE CASCADE)
+    - message (TEXT)
+    - created_at (TIMESTAMP WITH TIME ZONE, DEFAULT now())
+
+================================================================================
+ENUMS
+================================================================================
+
+1. message_status ENUM
+   - Values: 'SENT', 'DELIVERED', 'READ', 'DELETED'
+
+================================================================================
+STORAGE BUCKETS
+================================================================================
+
+1. setup-images
+   - Purpose: Trade setup chart images
+   - Access: Authenticated users
+   - File types: Images (jpg, png, gif, webp)
+
+2. trade-setup-images
+   - Purpose: Alternative bucket for setup images
+   - Access: Authenticated users
+   - File types: Images (jpg, png, gif, webp)
+
+3. trade-images
+   - Purpose: Individual trade images
+   - Access: Authenticated users
+   - File types: Images (jpg, png, gif, webp)
+
+4. avatars
+   - Purpose: User avatar images
+   - Access: Authenticated users
+   - File types: Images (jpg, png, gif, webp)
+
+5. shared-assets
+   - Purpose: Shared assets and files
+   - Access: Authenticated users
+   - File types: Various
+
+================================================================================
+KEY FUNCTIONS
+================================================================================
+
+1. cleanup_user_data(user_id_param UUID)
+   - Comprehensive user data cleanup when account is deleted
+   - Removes all related data across all tables
+   - Called automatically via trigger when user is deleted from auth.users
+
+2. cleanup_trade_setup(setup_id_param UUID)
+   - Cleans up trade setup and all related data
+   - Removes comments, likes, tags, and the setup itself
+
+3. update_comment_reaction_counts()
+   - Trigger function to maintain comment like/dislike counts
+   - Automatically updates counts when reactions are added/removed
+
+4. handle_comment_edit()
+   - Trigger function to track comment editing
+   - Maintains edit history and marks comments as edited
+
+5. update_trade_setup_dislikes_count()
+   - Trigger function to maintain trade setup dislike counts
+
+6. get_unread_message_count(user_uuid UUID)
+   - Returns count of unread messages for a user
+
+7. mark_messages_as_read(sender_uuid UUID, receiver_uuid UUID)
+   - Marks all messages in a conversation as read
+
+8. get_user_conversations(user_uuid UUID)
+   - Returns list of user's conversations with metadata
+
+9. soft_delete_message(message_uuid UUID, user_uuid UUID)
+   - Soft deletes a message (sets deleted_at timestamp)
+
+10. cleanup_old_messages()
+    - Removes messages deleted more than 30 days ago
+
+11. get_comment_with_reactions(comment_id UUID)
+    - Returns comment with reaction data and user info
+
+12. decrement_count(row_id UUID)
+    - Decrements likes count for trade setups
+
+13. decrement_comments_count(row_id UUID)
+    - Decrements comments count for trade setups
+
+================================================================================
+TRIGGERS
+================================================================================
+
+1. on_user_deleted
+   - Triggered when user is deleted from auth.users
+   - Calls cleanup_user_data() function
+
+2. trigger_update_comment_reaction_counts
+   - Triggered on trade_setup_comment_reactions table changes
+   - Calls update_comment_reaction_counts() function
+
+3. trigger_handle_comment_edit
+   - Triggered on trade_setup_comments table updates
+   - Calls handle_comment_edit() function
+
+4. trade_setup_dislikes_count_trigger
+   - Triggered on trade_setup_dislikes table changes
+   - Calls update_trade_setup_dislikes_count() function
+
+5. on_comment_deleted
+   - Triggered when comments are deleted
+   - Calls update_comments_count() function
+
+6. on_like_deleted
+   - Triggered when likes are deleted
+   - Calls update_likes_count() function
+
+7. update_messages_updated_at_trigger
+   - Triggered on messages table updates
+   - Updates the updated_at timestamp
+
+================================================================================
+ROW LEVEL SECURITY (RLS) POLICIES
+================================================================================
+
+All tables have RLS enabled with appropriate policies:
+
+1. PROFILES
+   - Users can view public profiles
+   - Users can update their own profile
+   - Users can delete their own profile
+
+2. TRADES
+   - Users can view their own trades
+   - Users can insert/update/delete their own trades
+
+3. TRADE_SETUPS
+   - Users can view public setups or their own
+   - Users can insert/update/delete their own setups
+
+4. TRADE_SETUP_COMMENTS
+   - Users can view comments on setups they can see
+   - Users can insert comments on setups they can see
+   - Users can update/delete their own comments
+
+5. TRADE_SETUP_LIKES/DISLIKES
+   - Users can view likes/dislikes on setups they can see
+   - Users can add/remove their own likes/dislikes
+
+6. MESSAGES
+   - Users can only see messages they sent or received
+   - Users can only send messages as themselves
+   - Users can update/delete their own messages
+
+7. FRIEND_REQUESTS
+   - Users can view requests they sent or received
+   - Users can send requests to other users
+   - Users can update/delete their own requests
+
+8. TRADER_FRIENDS
+   - Users can view their own friend relationships
+   - Users can manage their own friend relationships
+
+9. USER_BLOCKS
+   - Users can view their own blocks
+   - Users can add/remove their own blocks
+
+10. USER_SETTINGS
+    - Users can only access their own settings
+
+11. USER_PRESENCE
+    - Users can view presence of users they can see
+    - Users can update their own presence
+
+================================================================================
+INDEXES
+================================================================================
+
+Performance indexes are created on:
+- Foreign key columns
+- Frequently queried columns
+- Composite indexes for common query patterns
+- Text search indexes where needed
+
+================================================================================
+NOTES
+================================================================================
+
+1. All tables use UUID primary keys for security
+2. Timestamps use TIMESTAMP WITH TIME ZONE for timezone awareness
+3. Soft deletes are used where appropriate (messages table)
+4. Cascade deletes are configured for related data cleanup
+5. All user-generated content has proper RLS policies
+6. Storage buckets are configured with appropriate access policies
+7. Functions are created with SECURITY DEFINER where needed
+8. Triggers maintain data integrity and counts
+9. Edit history is maintained for comments
+10. Comprehensive cleanup procedures exist for user deletion
+
+================================================================================
+END OF SCHEMA
+================================================================================

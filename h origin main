@@ -1,5 +1,0 @@
-[33mf291461[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m Fix authentication issues in ChatWidget
-[33m50a0a45[m Fix Supabase query syntax errors in ChatWidget
-[33md1f324b[m Fix backward compatibility for existing TDA analyses
-[33m1b11036[m Major Top Down Analysis Enhancement: Alpha Vantage Integration & Netlify-Compatible Word Export
-[33m28e5ae2[m Add duplicate group name prevention - check for existing groups and validate group names

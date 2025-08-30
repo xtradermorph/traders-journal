@@ -76,7 +76,9 @@ export default function MessagesPage() {
     setMessages,
     addMessage,
     setLoading,
-    setSending
+    setSending,
+    markConversationAsRead,
+    refreshUnreadCount
   } = useMessageStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -128,6 +130,16 @@ export default function MessagesPage() {
       
       const data = await response.json();
       setMessages(data.messages);
+      
+      // Set current conversation and mark as read
+      const conversation = conversations.find(c => c.id === conversationId);
+      if (conversation) {
+        setCurrentConversation(conversation);
+        // Mark conversation as read
+        markConversationAsRead(conversationId);
+        // Refresh unread count
+        refreshUnreadCount();
+      }
     } catch (error) {
       console.error('Error fetching messages:', error);
       toast({

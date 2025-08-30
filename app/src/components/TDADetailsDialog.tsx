@@ -914,56 +914,60 @@ export default function TDADetailsDialog({ isOpen, onClose, analysisId }: TDADet
           setIsScreenshotFullscreen(false);
         }
       }}>
-        <ScreenshotDialogContent 
-          className={`${isScreenshotFullscreen ? 'fixed inset-0 z-[9999] max-w-none w-screen h-screen rounded-none' : 'max-w-4xl max-h-[90vh]'} overflow-y-auto`}
+                <ScreenshotDialogContent
+          className={`${isScreenshotFullscreen ? 'fixed inset-0 z-[9999] max-w-none w-screen h-screen rounded-none' : 'sm:max-w-4xl max-h-[90vh]'} overflow-y-auto bg-gradient-to-br from-slate-50/95 to-slate-100/95 backdrop-blur-md border border-white/30 shadow-[0_8px_32px_rgba(0,0,0,0.12)] [&>button]:text-slate-700 [&>button]:hover:text-slate-900 [&>button]:hover:bg-slate-100/80 [&>button]:hidden`}
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
-          <ScreenshotDialogHeader className="flex items-center justify-between p-4 border-b">
-            <ScreenshotDialogTitle className="text-lg font-semibold">
-              Chart Screenshot - {selectedScreenshot && getTimeframeDisplayName(selectedScreenshot.timeframe)}
-            </ScreenshotDialogTitle>
-            <div className="flex items-center space-x-2">
-              <TooltipProvider>
-                <Tooltip delayDuration={300}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsScreenshotFullscreen(!isScreenshotFullscreen)}
-                      className="h-8 w-8 p-0"
-                    >
-                      {isScreenshotFullscreen ? (
-                        <Minimize2 className="h-4 w-4" />
-                      ) : (
-                        <Maximize2 className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="z-50 bg-background text-foreground border shadow">
-                    {isScreenshotFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <TooltipProvider>
-                <Tooltip delayDuration={300}>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        setScreenshotModalOpen(false);
-                        setIsScreenshotFullscreen(false);
-                      }}
-                      className="h-8 w-8 p-0"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent className="z-50 bg-background text-foreground border shadow">
-                    Close
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
+          <ScreenshotDialogHeader className="bg-black/80 backdrop-blur-md rounded-t-xl border-b border-white/20 shadow-[0_8px_32px_rgba(0,0,0,0.3)] p-3 sm:p-4 md:p-6">
+            <div className="flex items-start justify-between w-full">
+              <div className="flex-1 min-w-0">
+                <ScreenshotDialogTitle className="text-white font-bold text-lg sm:text-xl md:text-2xl px-1 sm:px-2">
+                  Chart Screenshot - {selectedScreenshot && getTimeframeDisplayName(selectedScreenshot.timeframe)}
+                </ScreenshotDialogTitle>
+              </div>
+              <div className="flex items-center space-x-2">
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setIsScreenshotFullscreen(!isScreenshotFullscreen)}
+                        className="text-white hover:bg-white/10"
+                      >
+                        {isScreenshotFullscreen ? (
+                          <Minimize2 className="h-5 w-5" />
+                        ) : (
+                          <Maximize2 className="h-5 w-5" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                      {isScreenshotFullscreen ? 'Exit Fullscreen' : 'Fullscreen'}
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip delayDuration={300}>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => {
+                          setScreenshotModalOpen(false);
+                          setIsScreenshotFullscreen(false);
+                        }}
+                        className="text-white hover:bg-white/10"
+                      >
+                        <X className="h-5 w-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent className="z-50 bg-background text-foreground border shadow">
+                      Close
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              </div>
             </div>
           </ScreenshotDialogHeader>
           <div className={`${isScreenshotFullscreen ? 'flex-1 overflow-y-auto p-6' : 'p-4'}`}>
