@@ -43,6 +43,9 @@ export async function GET(request: NextRequest) {
            sender_id,
            receiver_id,
            content,
+           file_url,
+           file_name,
+           message_type,
            is_read,
            created_at,
            updated_at,
@@ -105,6 +108,9 @@ export async function GET(request: NextRequest) {
            sender_id,
            receiver_id,
            content,
+           file_url,
+           file_name,
+           message_type,
            is_read,
            created_at,
            updated_at,
@@ -173,7 +179,7 @@ export async function POST(request: NextRequest) {
     console.log('POST /api/messages - Parsing request body');
     const body = await request.json();
     console.log('POST /api/messages - Request body:', body);
-    const { receiver_id, content } = body; // Remove file_url and file_name as they don't exist in the table
+    const { receiver_id, content, file_url, file_name, message_type } = body;
 
     if (!receiver_id || !content) {
       console.log('POST /api/messages - Missing required fields');
@@ -211,6 +217,9 @@ export async function POST(request: NextRequest) {
       sender_id: user.id,
       receiver_id,
       content,
+      file_url,
+      file_name,
+      message_type: message_type || 'text',
       is_read: false
     };
     console.log('POST /api/messages - Message data to insert:', messageData);
@@ -223,6 +232,9 @@ export async function POST(request: NextRequest) {
         sender_id,
         receiver_id,
         content,
+        file_url,
+        file_name,
+        message_type,
         is_read,
         created_at,
         updated_at,

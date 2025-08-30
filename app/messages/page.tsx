@@ -22,10 +22,30 @@ import {
   MoreVertical,
   Trash2,
   User,
-  ArrowLeft
+  ArrowLeft,
+  Download,
+  Eye,
+  AlertCircle
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../src/components/ui/tooltip';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '../src/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '../src/components/ui/alert-dialog';
 
 interface Message {
   id: string;
@@ -86,6 +106,8 @@ export default function MessagesPage() {
   const [messageInput, setMessageInput] = useState('');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [showConversationList, setShowConversationList] = useState(true);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch conversations on mount
   useEffect(() => {
@@ -214,6 +236,15 @@ export default function MessagesPage() {
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        toast({
+          title: 'File too large',
+          description: 'Please select a file smaller than 10MB',
+          variant: 'destructive'
+        });
+        return;
+      }
       setSelectedFile(file);
     }
   };
@@ -223,6 +254,49 @@ export default function MessagesPage() {
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
+  };
+
+  const handleDeleteConversation = async () => {
+    if (!currentConversation) return;
+    
+    setIsDeleting(true);
+    try {
+      const response = await fetch(`/api/messages/delete-conversation?conversationId=${currentConversation.id}`, {
+        method: 'DELETE'
+      });
+
+      if (!response.ok) throw new Error('Failed to delete conversation');
+      
+      toast({
+        title: 'Success',
+        description: 'Conversation deleted successfully',
+      });
+      
+      // Clear current conversation and refresh list
+      setCurrentConversation(null);
+      setMessages([]);
+      fetchConversations();
+      setShowConversationList(true);
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete conversation',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteDialog(false);
+    }
+  };
+
+  const handleFileDownload = (fileUrl: string, fileName: string) => {
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const filteredConversations = conversations.filter(conv =>
@@ -247,30 +321,30 @@ export default function MessagesPage() {
     <>
       <PageHeader title="Messages" showBackButton backUrl="/dashboard" />
       
-      <div className="min-h-screen bg-gradient-to-br from-background to-muted/40">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 dark:from-slate-900 dark:via-slate-800 dark:to-slate-900">
         <div className="container mx-auto p-4 max-w-6xl">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 h-[calc(100vh-200px)]">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
             
             {/* Conversations List */}
-            <Card className={`lg:col-span-1 ${showConversationList ? 'block' : 'hidden lg:block'}`}>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">Conversations</CardTitle>
+            <Card className={`lg:col-span-1 ${showConversationList ? 'block' : 'hidden lg:block'} bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg`}>
+              <CardHeader className="pb-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-t-lg">
+                <CardTitle className="text-lg font-semibold">Conversations</CardTitle>
                 <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <Input
                     placeholder="Search conversations..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 bg-white/90 dark:bg-slate-700/90 border-0 text-slate-900 dark:text-slate-100 placeholder:text-slate-500"
                   />
                 </div>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="space-y-1 max-h-[calc(100vh-300px)] overflow-y-auto">
                   {isLoading ? (
-                    <div className="p-4 text-center text-muted-foreground">Loading...</div>
+                    <div className="p-4 text-center text-slate-600 dark:text-slate-400">Loading...</div>
                   ) : filteredConversations.length === 0 ? (
-                    <div className="p-4 text-center text-muted-foreground">
+                    <div className="p-4 text-center text-slate-600 dark:text-slate-400">
                       {searchQuery ? 'No conversations found' : 'No conversations yet'}
                     </div>
                   ) : (
@@ -278,36 +352,38 @@ export default function MessagesPage() {
                       <div
                         key={conversation.id}
                         onClick={() => handleConversationSelect(conversation)}
-                        className={`p-3 cursor-pointer hover:bg-muted/50 transition-colors ${
-                          currentConversation?.id === conversation.id ? 'bg-muted' : ''
+                        className={`p-4 cursor-pointer hover:bg-blue-50 dark:hover:bg-slate-700/50 transition-all duration-200 border-l-4 ${
+                          currentConversation?.id === conversation.id 
+                            ? 'bg-blue-100 dark:bg-slate-700 border-blue-500' 
+                            : 'border-transparent'
                         }`}
                       >
                         <div className="flex items-center space-x-3">
-                          <Avatar className="h-10 w-10">
+                          <Avatar className="h-12 w-12 ring-2 ring-blue-200 dark:ring-slate-600">
                             <AvatarImage src={conversation.other_user.avatar_url} />
-                            <AvatarFallback>
-                              <User className="h-5 w-5" />
+                            <AvatarFallback className="bg-gradient-to-br from-blue-400 to-indigo-500 text-white">
+                              <User className="h-6 w-6" />
                             </AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between">
-                              <p className="font-medium text-sm truncate">
+                              <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
                                 {conversation.other_user.username}
                               </p>
                               {conversation.last_message && (
-                                <span className="text-xs text-muted-foreground">
+                                <span className="text-xs text-slate-500 dark:text-slate-400">
                                   {formatMessageTime(conversation.last_message.created_at)}
                                 </span>
                               )}
                             </div>
                             {conversation.last_message && (
-                              <p className="text-xs text-muted-foreground truncate">
+                              <p className="text-sm text-slate-600 dark:text-slate-300 truncate mt-1">
                                 {conversation.last_message.content}
                               </p>
                             )}
                           </div>
                           {conversation.unread_count > 0 && (
-                            <Badge variant="destructive" className="h-5 w-5 p-0 text-xs">
+                            <Badge className="h-6 w-6 p-0 text-xs bg-red-500 hover:bg-red-600 text-white">
                               {conversation.unread_count}
                             </Badge>
                           )}
@@ -320,67 +396,102 @@ export default function MessagesPage() {
             </Card>
 
             {/* Messages Area */}
-            <Card className={`lg:col-span-2 ${!showConversationList ? 'block' : 'hidden lg:block'}`}>
+            <Card className={`lg:col-span-2 ${!showConversationList ? 'block' : 'hidden lg:block'} bg-white/80 dark:bg-slate-800/80 backdrop-blur-sm border-slate-200 dark:border-slate-700 shadow-lg`}>
               {currentConversation ? (
                 <>
-                  <CardHeader className="pb-3">
+                  <CardHeader className="pb-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white rounded-t-lg">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => setShowConversationList(true)}
-                          className="lg:hidden"
+                          className="lg:hidden text-white hover:bg-white/20"
                         >
                           <ArrowLeft className="h-4 w-4" />
                         </Button>
-                        <Avatar className="h-8 w-8">
+                        <Avatar className="h-10 w-10 ring-2 ring-white/20">
                           <AvatarImage src={currentConversation.other_user.avatar_url} />
-                          <AvatarFallback>
-                            <User className="h-4 w-4" />
+                          <AvatarFallback className="bg-white/20 text-white">
+                            <User className="h-5 w-5" />
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <h3 className="font-semibold">{currentConversation.other_user.username}</h3>
-                          <p className="text-xs text-muted-foreground">Active now</p>
+                          <h3 className="font-semibold text-white">{currentConversation.other_user.username}</h3>
+                          <p className="text-xs text-white/80">Active now</p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm" className="text-white hover:bg-white/20">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuItem onClick={() => setShowDeleteDialog(true)} className="text-red-600 focus:text-red-600">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete Conversation
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </div>
                   </CardHeader>
                   <CardContent className="p-0">
                     <div className="flex flex-col h-[calc(100vh-350px)]">
                       {/* Messages */}
-                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                      <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-gradient-to-b from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
                         {messages.map((message) => (
                           <div
                             key={message.id}
                             className={`flex ${message.sender_id === currentUser?.id ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
-                              className={`max-w-[70%] rounded-lg p-3 ${
+                              className={`max-w-[70%] rounded-2xl p-4 shadow-sm ${
                                 message.sender_id === currentUser?.id
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-muted'
+                                  ? 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white'
+                                  : 'bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600'
                               }`}
                             >
                               {message.message_type === 'image' && message.file_url && (
-                                <img
-                                  src={message.file_url}
-                                  alt="Shared image"
-                                  className="max-w-full rounded mb-2"
-                                />
-                              )}
-                              {message.message_type === 'file' && (
-                                <div className="flex items-center space-x-2 mb-2 p-2 bg-background/50 rounded">
-                                  <FileText className="h-4 w-4" />
-                                  <span className="text-sm">{message.file_name}</span>
+                                <div className="mb-3">
+                                  <img
+                                    src={message.file_url}
+                                    alt="Shared image"
+                                    className="max-w-full rounded-lg shadow-md cursor-pointer hover:opacity-90 transition-opacity"
+                                    onClick={() => window.open(message.file_url, '_blank')}
+                                  />
+                                  <div className="flex items-center justify-between mt-2">
+                                    <span className="text-xs opacity-70">{message.file_name}</span>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      onClick={() => handleFileDownload(message.file_url!, message.file_name!)}
+                                      className="h-6 w-6 p-0 text-white/70 hover:text-white"
+                                    >
+                                      <Download className="h-3 w-3" />
+                                    </Button>
+                                  </div>
                                 </div>
                               )}
-                              <p className="text-sm">{message.content}</p>
-                              <p className="text-xs opacity-70 mt-1">
+                              {message.message_type === 'file' && message.file_name && (
+                                <div className="flex items-center space-x-3 mb-3 p-3 bg-white/10 dark:bg-slate-600/20 rounded-lg">
+                                  <FileText className="h-5 w-5" />
+                                  <div className="flex-1">
+                                    <p className="text-sm font-medium">{message.file_name}</p>
+                                    <p className="text-xs opacity-70">File attachment</p>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleFileDownload(message.file_url!, message.file_name!)}
+                                    className="h-8 w-8 p-0"
+                                  >
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              )}
+                              <p className="text-sm leading-relaxed">{message.content}</p>
+                              <p className="text-xs opacity-70 mt-2 text-right">
                                 {formatMessageTime(message.created_at)}
                               </p>
                             </div>
@@ -390,26 +501,26 @@ export default function MessagesPage() {
                       </div>
 
                       {/* Message Input */}
-                      <div className="border-t p-4">
+                      <div className="border-t border-slate-200 dark:border-slate-700 p-4 bg-white dark:bg-slate-800">
                         {selectedFile && (
-                          <div className="flex items-center space-x-2 mb-3 p-2 bg-muted rounded">
+                          <div className="flex items-center space-x-3 mb-3 p-3 bg-blue-50 dark:bg-slate-700 rounded-lg border border-blue-200 dark:border-slate-600">
                             {selectedFile.type.startsWith('image/') ? (
-                              <ImageIcon className="h-4 w-4" />
+                              <ImageIcon className="h-5 w-5 text-blue-600" />
                             ) : (
-                              <FileText className="h-4 w-4" />
+                              <FileText className="h-5 w-5 text-blue-600" />
                             )}
-                            <span className="text-sm flex-1 truncate">{selectedFile.name}</span>
+                            <span className="text-sm flex-1 truncate text-slate-700 dark:text-slate-300">{selectedFile.name}</span>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={removeSelectedFile}
-                              className="h-6 w-6 p-0"
+                              className="h-6 w-6 p-0 text-red-500 hover:text-red-600"
                             >
                               <X className="h-3 w-3" />
                             </Button>
                           </div>
                         )}
-                        <div className="flex items-center space-x-2">
+                        <div className="flex items-center space-x-3">
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
@@ -417,9 +528,9 @@ export default function MessagesPage() {
                                   variant="ghost"
                                   size="sm"
                                   onClick={() => fileInputRef.current?.click()}
-                                  className="h-8 w-8 p-0"
+                                  className="h-10 w-10 p-0 text-slate-600 dark:text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-700"
                                 >
-                                  <Paperclip className="h-4 w-4" />
+                                  <Paperclip className="h-5 w-5" />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>Attach file</TooltipContent>
@@ -430,12 +541,13 @@ export default function MessagesPage() {
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
                             onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                            className="flex-1"
+                            className="flex-1 border-slate-300 dark:border-slate-600 focus:border-blue-500 dark:focus:border-blue-400 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                           />
                           <Button
                             onClick={handleSendMessage}
                             disabled={isSending || (!messageInput.trim() && !selectedFile)}
                             size="sm"
+                            className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-6"
                           >
                             <Send className="h-4 w-4" />
                           </Button>
@@ -445,18 +557,20 @@ export default function MessagesPage() {
                           type="file"
                           onChange={handleFileSelect}
                           className="hidden"
-                          accept="image/*,.pdf,.doc,.docx,.txt"
+                          accept="image/*,.pdf,.doc,.docx,.txt,.zip,.rar"
                         />
                       </div>
                     </div>
                   </CardContent>
                 </>
               ) : (
-                <div className="flex items-center justify-center h-full">
+                <div className="flex items-center justify-center h-full bg-gradient-to-b from-slate-50 to-white dark:from-slate-800 dark:to-slate-900">
                   <div className="text-center">
-                    <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                    <h3 className="text-lg font-semibold mb-2">Select a conversation</h3>
-                    <p className="text-muted-foreground">Choose a conversation to start messaging</p>
+                    <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center">
+                      <MessageSquare className="h-10 w-10 text-white" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2 text-slate-900 dark:text-slate-100">Select a conversation</h3>
+                    <p className="text-slate-600 dark:text-slate-400">Choose a conversation to start messaging</p>
                   </div>
                 </div>
               )}
@@ -464,6 +578,31 @@ export default function MessagesPage() {
           </div>
         </div>
       </div>
+
+      {/* Delete Conversation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <span>Delete Conversation</span>
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this conversation? This action cannot be undone and will remove all messages between you and {currentConversation?.other_user.username}.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteConversation}
+              disabled={isDeleting}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }
