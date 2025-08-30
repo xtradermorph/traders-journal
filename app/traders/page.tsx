@@ -304,11 +304,9 @@ const TradersPage = () => {
           avatar_url, 
           created_at, 
           win_rate, 
-          performance_rank,
-          user_settings(public_profile)
+          performance_rank
         `)
-        .not('username', 'is', null)
-        .eq('user_settings.public_profile', true);
+        .not('username', 'is', null);
 
       // Exclude current user from results
       if (currentUserId) {
@@ -328,8 +326,7 @@ const TradersPage = () => {
             avatar_url, 
             created_at, 
             win_rate, 
-            performance_rank,
-            user_settings(public_profile)
+            performance_rank
           `)
           .eq('username', debouncedSearchQuery.trim())
           .not('username', 'is', null);
@@ -351,11 +348,9 @@ const TradersPage = () => {
               avatar_url, 
               created_at, 
               win_rate, 
-              performance_rank,
-              user_settings(public_profile)
+              performance_rank
             `)
             .not('username', 'is', null)
-            .eq('user_settings.public_profile', true)
             .or(`username.ilike.%${debouncedSearchQuery}%,first_name.ilike.%${debouncedSearchQuery}%,last_name.ilike.%${debouncedSearchQuery}%`);
           
           if (currentUserId) {
@@ -382,7 +377,7 @@ const TradersPage = () => {
             created_at: trader.created_at,
             win_rate: trader.win_rate,
             performance_rank: trader.performance_rank,
-            public_profile: trader.user_settings?.[0]?.public_profile || false,
+            public_profile: true,
             user_presence: null
           })));
           
@@ -446,7 +441,7 @@ const TradersPage = () => {
           created_at: trader.created_at,
           win_rate: trader.win_rate,
           performance_rank: trader.performance_rank,
-          public_profile: trader.user_settings?.[0]?.public_profile || false,
+          public_profile: true,
           user_presence: null
         }));
       setTraders(filteredTraders);
@@ -456,8 +451,7 @@ const TradersPage = () => {
         let countQuery = supabase
           .from('profiles')
           .select('id', { count: 'exact', head: true })
-          .not('username', 'is', null)
-          .eq('user_settings.public_profile', true);
+          .not('username', 'is', null);
         
         // Exclude current user from count
         if (currentUserId) {
