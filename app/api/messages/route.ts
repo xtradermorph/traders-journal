@@ -147,22 +147,47 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('POST /api/messages - Starting request processing');
     const supabase = createRouteHandlerClient({ cookies });
     
     // Get current user
+    console.log('POST /api/messages - Getting current user');
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
+      console.log('POST /api/messages - Auth error:', authError);
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
+    console.log('POST /api/messages - User authenticated:', user.id);
 
+    // Check if messages table exists
+    console.log('POST /api/messages - Checking if messages table exists');
+    const { data: tableCheck, error: tableError } = await supabase
+      .from('messages')
+      .select('id')
+      .limit(1);
+    
+    if (tableError) {
+      console.log('POST /api/messages - Messages table error:', tableError);
+      return NextResponse.json({ 
+        error: 'Messages table not available', 
+        details: tableError.message,
+        code: tableError.code 
+      }, { status: 500 });
+    }
+    console.log('POST /api/messages - Messages table exists and is accessible');
+
+    console.log('POST /api/messages - Parsing request body');
     const body = await request.json();
+    console.log('POST /api/messages - Request body:', body);
     const { receiver_id, content, message_type = 'text', file_url, file_name } = body;
 
     if (!receiver_id || !content) {
+      console.log('POST /api/messages - Missing required fields');
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Validate that receiver exists
+    console.log('POST /api/messages - Validating receiver:', receiver_id);
     const { data: receiver, error: receiverError } = await supabase
       .from('profiles')
       .select('id')
@@ -170,11 +195,13 @@ export async function POST(request: NextRequest) {
       .single();
 
     if (receiverError || !receiver) {
+      console.log('POST /api/messages - Receiver validation failed:', receiverError);
       return NextResponse.json({ 
         error: 'Receiver not found', 
         details: 'The user you are trying to message does not exist' 
       }, { status: 404 });
     }
+    console.log('POST /api/messages - Receiver validated successfully');
 
     // Prevent sending message to self
     if (receiver_id === user.id) {
@@ -185,17 +212,21 @@ export async function POST(request: NextRequest) {
     }
 
     // Insert the message
+    console.log('POST /api/messages - Attempting to insert message');
+    const messageData = {
+      sender_id: user.id,
+      receiver_id,
+      content,
+      message_type,
+      file_url,
+      file_name,
+      is_read: false
+    };
+    console.log('POST /api/messages - Message data to insert:', messageData);
+    
     const { data: message, error } = await supabase
       .from('messages')
-      .insert({
-        sender_id: user.id,
-        receiver_id,
-        content,
-        message_type,
-        file_url,
-        file_name,
-        is_read: false
-      })
+      .insert(messageData)
       .select(`
         id,
         sender_id,
