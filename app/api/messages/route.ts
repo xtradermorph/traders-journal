@@ -162,6 +162,28 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
+    // Validate that receiver exists
+    const { data: receiver, error: receiverError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', receiver_id)
+      .single();
+
+    if (receiverError || !receiver) {
+      return NextResponse.json({ 
+        error: 'Receiver not found', 
+        details: 'The user you are trying to message does not exist' 
+      }, { status: 404 });
+    }
+
+    // Prevent sending message to self
+    if (receiver_id === user.id) {
+      return NextResponse.json({ 
+        error: 'Cannot send message to yourself', 
+        details: 'You cannot send a message to your own profile' 
+      }, { status: 400 });
+    }
+
     // Insert the message
     const { data: message, error } = await supabase
       .from('messages')
@@ -191,7 +213,11 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('Error sending message:', error);
-      return NextResponse.json({ error: 'Failed to send message' }, { status: 500 });
+      return NextResponse.json({ 
+        error: 'Failed to send message', 
+        details: error.message,
+        code: error.code 
+      }, { status: 500 });
     }
 
     return NextResponse.json({ message });
