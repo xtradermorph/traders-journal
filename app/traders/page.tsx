@@ -298,9 +298,17 @@ const TradersPage = () => {
       
       let query = supabase
         .from('profiles')
-        .select('id, username, avatar_url, created_at, win_rate, performance_rank, public_profile')
+        .select(`
+          id, 
+          username, 
+          avatar_url, 
+          created_at, 
+          win_rate, 
+          performance_rank,
+          user_settings!inner(public_profile)
+        `)
         .not('username', 'is', null)
-        .eq('public_profile', true);
+        .eq('user_settings.public_profile', true);
 
       // Exclude current user from results
       if (currentUserId) {
@@ -314,7 +322,15 @@ const TradersPage = () => {
         // First, check if there's an exact username match (for private profiles)
         const exactMatchQuery = supabase
           .from('profiles')
-          .select('id, username, avatar_url, created_at, win_rate, performance_rank, public_profile')
+          .select(`
+            id, 
+            username, 
+            avatar_url, 
+            created_at, 
+            win_rate, 
+            performance_rank,
+            user_settings!inner(public_profile)
+          `)
           .eq('username', debouncedSearchQuery.trim())
           .not('username', 'is', null);
         
@@ -329,9 +345,17 @@ const TradersPage = () => {
           // Also include public profiles that match the search term
           const publicMatchesQuery = supabase
             .from('profiles')
-            .select('id, username, avatar_url, created_at, win_rate, performance_rank, public_profile')
+            .select(`
+              id, 
+              username, 
+              avatar_url, 
+              created_at, 
+              win_rate, 
+              performance_rank,
+              user_settings!inner(public_profile)
+            `)
             .not('username', 'is', null)
-            .eq('public_profile', true)
+            .eq('user_settings.public_profile', true)
             .or(`username.ilike.%${debouncedSearchQuery}%,first_name.ilike.%${debouncedSearchQuery}%,last_name.ilike.%${debouncedSearchQuery}%`);
           
           if (currentUserId) {
@@ -352,7 +376,13 @@ const TradersPage = () => {
           
           // Set the results directly
           setTraders(allMatches.map(trader => ({
-            ...trader,
+            id: trader.id,
+            username: trader.username,
+            avatar_url: trader.avatar_url,
+            created_at: trader.created_at,
+            win_rate: trader.win_rate,
+            performance_rank: trader.performance_rank,
+            public_profile: trader.user_settings?.[0]?.public_profile || false,
             user_presence: null
           })));
           
@@ -410,7 +440,13 @@ const TradersPage = () => {
       let filteredTraders = (data || [])
         .filter(trader => trader.username)
         .map(trader => ({
-          ...trader,
+          id: trader.id,
+          username: trader.username,
+          avatar_url: trader.avatar_url,
+          created_at: trader.created_at,
+          win_rate: trader.win_rate,
+          performance_rank: trader.performance_rank,
+          public_profile: trader.user_settings?.[0]?.public_profile || false,
           user_presence: null
         }));
       setTraders(filteredTraders);
@@ -421,7 +457,7 @@ const TradersPage = () => {
           .from('profiles')
           .select('id', { count: 'exact', head: true })
           .not('username', 'is', null)
-          .eq('public_profile', true);
+          .eq('user_settings.public_profile', true);
         
         // Exclude current user from count
         if (currentUserId) {
