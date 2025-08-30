@@ -179,7 +179,7 @@ export async function POST(request: NextRequest) {
     console.log('POST /api/messages - Parsing request body');
     const body = await request.json();
     console.log('POST /api/messages - Request body:', body);
-    const { receiver_id, content, message_type = 'text', file_url, file_name } = body;
+    const { receiver_id, content, file_url, file_name } = body;
 
     if (!receiver_id || !content) {
       console.log('POST /api/messages - Missing required fields');
@@ -217,7 +217,6 @@ export async function POST(request: NextRequest) {
       sender_id: user.id,
       receiver_id,
       content,
-      message_type,
       file_url,
       file_name,
       is_read: false
@@ -232,7 +231,6 @@ export async function POST(request: NextRequest) {
         sender_id,
         receiver_id,
         content,
-        message_type,
         file_url,
         file_name,
         is_read,

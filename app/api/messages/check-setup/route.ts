@@ -34,7 +34,6 @@ export async function GET(request: NextRequest) {
       sender_id: user.id,
       receiver_id: user.id, // Temporarily use self for testing
       content: 'Test message for setup verification',
-      message_type: 'text',
       is_read: false
     };
 
