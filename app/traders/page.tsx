@@ -305,7 +305,7 @@ const TradersPage = () => {
           created_at, 
           win_rate, 
           performance_rank,
-          user_settings!inner(public_profile)
+          user_settings(public_profile)
         `)
         .not('username', 'is', null)
         .eq('user_settings.public_profile', true);
@@ -329,7 +329,7 @@ const TradersPage = () => {
             created_at, 
             win_rate, 
             performance_rank,
-            user_settings!inner(public_profile)
+            user_settings(public_profile)
           `)
           .eq('username', debouncedSearchQuery.trim())
           .not('username', 'is', null);
@@ -352,7 +352,7 @@ const TradersPage = () => {
               created_at, 
               win_rate, 
               performance_rank,
-              user_settings!inner(public_profile)
+              user_settings(public_profile)
             `)
             .not('username', 'is', null)
             .eq('user_settings.public_profile', true)
