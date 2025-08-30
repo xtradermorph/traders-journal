@@ -304,7 +304,8 @@ const TradersPage = () => {
           avatar_url, 
           created_at, 
           win_rate, 
-          performance_rank
+          performance_rank,
+          user_settings(public_profile)
         `)
         .not('username', 'is', null);
 
@@ -326,7 +327,8 @@ const TradersPage = () => {
             avatar_url, 
             created_at, 
             win_rate, 
-            performance_rank
+            performance_rank,
+            user_settings(public_profile)
           `)
           .eq('username', debouncedSearchQuery.trim())
           .not('username', 'is', null);
@@ -348,7 +350,8 @@ const TradersPage = () => {
               avatar_url, 
               created_at, 
               win_rate, 
-              performance_rank
+              performance_rank,
+              user_settings(public_profile)
             `)
             .not('username', 'is', null)
             .or(`username.ilike.%${debouncedSearchQuery}%,first_name.ilike.%${debouncedSearchQuery}%,last_name.ilike.%${debouncedSearchQuery}%`);
@@ -369,20 +372,32 @@ const TradersPage = () => {
             });
           }
           
+          // Filter results based on privacy settings
+          const filteredMatches = allMatches.filter(trader => {
+            // Always include exact matches (regardless of privacy)
+            if (trader.username === debouncedSearchQuery.trim()) {
+              return true;
+            }
+            
+            // For partial matches, only include if user is public
+            const isPublic = trader.user_settings?.[0]?.public_profile ?? false; // Default to false (private)
+            return isPublic;
+          });
+          
           // Set the results directly
-          setTraders(allMatches.map(trader => ({
+          setTraders(filteredMatches.map(trader => ({
             id: trader.id,
             username: trader.username,
             avatar_url: trader.avatar_url,
             created_at: trader.created_at,
             win_rate: trader.win_rate,
             performance_rank: trader.performance_rank,
-            public_profile: true,
+            public_profile: trader.user_settings?.[0]?.public_profile ?? false,
             user_presence: null
           })));
           
           // Calculate total pages for combined results
-          setTotalPages(Math.ceil(allMatches.length / tradersPerPage));
+          setTotalPages(Math.ceil(filteredMatches.length / tradersPerPage));
           return;
         } else {
           // No exact match found, search only public profiles with partial matching
@@ -434,6 +449,23 @@ const TradersPage = () => {
       // Filter out traders without usernames and transform data
       let filteredTraders = (data || [])
         .filter(trader => trader.username)
+        .filter(trader => {
+          // If there's a search query, check privacy settings
+          if (debouncedSearchQuery) {
+            // Always include exact matches (regardless of privacy)
+            if (trader.username === debouncedSearchQuery.trim()) {
+              return true;
+            }
+            
+            // For partial matches, only include if user is public
+            const isPublic = trader.user_settings?.[0]?.public_profile ?? false; // Default to false (private)
+            return isPublic;
+          }
+          
+          // If no search query, only show public profiles
+          const isPublic = trader.user_settings?.[0]?.public_profile ?? false; // Default to false (private)
+          return isPublic;
+        })
         .map(trader => ({
           id: trader.id,
           username: trader.username,
@@ -441,7 +473,7 @@ const TradersPage = () => {
           created_at: trader.created_at,
           win_rate: trader.win_rate,
           performance_rank: trader.performance_rank,
-          public_profile: true,
+          public_profile: trader.user_settings?.[0]?.public_profile ?? false,
           user_presence: null
         }));
       setTraders(filteredTraders);
