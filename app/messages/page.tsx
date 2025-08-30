@@ -21,7 +21,8 @@ import {
   FileText,
   MoreVertical,
   Trash2,
-  User
+  User,
+  ArrowLeft
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../src/components/ui/tooltip';
@@ -136,7 +137,7 @@ export default function MessagesPage() {
       if (conversation) {
         setCurrentConversation(conversation);
         // Mark conversation as read
-        markConversationAsRead(conversationId);
+        await markConversationAsRead(conversationId, currentUser.id);
         // Refresh unread count
         refreshUnreadCount();
       }
@@ -181,7 +182,7 @@ export default function MessagesPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          receiver_id: currentConversation.id,
+          receiver_id: currentConversation.other_user_id,
           content: messageInput.trim() || `Sent ${fileName}`,
           message_type: messageType,
           file_url: fileUrl,
@@ -241,18 +242,6 @@ export default function MessagesPage() {
       return format(date, 'MMM d');
     }
   };
-
-  if (!currentUser) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <MessageSquare className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h2 className="text-xl font-semibold mb-2">Please log in to view messages</h2>
-          <Button onClick={() => router.push('/login')}>Go to Login</Button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -343,7 +332,7 @@ export default function MessagesPage() {
                           onClick={() => setShowConversationList(true)}
                           className="lg:hidden"
                         >
-                          <X className="h-4 w-4" />
+                          <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <Avatar className="h-8 w-8">
                           <AvatarImage src={currentConversation.other_user.avatar_url} />
@@ -352,32 +341,27 @@ export default function MessagesPage() {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <CardTitle className="text-lg">
-                            {currentConversation.other_user.username}
-                          </CardTitle>
+                          <h3 className="font-semibold">{currentConversation.other_user.username}</h3>
+                          <p className="text-xs text-muted-foreground">Active now</p>
                         </div>
                       </div>
+                      <Button variant="ghost" size="sm">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
                     </div>
                   </CardHeader>
-                  
-                  <CardContent className="p-0 flex flex-col h-[calc(100vh-300px)]">
-                    {/* Messages */}
-                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                      {isLoading ? (
-                        <div className="text-center text-muted-foreground">Loading messages...</div>
-                      ) : messages.length === 0 ? (
-                        <div className="text-center text-muted-foreground">
-                          No messages yet. Start the conversation!
-                        </div>
-                      ) : (
-                        messages.map((message) => (
+                  <CardContent className="p-0">
+                    <div className="flex flex-col h-[calc(100vh-350px)]">
+                      {/* Messages */}
+                      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                        {messages.map((message) => (
                           <div
                             key={message.id}
-                            className={`flex ${message.sender_id === currentUser.id ? 'justify-end' : 'justify-start'}`}
+                            className={`flex ${message.sender_id === currentUser?.id ? 'justify-end' : 'justify-start'}`}
                           >
                             <div
                               className={`max-w-[70%] rounded-lg p-3 ${
-                                message.sender_id === currentUser.id
+                                message.sender_id === currentUser?.id
                                   ? 'bg-primary text-primary-foreground'
                                   : 'bg-muted'
                               }`}
@@ -396,81 +380,74 @@ export default function MessagesPage() {
                                 </div>
                               )}
                               <p className="text-sm">{message.content}</p>
-                              <p className={`text-xs mt-1 ${
-                                message.sender_id === currentUser.id ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                              }`}>
+                              <p className="text-xs opacity-70 mt-1">
                                 {formatMessageTime(message.created_at)}
                               </p>
                             </div>
                           </div>
-                        ))
-                      )}
-                      <div ref={messagesEndRef} />
-                    </div>
+                        ))}
+                        <div ref={messagesEndRef} />
+                      </div>
 
-                    {/* Message Input */}
-                    <div className="p-4 border-t">
-                      {selectedFile && (
-                        <div className="flex items-center space-x-2 mb-3 p-2 bg-muted rounded">
-                          {selectedFile.type.startsWith('image/') ? (
-                            <ImageIcon className="h-4 w-4" />
-                          ) : (
-                            <FileText className="h-4 w-4" />
-                          )}
-                          <span className="text-sm flex-1 truncate">{selectedFile.name}</span>
+                      {/* Message Input */}
+                      <div className="border-t p-4">
+                        {selectedFile && (
+                          <div className="flex items-center space-x-2 mb-3 p-2 bg-muted rounded">
+                            {selectedFile.type.startsWith('image/') ? (
+                              <ImageIcon className="h-4 w-4" />
+                            ) : (
+                              <FileText className="h-4 w-4" />
+                            )}
+                            <span className="text-sm flex-1 truncate">{selectedFile.name}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={removeSelectedFile}
+                              className="h-6 w-6 p-0"
+                            >
+                              <X className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
+                        <div className="flex items-center space-x-2">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => fileInputRef.current?.click()}
+                                  className="h-8 w-8 p-0"
+                                >
+                                  <Paperclip className="h-4 w-4" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Attach file</TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          <Input
+                            placeholder="Type a message..."
+                            value={messageInput}
+                            onChange={(e) => setMessageInput(e.target.value)}
+                            onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                            className="flex-1"
+                          />
                           <Button
-                            variant="ghost"
+                            onClick={handleSendMessage}
+                            disabled={isSending || (!messageInput.trim() && !selectedFile)}
                             size="sm"
-                            onClick={removeSelectedFile}
-                            className="h-6 w-6 p-0"
                           >
-                            <X className="h-3 w-3" />
+                            <Send className="h-4 w-4" />
                           </Button>
                         </div>
-                      )}
-                      
-                      <div className="flex items-center space-x-2">
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => fileInputRef.current?.click()}
-                                className="h-8 w-8 p-0"
-                              >
-                                <Paperclip className="h-4 w-4" />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Attach file</TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                        
-                        <Input
-                          placeholder="Type a message..."
-                          value={messageInput}
-                          onChange={(e) => setMessageInput(e.target.value)}
-                          onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                          className="flex-1"
-                          disabled={isSending}
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          onChange={handleFileSelect}
+                          className="hidden"
+                          accept="image/*,.pdf,.doc,.docx,.txt"
                         />
-                        
-                        <Button
-                          onClick={handleSendMessage}
-                          disabled={(!messageInput.trim() && !selectedFile) || isSending}
-                          size="sm"
-                        >
-                          <Send className="h-4 w-4" />
-                        </Button>
                       </div>
-                      
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        onChange={handleFileSelect}
-                        className="hidden"
-                        accept="image/*,.pdf,.doc,.docx,.txt"
-                      />
                     </div>
                   </CardContent>
                 </>

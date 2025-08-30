@@ -14,7 +14,8 @@ import {
   TableRow,
   TableCell,
   WidthType,
-  BorderStyle
+  BorderStyle,
+  ImageRun
 } from 'docx';
 
 export async function POST(request: NextRequest) {
@@ -79,6 +80,44 @@ export async function POST(request: NextRequest) {
     if (answersError) {
       console.log('Answers error:', answersError);
       return NextResponse.json({ error: 'Failed to fetch answers' }, { status: 500 });
+    }
+
+    // Fetch screenshots for the analysis
+    const { data: screenshots, error: screenshotsError } = await supabase
+      .from('tda_screenshots')
+      .select('*')
+      .eq('analysis_id', finalAnalysisId);
+
+    if (screenshotsError) {
+      console.log('Screenshots error:', screenshotsError);
+      return NextResponse.json({ error: 'Failed to fetch screenshots' }, { status: 500 });
+    }
+
+    // Helper function to download image and convert to buffer
+    const downloadImage = async (url: string): Promise<Buffer | null> => {
+      try {
+        const response = await fetch(url);
+        if (!response.ok) {
+          console.log(`Failed to download image from ${url}: ${response.status}`);
+          return null;
+        }
+        const arrayBuffer = await response.arrayBuffer();
+        return Buffer.from(arrayBuffer);
+      } catch (error) {
+        console.log(`Error downloading image from ${url}:`, error);
+        return null;
+      }
+    };
+
+    // Download all screenshots
+    const screenshotBuffers: { [timeframe: string]: Buffer } = {};
+    if (screenshots && screenshots.length > 0) {
+      for (const screenshot of screenshots) {
+        const buffer = await downloadImage(screenshot.file_url);
+        if (buffer) {
+          screenshotBuffers[screenshot.timeframe] = buffer;
+        }
+      }
     }
 
          // Get unique timeframes from answers and sort from higher to lower timeframes
@@ -507,6 +546,50 @@ export async function POST(request: NextRequest) {
       
       elements.push(new Paragraph({ text: "" }));
 
+      // Add screenshot if available for this timeframe
+      if (screenshotBuffers[timeframe]) {
+        try {
+          const image = new ImageRun({
+            data: screenshotBuffers[timeframe],
+            transformation: {
+              width: 500,
+              height: 300,
+            },
+          });
+          
+          elements.push(new Paragraph({
+            children: [image],
+            alignment: AlignmentType.CENTER,
+            spacing: {
+              before: 200,
+              after: 200
+            }
+          }));
+          
+          elements.push(new Paragraph({ text: "" }));
+        } catch (error) {
+          console.log(`Error adding image for timeframe ${timeframe}:`, error);
+          // Fallback to placeholder if image fails
+          elements.push(new Paragraph({
+            children: [
+              new TextRun({ 
+                text: `[Chart Screenshot for ${timeframeDisplay}]`, 
+                bold: true,
+                color: "1e40af",
+                size: 16
+              })
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: {
+              before: 200,
+              after: 200
+            }
+          }));
+          
+          elements.push(new Paragraph({ text: "" }));
+        }
+      }
+
       // Create flexible rows with individual question positioning
       organizedRows.forEach(rowQuestions => {
         if (rowQuestions.length === 0) return;
@@ -606,6 +689,50 @@ export async function POST(request: NextRequest) {
        }));
        
        elements.push(new Paragraph({ text: "" }));
+
+               // Add screenshot if available for this timeframe
+        if (screenshotBuffers[timeframe]) {
+          try {
+            const image = new ImageRun({
+              data: screenshotBuffers[timeframe],
+              transformation: {
+                width: 500,
+                height: 300,
+              },
+            });
+            
+            elements.push(new Paragraph({
+              children: [image],
+              alignment: AlignmentType.CENTER,
+              spacing: {
+                before: 200,
+                after: 200
+              }
+            }));
+            
+            elements.push(new Paragraph({ text: "" }));
+          } catch (error) {
+            console.log(`Error adding image for timeframe ${timeframe}:`, error);
+            // Fallback to placeholder if image fails
+            elements.push(new Paragraph({
+              children: [
+                new TextRun({ 
+                  text: `[Chart Screenshot for ${timeframeDisplay}]`, 
+                  bold: true,
+                  color: "1e40af",
+                  size: 16
+                })
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: {
+                before: 200,
+                after: 200
+              }
+            }));
+            
+            elements.push(new Paragraph({ text: "" }));
+          }
+        }
 
                // Add questions and answers
         timeframeAnswers.forEach(answer => {

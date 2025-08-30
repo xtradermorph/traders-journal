@@ -1187,12 +1187,12 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
                       <span>Trade Records</span>
                     </Link>
                   </Button>
-                                     <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                     <Link href="/shared-trades" className="flex items-center w-full">
-                       <Share2 className="mr-2 h-4 w-4" />
-                       <span>Shared Trades</span>
-                     </Link>
-                   </Button>
+                  <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
+                    <Link href="/shared-trades" className="flex items-center w-full">
+                      <Share2 className="mr-2 h-4 w-4" />
+                      <span>Shared Trades</span>
+                    </Link>
+                  </Button>
                    <Button asChild variant="ghost" className="justify-start w-full px-4 py-2 relative">
                      <Link href="/messages" className="flex items-center w-full">
                        <MessageSquare className="mr-2 h-4 w-4" />
@@ -1206,12 +1206,12 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
                        )}
                      </Link>
                    </Button>
-                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                     <Link href="/settings" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
-                       <Settings className="mr-2 h-4 w-4" />
-                       <span>Settings</span>
-                     </Link>
-                   </Button>
+                  <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
+                    <Link href="/settings" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </Button>
                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
                     <Link href="/support" className="flex items-center w-full" onClick={() => { setUserMenuOpen(false); try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
                       <LifeBuoy className="mr-2 h-4 w-4" />
@@ -1286,12 +1286,12 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
                       <span>Trade Records</span>
                     </Link>
                   </Button>
-                                     <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                     <Link href="/shared-trades" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
-                       <Share2 className="mr-2 h-4 w-4" />
-                       <span>Shared Trades</span>
-                     </Link>
-                   </Button>
+                  <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
+                    <Link href="/shared-trades" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
+                      <Share2 className="mr-2 h-4 w-4" />
+                      <span>Shared Trades</span>
+                    </Link>
+                  </Button>
                    <Button asChild variant="ghost" className="justify-start w-full px-4 py-2 relative">
                      <Link href="/messages" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
                        <MessageSquare className="mr-2 h-4 w-4" />
@@ -1305,12 +1305,12 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
                        )}
                      </Link>
                    </Button>
-                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
-                     <Link href="/settings" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
-                       <Settings className="mr-2 h-4 w-4" />
-                       <span>Settings</span>
-                     </Link>
-                   </Button>
+                  <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
+                    <Link href="/settings" className="flex items-center w-full" onClick={() => setUserMenuOpen(false)}>
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Settings</span>
+                    </Link>
+                  </Button>
                   <Button asChild variant="ghost" className="justify-start w-full px-4 py-2">
                     <Link href="/support" className="flex items-center w-full" onClick={() => { setUserMenuOpen(false); try { sessionStorage.setItem('fromPage', '/dashboard'); } catch {} }}>
                       <LifeBuoy className="mr-2 h-4 w-4" />
