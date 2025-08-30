@@ -30,9 +30,25 @@ export async function GET(request: NextRequest) {
     }
 
     // Check if we can insert a test message
+    // First, find another user to send a test message to
+    const { data: otherUser, error: otherUserError } = await supabase
+      .from('profiles')
+      .select('id')
+      .neq('id', user.id)
+      .limit(1)
+      .single();
+
+    if (otherUserError || !otherUser) {
+      return NextResponse.json({ 
+        status: 'error',
+        error: 'No other users found for testing',
+        details: 'Cannot test message insertion without another user in the system'
+      });
+    }
+
     const testMessage = {
       sender_id: user.id,
-      receiver_id: user.id, // Temporarily use self for testing
+      receiver_id: otherUser.id, // Use another user for testing
       content: 'Test message for setup verification',
       is_read: false
     };
