@@ -546,49 +546,7 @@ export async function POST(request: NextRequest) {
       
       elements.push(new Paragraph({ text: "" }));
 
-      // Add screenshot if available for this timeframe
-      if (screenshotBuffers[timeframe]) {
-        try {
-          const image = new ImageRun({
-            data: screenshotBuffers[timeframe],
-            transformation: {
-              width: 500,
-              height: 300,
-            },
-          });
-          
-          elements.push(new Paragraph({
-            children: [image],
-            alignment: AlignmentType.CENTER,
-            spacing: {
-              before: 200,
-              after: 200
-            }
-          }));
-          
-          elements.push(new Paragraph({ text: "" }));
-        } catch (error) {
-          console.log(`Error adding image for timeframe ${timeframe}:`, error);
-          // Fallback to placeholder if image fails
-          elements.push(new Paragraph({
-            children: [
-              new TextRun({ 
-                text: `[Chart Screenshot for ${timeframeDisplay}]`, 
-                bold: true,
-                color: "1e40af",
-                size: 16
-              })
-            ],
-            alignment: AlignmentType.CENTER,
-            spacing: {
-              before: 200,
-              after: 200
-            }
-          }));
-          
-          elements.push(new Paragraph({ text: "" }));
-        }
-      }
+      // Note: Screenshot will be added at the end of the timeframe content
 
       // Create flexible rows with individual question positioning
       organizedRows.forEach(rowQuestions => {
@@ -651,6 +609,50 @@ export async function POST(request: NextRequest) {
         }
       });
 
+      // Add screenshot at the end of the timeframe content (before separation line)
+      if (screenshotBuffers[timeframe]) {
+        try {
+          const image = new ImageRun({
+            data: screenshotBuffers[timeframe],
+            transformation: {
+              width: 500,
+              height: 300,
+            },
+          });
+          
+          elements.push(new Paragraph({
+            children: [image],
+            alignment: AlignmentType.CENTER,
+            spacing: {
+              before: 200,
+              after: 200
+            }
+          }));
+          
+          elements.push(new Paragraph({ text: "" }));
+        } catch (error) {
+          console.log(`Error adding image for timeframe ${timeframe}:`, error);
+          // Fallback to placeholder if image fails
+          elements.push(new Paragraph({
+            children: [
+              new TextRun({ 
+                text: `[Chart Screenshot for ${timeframeDisplay}]`, 
+                bold: true,
+                color: "1e40af",
+                size: 16
+              })
+            ],
+            alignment: AlignmentType.CENTER,
+            spacing: {
+              before: 200,
+              after: 200
+            }
+          }));
+          
+          elements.push(new Paragraph({ text: "" }));
+        }
+      }
+
       return elements;
     };
 
@@ -690,49 +692,7 @@ export async function POST(request: NextRequest) {
        
        elements.push(new Paragraph({ text: "" }));
 
-               // Add screenshot if available for this timeframe
-        if (screenshotBuffers[timeframe]) {
-          try {
-            const image = new ImageRun({
-              data: screenshotBuffers[timeframe],
-              transformation: {
-                width: 500,
-                height: 300,
-              },
-            });
-            
-            elements.push(new Paragraph({
-              children: [image],
-              alignment: AlignmentType.CENTER,
-              spacing: {
-                before: 200,
-                after: 200
-              }
-            }));
-            
-            elements.push(new Paragraph({ text: "" }));
-          } catch (error) {
-            console.log(`Error adding image for timeframe ${timeframe}:`, error);
-            // Fallback to placeholder if image fails
-            elements.push(new Paragraph({
-              children: [
-                new TextRun({ 
-                  text: `[Chart Screenshot for ${timeframeDisplay}]`, 
-                  bold: true,
-                  color: "1e40af",
-                  size: 16
-                })
-              ],
-              alignment: AlignmentType.CENTER,
-              spacing: {
-                before: 200,
-                after: 200
-              }
-            }));
-            
-            elements.push(new Paragraph({ text: "" }));
-          }
-        }
+               // Note: Screenshot will be added at the end of the timeframe content
 
                // Add questions and answers
         timeframeAnswers.forEach(answer => {
@@ -787,10 +747,54 @@ export async function POST(request: NextRequest) {
                 })
               ]
             }));
-          }
-        });
+                     }
+         });
 
-       return elements;
+        // Add screenshot at the end of the timeframe content (before separation line)
+        if (screenshotBuffers[timeframe]) {
+          try {
+            const image = new ImageRun({
+              data: screenshotBuffers[timeframe],
+              transformation: {
+                width: 500,
+                height: 300,
+              },
+            });
+            
+            elements.push(new Paragraph({
+              children: [image],
+              alignment: AlignmentType.CENTER,
+              spacing: {
+                before: 200,
+                after: 200
+              }
+            }));
+            
+            elements.push(new Paragraph({ text: "" }));
+          } catch (error) {
+            console.log(`Error adding image for timeframe ${timeframe}:`, error);
+            // Fallback to placeholder if image fails
+            elements.push(new Paragraph({
+              children: [
+                new TextRun({ 
+                  text: `[Chart Screenshot for ${timeframeDisplay}]`, 
+                  bold: true,
+                  color: "1e40af",
+                  size: 16
+                })
+              ],
+              alignment: AlignmentType.CENTER,
+              spacing: {
+                before: 200,
+                after: 200
+              }
+            }));
+            
+            elements.push(new Paragraph({ text: "" }));
+          }
+        }
+
+        return elements;
      };
 
     // Create document
