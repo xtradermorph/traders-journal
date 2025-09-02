@@ -32,13 +32,8 @@ const nextConfig = {
     esmExternals: 'loose',
     // Force all pages to be dynamic
     workerThreads: false,
-    cpus: 1,
-    // Disable static generation completely
-    staticPageGenerationTimeout: 0,
-    // Force dynamic rendering
-    dynamicImports: true
-  }
-
+    cpus: 1
+  },
   // Disable static optimization completely
   images: {
     unoptimized: true
@@ -76,12 +71,6 @@ const nextConfig = {
     }
     
     return config
-  },
-  experimental: {
-    esmExternals: 'loose',
-    // Force all pages to be dynamic
-    workerThreads: false,
-    cpus: 1
   }
 }
 
