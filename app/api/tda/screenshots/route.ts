@@ -8,7 +8,9 @@ export const dynamic = "force-dynamic";
 
 
 // Force dynamic rendering to prevent static generation issues
-export const dynamic = 'force-dynamic';
+
+
+// Force dynamic rendering to prevent static generation issues
 
 export async function GET(request: NextRequest) {
   try {

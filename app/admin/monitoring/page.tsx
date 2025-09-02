@@ -1142,6 +1142,217 @@ export default function MonitoringPage() {
         <SupportManagementPage />
       </div>
 
+      {/* Admin Documentation Section */}
+      <div className="mt-10">
+        <h2 className="text-xl font-semibold mb-4">Admin Documentation & System Guide</h2>
+        
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* System Overview */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                System Overview
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">Trader's Journal Architecture</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Next.js 14 frontend with TypeScript</li>
+                  <li>• Supabase PostgreSQL backend with RLS</li>
+                  <li>• Drizzle ORM for database operations</li>
+                  <li>• Tailwind CSS + Shadcn/UI components</li>
+                  <li>• PWA capabilities with offline support</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Enhanced Features Implemented</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• AI Market Analysis (10 new tables, 42 indexes)</li>
+                  <li>• Mobile optimization with biometric auth</li>
+                  <li>• Performance monitoring & security logging</li>
+                  <li>• Progressive loading & skeleton states</li>
+                  <li>• Image optimization & code splitting</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Monitoring Guide */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                Monitoring Guide
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">Health Status Monitoring</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Database connectivity & record counts</li>
+                  <li>• Edge function status & cron job health</li>
+                  <li>• Email service availability</li>
+                  <li>• Real-time error tracking</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Performance Metrics</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Query count & average response times</li>
+                  <li>• Slow query identification</li>
+                  <li>• Index usage optimization</li>
+                  <li>• Cache hit rate monitoring</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Security Monitoring */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                Security Monitoring
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">Security Events Tracking</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• User authentication attempts</li>
+                  <li>• Data access & modification logs</li>
+                  <li>• Security policy violations</li>
+                  <li>• IP address & user agent tracking</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Compliance & Auditing</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Comprehensive audit logging</li>
+                  <li>• Data access trail maintenance</li>
+                  <li>• Security incident response</li>
+                  <li>• Regulatory compliance reporting</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Database Management */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <FileText className="h-5 w-5" />
+                Database Management
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <h4 className="font-semibold mb-2">Performance Optimization</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• 42 database indexes for optimal queries</li>
+                  <li>• Composite indexes for common patterns</li>
+                  <li>• Query performance monitoring</li>
+                  <li>• Automatic maintenance scheduling</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Data Integrity</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Row Level Security (RLS) policies</li>
+                  <li>• Foreign key constraints & validation</li>
+                  <li>• Automated cleanup procedures</li>
+                  <li>• Backup & recovery procedures</li>
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Admin Actions Guide */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Admin Actions & Best Practices
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold mb-2">System Announcements</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Send to all users or selected users only</li>
+                  <li>• Use clear, actionable subject lines</li>
+                  <li>• Test announcements on small groups first</li>
+                  <li>• Monitor user engagement & feedback</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Performance Monitoring</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Check health status regularly (every 15 minutes)</li>
+                  <li>• Monitor slow queries & optimize indexes</li>
+                  <li>• Track security events for anomalies</li>
+                  <li>• Review database performance weekly</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Security Best Practices</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Review security events daily</li>
+                  <li>• Monitor for unusual access patterns</li>
+                  <li>• Keep audit logs for compliance</li>
+                  <li>• Respond to security alerts promptly</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">User Management</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Monitor user growth & engagement</li>
+                  <li>• Review support requests regularly</li>
+                  <li>• Track feature usage & adoption</li>
+                  <li>• Gather user feedback for improvements</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Troubleshooting Guide */}
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5" />
+              Troubleshooting Guide
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="font-semibold mb-2">Common Issues</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Database connection failures</li>
+                  <li>• Slow query performance</li>
+                  <li>• High memory usage</li>
+                  <li>• Email delivery issues</li>
+                </ul>
+              </div>
+              <div>
+                <h4 className="font-semibold mb-2">Resolution Steps</h4>
+                <ul className="text-sm space-y-1 text-muted-foreground">
+                  <li>• Check health status & error logs</li>
+                  <li>• Review performance metrics</li>
+                  <li>• Optimize database queries</li>
+                  <li>• Contact Supabase support if needed</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
       {/* Confirmation Dialog */}
       <AlertDialog open={showConfirmation} onOpenChange={setShowConfirmation}>
         <AlertDialogContent>

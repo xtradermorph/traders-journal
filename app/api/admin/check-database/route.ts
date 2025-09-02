@@ -4,10 +4,6 @@ import { cookies } from 'next/headers';
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = "force-dynamic";
-
-
-// Force dynamic runtime to prevent static generation
-export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET() {

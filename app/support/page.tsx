@@ -360,107 +360,6 @@ export default function SupportPage() {
                         All AI features are designed to complement your manual analysis and provide additional perspectives on your trading decisions.
                       </AccordionContent>
                     </AccordionItem>
-
-                    {/* NEW ENHANCED FEATURES SECTION */}
-                    <AccordionItem value="item-15">
-                      <AccordionTrigger>How do I use the new Enhanced AI Market Analysis features?</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="mb-3">Our enhanced AI features provide comprehensive market analysis and insights:</p>
-                        <ul className="list-disc pl-6 mt-2 space-y-1">
-                          <li><strong>Market Sentiment Analysis:</strong> Get real-time sentiment scores for currency pairs based on news, technical indicators, and social media</li>
-                          <li><strong>Risk Prediction:</strong> AI-powered risk assessment for potential trades with confidence scores and recommendations</li>
-                          <li><strong>Behavioral Pattern Recognition:</strong> Identify trading patterns and market behaviors with historical accuracy tracking</li>
-                          <li><strong>Market Correlations:</strong> Understand relationships between different currency pairs and their strength</li>
-                          <li><strong>Volatility Prediction:</strong> Forecast expected market volatility with probability scores and risk implications</li>
-                        </ul>
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          Access these features from your dashboard. The AI analyzes your existing trading data and market conditions to provide actionable insights.
-                        </p>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    <AccordionItem value="item-16">
-                      <AccordionTrigger>What are the new Mobile & Security features?</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="mb-3">We've added powerful mobile and security capabilities:</p>
-                        <ul className="list-disc pl-6 mt-2 space-y-1">
-                          <li><strong>Biometric Authentication:</strong> Use Face ID, Touch ID, or Windows Hello for secure login</li>
-                          <li><strong>Offline Mode:</strong> Access your data even without internet connection, with automatic sync when online</li>
-                          <li><strong>Push Notifications:</strong> Get instant alerts for trade updates, friend requests, and system notifications</li>
-                          <li><strong>Mobile-Optimized Charts:</strong> Touch-friendly trading visualizations optimized for mobile devices</li>
-                          <li><strong>Enhanced Security:</strong> Comprehensive audit logging and real-time security monitoring</li>
-                        </ul>
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          These features work seamlessly across all devices and provide enterprise-level security for your trading data.
-                        </p>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    <AccordionItem value="item-17">
-                      <AccordionTrigger>How do I enable biometric authentication?</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="mb-3">To set up biometric authentication:</p>
-                        <ol className="list-decimal pl-6 mt-2 space-y-1">
-                          <li>Go to your Settings page</li>
-                          <li>Look for the "Security" or "Biometric Authentication" section</li>
-                          <li>Click "Enable Biometric Login"</li>
-                          <li>Follow your device's prompts to register your biometric data</li>
-                          <li>Test the login to ensure it's working properly</li>
-                        </ol>
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          <strong>Note:</strong> Biometric authentication requires a compatible device and browser that supports WebAuthn. 
-                          You can still use your password as a backup login method.
-                        </p>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    <AccordionItem value="item-18">
-                      <AccordionTrigger>How does the offline mode work?</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="mb-3">Offline mode allows you to access your data without internet:</p>
-                        <ul className="list-disc pl-6 mt-2 space-y-1">
-                          <li><strong>Automatic Caching:</strong> Your recent trades, settings, and data are automatically stored locally</li>
-                          <li><strong>Offline Access:</strong> View your trading history, statistics, and settings even when disconnected</li>
-                          <li><strong>Sync Queue:</strong> Any changes made offline are queued and synchronized when you're back online</li>
-                          <li><strong>Data Integrity:</strong> Your data remains secure and consistent across online/offline states</li>
-                        </ul>
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          Offline mode is automatically enabled and requires no setup. You'll see an offline indicator when disconnected.
-                        </p>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    <AccordionItem value="item-19">
-                      <AccordionTrigger>What are Progressive Loading and Loading Skeletons?</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="mb-3">We've enhanced the user experience with advanced loading systems:</p>
-                        <ul className="list-disc pl-6 mt-2 space-y-1">
-                          <li><strong>Loading Skeletons:</strong> Visual placeholders that show the structure of content while it loads</li>
-                          <li><strong>Progressive Loading:</strong> Content loads in stages, showing the most important information first</li>
-                          <li><strong>Smart Caching:</strong> Frequently accessed data loads instantly from local storage</li>
-                          <li><strong>Performance Optimization:</strong> Images and heavy content load progressively for faster perceived performance</li>
-                        </ul>
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          These features make the app feel faster and more responsive, especially on slower connections or mobile devices.
-                        </p>
-                      </AccordionContent>
-                    </AccordionItem>
-
-                    <AccordionItem value="item-20">
-                      <AccordionTrigger>How do I use the new Performance & Security Monitoring?</AccordionTrigger>
-                      <AccordionContent>
-                        <p className="mb-3">Our enhanced monitoring provides comprehensive system insights:</p>
-                        <ul className="list-disc pl-6 mt-2 space-y-1">
-                          <li><strong>Performance Metrics:</strong> Monitor database performance, query times, and system efficiency</li>
-                          <li><strong>Security Events:</strong> Track login attempts, user actions, and security-related activities</li>
-                          <li><strong>Database Health:</strong> Monitor table performance, index usage, and data integrity</li>
-                          <li><strong>Real-time Alerts:</strong> Get notified of performance issues or security concerns</li>
-                        </ul>
-                        <p className="mt-3 text-sm text-muted-foreground">
-                          These monitoring features help ensure optimal performance and security for all users. Contact support if you notice any issues.
-                        </p>
-                      </AccordionContent>
-                    </AccordionItem>
                   </Accordion>
                 </CardContent>
               </Card>
@@ -754,6 +653,24 @@ export default function SupportPage() {
               <li>Set default performance view (Total or Current Week).</li>
               <li>Manage privacy controls and data preferences.</li>
               <li>Configure account security and display settings.</li>
+            </ul>
+
+            <h2 className="text-primary">Mobile & Security Features</h2>
+            <ul>
+              <li><strong>Biometric Authentication:</strong> Enable Face ID, Touch ID, or Windows Hello for secure login in Settings.</li>
+              <li><strong>Offline Mode:</strong> Access your data without internet - changes sync automatically when online.</li>
+              <li><strong>Push Notifications:</strong> Get instant alerts for trade updates, friend requests, and system notifications.</li>
+              <li><strong>Mobile-Optimized Charts:</strong> Touch-friendly trading visualizations optimized for mobile devices.</li>
+              <li><strong>Enhanced Security:</strong> Comprehensive audit logging and real-time security monitoring.</li>
+            </ul>
+
+            <h2 className="text-primary">Performance & User Experience</h2>
+            <ul>
+              <li><strong>Loading Skeletons:</strong> Visual placeholders show content structure while loading for better UX.</li>
+              <li><strong>Progressive Loading:</strong> Content loads in stages, showing important information first.</li>
+              <li><strong>Image Optimization:</strong> Automatic WebP conversion, responsive sizes, and lazy loading.</li>
+              <li><strong>Smart Caching:</strong> Frequently accessed data loads instantly from local storage.</li>
+              <li><strong>Performance Monitoring:</strong> Real-time system health and performance tracking.</li>
             </ul>
             
             <h2 className="text-primary">Support & Help</h2>

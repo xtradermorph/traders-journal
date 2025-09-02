@@ -6,8 +6,10 @@ import { cookies } from "next/headers";
 export const dynamic = "force-dynamic";
 
 
+// Force dynamic rendering to prevent static generation issues
+
+
 // Force dynamic runtime to prevent static generation
-export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {

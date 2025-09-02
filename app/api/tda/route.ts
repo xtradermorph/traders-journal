@@ -7,8 +7,10 @@ import { Database } from '@/types/supabase';
 export const dynamic = "force-dynamic";
 
 
+// Force dynamic rendering to prevent static generation issues
+
+
 // Force dynamic runtime to prevent static generation
-export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
