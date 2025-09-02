@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import Link from 'next/link';
 import Image from 'next/image';
 import { LOGO_CONFIG } from '@/lib/logo-config';
+import { v4 as uuidv4 } from 'uuid';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -25,14 +26,72 @@ export default function ForgotPassword() {
     setIsLoading(true);
   
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `https://tradersjournal.pro/reset-password`
-      });
-  
-      if (error) {
-        throw error;
+      // Generate a secure reset token
+      const resetToken = uuidv4();
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours from now
+      
+      // Store the reset token in Supabase
+      const { error: tokenError } = await supabase
+        .from('password_reset_tokens')
+        .insert({
+          email: email,
+          token: resetToken,
+          expires_at: expiresAt.toISOString(),
+          used: false
+        });
+
+      if (tokenError) {
+        // If table doesn't exist, create it first
+        if (tokenError.message.includes('relation "password_reset_tokens" does not exist')) {
+          await supabase.rpc('create_password_reset_table');
+          
+          // Try inserting again
+          const { error: retryError } = await supabase
+            .from('password_reset_tokens')
+            .insert({
+              email: email,
+              token: resetToken,
+              expires_at: expiresAt.toISOString(),
+              used: false
+            });
+            
+          if (retryError) {
+            throw retryError;
+          }
+        } else {
+          throw tokenError;
+        }
       }
-  
+
+      // Create the reset link
+      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
+      const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
+      
+      console.log('Sending password reset email to:', email);
+      console.log('Reset link:', resetLink);
+      
+      // Send email via your Resend function
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/resend`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: email,
+          subject: 'Password Reset Request - Trader\'s Journal',
+          type: 'passwordReset',
+          resetLink: resetLink
+        }),
+      });
+
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.json();
+        throw new Error(errorData.error || 'Failed to send reset email');
+      }
+
+      console.log('Password reset email sent successfully');
+      
       toast({
         id: `password-reset-${Date.now()}`,
         title: 'Password Reset',
@@ -42,6 +101,7 @@ export default function ForgotPassword() {
       // Redirect back to login page
       router.push('/login');
     } catch (error: unknown) {
+      console.error('Password reset failed:', error);
       toast({
         id: `error-${Date.now()}`,
         title: 'Error',
