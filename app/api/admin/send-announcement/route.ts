@@ -3,6 +3,10 @@ import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 import { Resend } from "resend";
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
+
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: NextRequest) {

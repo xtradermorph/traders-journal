@@ -4,6 +4,10 @@ import { cleanupUserData } from '../../../lib/database-cleanup';
 import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
+
 // Initialize admin Supabase client with service role key (only available server-side)
 const supabaseUrl = process.env.SUPABASE_URL || 'https://oweimywvzmqoizsyotrt.supabase.co';
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;

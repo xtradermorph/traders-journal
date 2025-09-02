@@ -4,6 +4,10 @@ import { cookies } from 'next/headers';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { z } from 'zod';
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
+
 // Password validation schema (same as registration)
 const passwordResetSchema = z.object({
   password: z.string()

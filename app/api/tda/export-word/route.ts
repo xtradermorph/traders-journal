@@ -4,6 +4,10 @@ import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 import { TimeframeType } from '@/types/tda';
 import { 
+
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
   Document, 
   Packer, 
   Paragraph, 

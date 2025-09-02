@@ -3,6 +3,10 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { cleanupCompleteTDA } from '../../../lib/database-cleanup';
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
+
 export async function DELETE(request: Request) {
   try {
     const supabase = createRouteHandlerClient({ cookies });

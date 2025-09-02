@@ -2,6 +2,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createRouteHandlerClient } from "@supabase/auth-helpers-nextjs";
 import { cookies } from "next/headers";
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
+
 export async function PATCH(req: NextRequest) {
   const supabase = createRouteHandlerClient({ cookies });
   const { oldTag, newTag } = await req.json();

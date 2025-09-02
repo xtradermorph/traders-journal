@@ -4,6 +4,10 @@ import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
+
 export async function POST(request: Request) {
   try {
     // Get the authenticated user from the request

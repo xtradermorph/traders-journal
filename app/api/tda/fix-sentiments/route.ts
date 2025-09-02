@@ -4,6 +4,10 @@ import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 import { TimeframeType } from '@/types/tda';
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
+
 async function fetchHistoricalAlphaVantageData(currencyPair: string, analysisDate: Date) {
   try {
     const apiKey = process.env.ALPHA_VANTAGE_API_KEY;

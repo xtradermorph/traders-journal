@@ -4,6 +4,10 @@ import { cookies } from 'next/headers';
 import { Database } from '@/types/supabase';
 import { AIAnalysisResponse, TimeframeType } from '@/types/tda';
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies });

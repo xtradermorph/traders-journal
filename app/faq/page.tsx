@@ -47,6 +47,10 @@ export default function FAQPage() {
         {
           question: "How accurate is the AI analysis?",
           answer: "Our AI provides insights based on your historical data and market patterns, but it should not be used as the sole basis for trading decisions. Always combine AI insights with your own analysis and risk management."
+        },
+        {
+          question: "What are the new Enhanced AI Market Analysis features?",
+          answer: "Our enhanced AI features include Market Sentiment Analysis (real-time sentiment scores), Risk Prediction (AI-powered risk assessment), Behavioral Pattern Recognition (trading pattern identification), Market Correlations (currency pair relationships), and Volatility Prediction (market volatility forecasting). These provide comprehensive market insights and actionable recommendations."
         }
       ]
     },
@@ -68,6 +72,27 @@ export default function FAQPage() {
       ]
     },
     {
+      category: "Mobile & Security Features",
+      items: [
+        {
+          question: "How do I enable biometric authentication?",
+          answer: "Go to your Settings page, look for the 'Security' or 'Biometric Authentication' section, click 'Enable Biometric Login', and follow your device's prompts. This works with Face ID, Touch ID, or Windows Hello on compatible devices."
+        },
+        {
+          question: "How does offline mode work?",
+          answer: "Offline mode automatically caches your data locally, allowing you to access your trading history and settings without internet. Any changes made offline are synchronized when you're back online, maintaining data integrity."
+        },
+        {
+          question: "What are push notifications?",
+          answer: "Push notifications provide instant alerts for trade updates, friend requests, system notifications, and important events. You can customize which notifications you receive in your Settings."
+        },
+        {
+          question: "How secure is my data?",
+          answer: "Your data is protected with enterprise-level security including comprehensive audit logging, real-time security monitoring, and encrypted storage. We never share your personal information without explicit consent."
+        }
+      ]
+    },
+    {
       category: "Account & Data",
       items: [
         {
@@ -81,6 +106,23 @@ export default function FAQPage() {
         {
           question: "What happens if I delete my account?",
           answer: "When you delete your account, all your data including trades, profile information, and social connections will be permanently removed. This action cannot be undone."
+        }
+      ]
+    },
+    {
+      category: "Performance & User Experience",
+      items: [
+        {
+          question: "What are Loading Skeletons and Progressive Loading?",
+          answer: "Loading Skeletons are visual placeholders that show content structure while loading. Progressive Loading displays content in stages, showing the most important information first. These features make the app feel faster and more responsive."
+        },
+        {
+          question: "How does image optimization work?",
+          answer: "Our image optimization automatically converts images to WebP format, generates responsive sizes, and implements lazy loading for faster page loads and better mobile performance."
+        },
+        {
+          question: "What performance improvements have been made?",
+          answer: "We've implemented database query optimization, composite indexes, smart caching, code splitting, and progressive loading to significantly improve app performance and responsiveness."
         }
       ]
     },

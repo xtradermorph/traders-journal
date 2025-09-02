@@ -53,6 +53,36 @@ interface User {
   created_at: string;
 }
 
+interface PerformanceMetrics {
+  queryCount: number;
+  avgQueryTime: number;
+  slowQueries: number;
+  indexUsage: number;
+  cacheHitRate: number;
+  lastUpdated: string;
+}
+
+interface SecurityEvent {
+  id: string;
+  user_id: string;
+  action: string;
+  severity: 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+  category: string;
+  ip_address?: string;
+  user_agent?: string;
+  created_at: string;
+  metadata?: any;
+}
+
+interface DatabasePerformance {
+  tableName: string;
+  rowCount: number;
+  indexCount: number;
+  lastVacuum: string;
+  lastAnalyze: string;
+  size: string;
+}
+
 export default function MonitoringPage() {
   const [healthStatus, setHealthStatus] = useState<HealthStatus | null>(null);
   const [loading, setLoading] = useState(false);
@@ -70,6 +100,12 @@ export default function MonitoringPage() {
   const { toast } = useToast();
   const [readmeContent, setReadmeContent] = useState<string>('');
   const [downloadingReadme, setDownloadingReadme] = useState(false);
+  const [performanceMetrics, setPerformanceMetrics] = useState<PerformanceMetrics | null>(null);
+  const [securityEvents, setSecurityEvents] = useState<SecurityEvent[]>([]);
+  const [databasePerformance, setDatabasePerformance] = useState<DatabasePerformance[]>([]);
+  const [loadingPerformance, setLoadingPerformance] = useState(false);
+  const [loadingSecurity, setLoadingSecurity] = useState(false);
+  const [securityFilter, setSecurityFilter] = useState<'all' | 'HIGH' | 'CRITICAL'>('all');
 
   const checkHealth = async () => {
     setLoading(true);
@@ -161,6 +197,60 @@ export default function MonitoringPage() {
       }
     }
   }, [projectStats?.lastSent, toast]);
+
+  const fetchPerformanceMetrics = async () => {
+    setLoadingPerformance(true);
+    try {
+      const response = await fetch('/api/admin/performance-metrics', {
+        signal: AbortSignal.timeout(30000)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setPerformanceMetrics(data);
+      } else {
+        console.warn('Performance metrics endpoint returned:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching performance metrics:', error);
+    } finally {
+      setLoadingPerformance(false);
+    }
+  };
+
+  const fetchSecurityEvents = async () => {
+    setLoadingSecurity(true);
+    try {
+      const response = await fetch('/api/admin/security-events', {
+        signal: AbortSignal.timeout(30000)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setSecurityEvents(data.events || []);
+      } else {
+        console.warn('Security events endpoint returned:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching security events:', error);
+    } finally {
+      setLoadingSecurity(false);
+    }
+  };
+
+  const fetchDatabasePerformance = async () => {
+    try {
+      const response = await fetch('/api/admin/database-performance', {
+        signal: AbortSignal.timeout(30000)
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setDatabasePerformance(data.tables || []);
+      } else {
+        console.warn('Database performance endpoint returned:', response.status);
+      }
+    } catch (error) {
+      console.error('Error fetching database performance:', error);
+    }
+  };
 
   const validateForm = () => {
     if (!announcementForm.subject.trim()) {
@@ -363,10 +453,16 @@ export default function MonitoringPage() {
   useEffect(() => {
     fetchProjectUpdateStats();
     fetchUsers();
+    fetchPerformanceMetrics();
+    fetchSecurityEvents();
+    fetchDatabasePerformance();
     // Fetch data every 2 minutes instead of every 30 seconds
     const interval = setInterval(() => {
       fetchProjectUpdateStats();
       fetchUsers();
+      fetchPerformanceMetrics();
+      fetchSecurityEvents();
+      fetchDatabasePerformance();
       }, 2 * 60 * 1000);
   return () => clearInterval(interval);
 }, [fetchUsers]);
@@ -417,7 +513,10 @@ export default function MonitoringPage() {
       await Promise.all([
         checkHealth(),
         fetchProjectUpdateStats(),
-        fetchUsers()
+        fetchUsers(),
+        fetchPerformanceMetrics(),
+        fetchSecurityEvents(),
+        fetchDatabasePerformance()
       ]);
     } catch (error) {
       console.error('Error refreshing statuses:', error);
@@ -671,6 +770,208 @@ export default function MonitoringPage() {
                 <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
               </div>
             )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Performance Monitoring Section */}
+      <div className="mt-10">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
+              Performance Monitoring
+            </CardTitle>
+            <CardDescription>
+              Database performance metrics and query optimization insights
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {performanceMetrics ? (
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <div className="w-3 h-3 bg-blue-500 rounded-full" />
+                    <div>
+                      <p className="text-sm font-medium">Query Count (24h)</p>
+                      <p className="text-2xl font-bold">{performanceMetrics.queryCount.toLocaleString()}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <div className="w-3 h-3 bg-green-500 rounded-full" />
+                    <div>
+                      <p className="text-sm font-medium">Avg Query Time</p>
+                      <p className="text-2xl font-bold">{performanceMetrics.avgQueryTime.toFixed(2)}ms</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <div className="w-3 h-3 bg-yellow-500 rounded-full" />
+                    <div>
+                      <p className="text-sm font-medium">Slow Queries</p>
+                      <p className="text-2xl font-bold">{performanceMetrics.slowQueries}</p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <div className="w-3 h-3 bg-purple-500 rounded-full" />
+                    <div>
+                      <p className="text-sm font-medium">Index Usage</p>
+                      <p className="text-2xl font-bold">{performanceMetrics.indexUsage}%</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
+                    <div className="w-3 h-3 bg-indigo-500 rounded-full" />
+                    <div>
+                      <p className="text-sm font-medium">Cache Hit Rate</p>
+                      <p className="text-2xl font-bold">{performanceMetrics.cacheHitRate}%</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <h4 className="font-medium mb-3">Database Table Performance</h4>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-2">Table</th>
+                          <th className="text-left p-2">Rows</th>
+                          <th className="text-left p-2">Indexes</th>
+                          <th className="text-left p-2">Size</th>
+                          <th className="text-left p-2">Last Updated</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {databasePerformance.map((table) => (
+                          <tr key={table.tableName} className="border-b hover:bg-muted/50">
+                            <td className="p-2 font-medium">{table.tableName}</td>
+                            <td className="p-2">{table.rowCount.toLocaleString()}</td>
+                            <td className="p-2">{table.indexCount}</td>
+                            <td className="p-2">{table.size}</td>
+                            <td className="p-2 text-xs text-muted-foreground">
+                              {new Date(table.lastAnalyze).toLocaleDateString()}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+                <div className="text-xs text-muted-foreground">
+                  Last updated: {new Date(performanceMetrics.lastUpdated).toLocaleString()}
+                </div>
+              </div>
+            ) : (
+              <div className="flex justify-center py-8">
+                {loadingPerformance ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <Button onClick={fetchPerformanceMetrics} variant="outline">
+                    Load Performance Data
+                  </Button>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Security Monitoring Section */}
+      <div className="mt-10">
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+              Security Event Monitoring
+            </CardTitle>
+            <CardDescription>
+              Real-time security events and threat detection
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="mb-4 flex gap-2">
+              <Button
+                variant={securityFilter === 'all' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSecurityFilter('all')}
+              >
+                All Events
+              </Button>
+              <Button
+                variant={securityFilter === 'HIGH' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSecurityFilter('HIGH')}
+              >
+                High Priority
+              </Button>
+              <Button
+                variant={securityFilter === 'CRITICAL' ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setSecurityFilter('CRITICAL')}
+              >
+                Critical
+              </Button>
+            </div>
+
+            {securityEvents.length > 0 ? (
+              <div className="space-y-3">
+                {securityEvents
+                  .filter(event => securityFilter === 'all' || event.severity === securityFilter)
+                  .slice(0, 20) // Show last 20 events
+                  .map((event) => (
+                    <div
+                      key={event.id}
+                      className={`p-3 rounded-lg border ${
+                        event.severity === 'CRITICAL' ? 'bg-red-50 border-red-200' :
+                        event.severity === 'HIGH' ? 'bg-orange-50 border-orange-200' :
+                        event.severity === 'MEDIUM' ? 'bg-yellow-50 border-yellow-200' :
+                        'bg-blue-50 border-blue-200'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge
+                              variant={
+                                event.severity === 'CRITICAL' ? 'destructive' :
+                                event.severity === 'HIGH' ? 'destructive' :
+                                event.severity === 'MEDIUM' ? 'secondary' :
+                                'outline'
+                              }
+                            >
+                              {event.severity}
+                            </Badge>
+                            <Badge variant="outline">{event.category}</Badge>
+                          </div>
+                          <p className="font-medium">{event.action}</p>
+                          <p className="text-sm text-muted-foreground">
+                            User: {event.user_id.substring(0, 8)}... | 
+                            {event.ip_address && ` IP: ${event.ip_address} |`}
+                            {new Date(event.created_at).toLocaleString()}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="flex justify-center py-8">
+                {loadingSecurity ? (
+                  <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                ) : (
+                  <Button onClick={fetchSecurityEvents} variant="outline">
+                    Load Security Events
+                  </Button>
+                )}
+              </div>
+            )}
+
+            <div className="mt-4 text-xs text-muted-foreground">
+              Showing {securityEvents.filter(event => securityFilter === 'all' || event.severity === securityFilter).length} of {securityEvents.length} events
+            </div>
           </CardContent>
         </Card>
       </div>

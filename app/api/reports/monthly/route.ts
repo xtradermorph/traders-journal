@@ -4,6 +4,10 @@ import { cookies } from "next/headers";
 import { Resend } from "resend";
 import { generateTradeReportExcel, getDateRangeForReport, getReportPeriodLabel, getReportFileName } from "@/lib/tradeReports";
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = "force-dynamic";
+
+
 // Force dynamic runtime to prevent static generation
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
