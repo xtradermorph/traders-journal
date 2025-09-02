@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2, Send, Users, Mail, AlertCircle, Download } from 'lucide-react';
+import { Loader2, Send, Users, Mail, AlertCircle, Download, FileText } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import SupportManagementPage from './support-management/page';
 import htmlDocx from 'html-docx-js/dist/html-docx';
