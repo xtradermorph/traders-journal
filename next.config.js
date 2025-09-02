@@ -27,10 +27,35 @@ const nextConfig = {
   generateBuildId: async () => {
     return 'build-' + Date.now()
   },
+  // Force dynamic rendering for all routes to prevent Netlify static generation issues
+  experimental: {
+    esmExternals: 'loose',
+    // Force all pages to be dynamic
+    workerThreads: false,
+    cpus: 1,
+    // Disable static generation completely
+    staticPageGenerationTimeout: 0,
+    // Force dynamic rendering
+    dynamicImports: true
+  }
 
   // Disable static optimization completely
   images: {
     unoptimized: true
+  },
+  // Force all API routes to be dynamic
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, must-revalidate'
+          }
+        ]
+      }
+    ]
   },
 
   webpack: (config, { isServer }) => {
