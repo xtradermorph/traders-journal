@@ -27,14 +27,48 @@ export default function ForgotPassword() {
     try {
       console.log('Sending password reset email to:', email);
       
-      // Use Supabase's built-in password reset (FREE and works with any email)
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      // Generate a unique reset token
+      const resetToken = uuidv4();
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // Token expires in 24 hours
+
+      // Store the reset token in the database
+      const { error: tokenError } = await supabase
+        .from('password_reset_tokens')
+        .insert({
+          email: email,
+          token: resetToken,
+          expires_at: expiresAt.toISOString(),
+          used: false
+        });
+
+      if (tokenError) {
+        console.error('Failed to store reset token:', tokenError);
+        throw new Error('Failed to create reset token. Please try again.');
+      }
+
+      // Create the reset link
+      const resetLink = `${window.location.origin}/reset-password?token=${resetToken}`;
+
+      // Send email using Resend function
+      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/resend`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          to: email,
+          subject: 'Password Reset - Trader\'s Journal',
+          type: 'passwordReset',
+          resetLink: resetLink
+        })
       });
 
-      if (resetError) {
-        console.error('Password reset error:', resetError);
-        throw new Error(resetError.message);
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.json();
+        console.error('Email sending failed:', errorData);
+        throw new Error(errorData.error || 'Failed to send email');
       }
 
       console.log('Password reset email sent successfully');

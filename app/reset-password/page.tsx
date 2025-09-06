@@ -28,47 +28,70 @@ function ResetPasswordForm() {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check if we have a valid session for password reset
-    checkSession();
+    // Check if we have a valid token for password reset
+    checkToken();
   }, []);
 
-  const checkSession = async () => {
+  const checkToken = async () => {
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const token = searchParams.get('token');
       
-      if (error) {
-        console.error('Session check error:', error);
+      if (!token) {
         setError('Invalid reset link. Please check your email or request a new password reset.');
         setIsValidToken(false);
         return;
       }
 
-      if (session) {
-        console.log('Valid session found for password reset');
-        setIsValidToken(true);
-        setError('');
-        
-        // Get user email and username
-        if (session.user?.email) {
-          setEmail(session.user.email);
-          
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('email', session.user.email)
-            .single();
+      console.log('Checking token:', token);
 
-          if (profileData) {
-            setUsername(profileData.username || 'User');
-          }
-        }
-      } else {
-        console.log('No valid session found');
+      // Check if token exists and is valid
+      const { data: tokenData, error: tokenError } = await supabase
+        .from('password_reset_tokens')
+        .select('email, expires_at, used')
+        .eq('token', token)
+        .single();
+
+      if (tokenError || !tokenData) {
+        console.error('Token validation error:', tokenError);
         setError('Invalid reset link. Please check your email or request a new password reset.');
         setIsValidToken(false);
+        return;
+      }
+
+      // Check if token is expired
+      const now = new Date();
+      const expiresAt = new Date(tokenData.expires_at);
+      
+      if (now > expiresAt) {
+        setError('Reset link has expired. Please request a new password reset.');
+        setIsValidToken(false);
+        return;
+      }
+
+      // Check if token is already used
+      if (tokenData.used) {
+        setError('Reset link has already been used. Please request a new password reset.');
+        setIsValidToken(false);
+        return;
+      }
+
+      console.log('Valid token found for email:', tokenData.email);
+      setIsValidToken(true);
+      setEmail(tokenData.email);
+      setError('');
+      
+      // Get username from profile
+      const { data: profileData } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('email', tokenData.email)
+        .single();
+
+      if (profileData) {
+        setUsername(profileData.username || 'User');
       }
     } catch (error) {
-      console.error('Session validation failed:', error);
+      console.error('Token validation failed:', error);
       setError('Invalid reset link. Please request a new password reset.');
       setIsValidToken(false);
     }
@@ -91,6 +114,13 @@ function ResetPasswordForm() {
     setError('');
 
     try {
+      const token = searchParams.get('token');
+      if (!token) {
+        throw new Error('Invalid reset token');
+      }
+
+      console.log('Resetting password for email:', email);
+
       // Update the user's password using Supabase auth
       const { error: updateError } = await supabase.auth.updateUser({ 
         password: password 
@@ -98,6 +128,42 @@ function ResetPasswordForm() {
 
       if (updateError) {
         throw updateError;
+      }
+
+      // Mark token as used
+      const { error: tokenUpdateError } = await supabase
+        .from('password_reset_tokens')
+        .update({ used: true })
+        .eq('token', token);
+
+      if (tokenUpdateError) {
+        console.error('Failed to mark token as used:', tokenUpdateError);
+      }
+
+      // Send confirmation email
+      try {
+        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/resend`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            to: email,
+            subject: 'Password Reset Confirmation - Trader\'s Journal',
+            type: 'passwordResetConfirmation',
+            newPassword: password,
+            username: username
+          })
+        });
+
+        if (!emailResponse.ok) {
+          console.error('Failed to send confirmation email:', await emailResponse.text());
+        } else {
+          console.log('Confirmation email sent successfully');
+        }
+      } catch (emailError) {
+        console.error('Error sending confirmation email:', emailError);
       }
 
       console.log('Password reset successful');

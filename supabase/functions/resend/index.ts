@@ -404,7 +404,7 @@ serve(async (req)=>{
         'Authorization': `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        from: "Trader's Journal <noreply@tradersjournal.pro>",
+        from: "Trader's Journal <onboarding@resend.dev>",
         to,
         subject,
         html: emailHtml
