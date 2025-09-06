@@ -18,6 +18,7 @@ function ResetPasswordForm() {
   const [isValidToken, setIsValidToken] = useState(false);
   const [error, setError] = useState('');
   const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
@@ -71,6 +72,18 @@ function ResetPasswordForm() {
 
       console.log('Token validation successful');
       setEmail(data.email);
+      
+      // Fetch username from profiles table
+      const { data: profileData, error: profileError } = await supabase
+        .from('profiles')
+        .select('username')
+        .eq('email', data.email)
+        .single();
+      
+      if (profileData) {
+        setUsername(profileData.username || 'User');
+      }
+      
       setIsValidToken(true);
       setError('');
     } catch (error) {
@@ -129,7 +142,8 @@ function ResetPasswordForm() {
             to: email,
             subject: 'Password Reset Successful - Trader\'s Journal',
             type: 'passwordResetConfirmation',
-            newPassword: password
+            newPassword: password,
+            username: username
           }),
         });
 

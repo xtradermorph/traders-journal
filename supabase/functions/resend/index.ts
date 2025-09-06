@@ -11,6 +11,7 @@ interface EmailRequest {
   resetLink?: string;
   verificationLink?: string;
   newPassword?: string;
+  username?: string;
 }
 
 // Email template types
@@ -140,7 +141,7 @@ const emailTemplates = {
     </html>
   `,
 
-  passwordResetConfirmation: (subject, newPassword) => `
+  passwordResetConfirmation: (subject, newPassword, username) => `
     <!DOCTYPE html>
     <html lang="en">
     <head>
@@ -213,13 +214,15 @@ const emailTemplates = {
         <div class="content">
           <h2>Password Reset Successful</h2>
           <div class="success-box">
-            <p><strong>Your password has been successfully reset!</strong></p>
+            <p><strong>Hello ${username || 'User'},</strong></p>
+            <p>Your password has been successfully reset!</p>
             <p>You can now log in to your Trader's Journal account using your new password.</p>
           </div>
           
-          <h3>Your New Password:</h3>
+          <h3>Your Account Details:</h3>
           <div class="password-box">
-            ${newPassword}
+            <strong>Username:</strong> ${username || 'N/A'}<br>
+            <strong>New Password:</strong> ${newPassword}
           </div>
           
           <div class="warning">
@@ -330,7 +333,7 @@ serve(async (req)=>{
   try {
     // Get the request body
     const body = await req.json();
-    const { to, subject, html, type = 'default', resetLink, verificationLink, newPassword } = body;
+    const { to, subject, html, type = 'default', resetLink, verificationLink, newPassword, username } = body;
 
     // Validate required fields
     if (!to || !subject) {
@@ -365,7 +368,7 @@ serve(async (req)=>{
             status: 400
           });
         }
-        emailHtml = emailTemplates.passwordResetConfirmation(subject, newPassword);
+        emailHtml = emailTemplates.passwordResetConfirmation(subject, newPassword, username);
         break;
       case 'verification':
         if (!verificationLink) {
