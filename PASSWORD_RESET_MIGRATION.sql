@@ -48,15 +48,6 @@ BEGIN
   CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_email ON password_reset_tokens(email);
   CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_expires_at ON password_reset_tokens(expires_at);
 
-  -- Create cleanup function if it doesn't exist
-  CREATE OR REPLACE FUNCTION cleanup_expired_password_tokens()
-  RETURNS void AS $$
-  BEGIN
-    DELETE FROM password_reset_tokens 
-    WHERE expires_at < NOW() OR used = TRUE;
-  END;
-  $$ LANGUAGE plpgsql;
-
   -- Grant permissions
   GRANT ALL ON password_reset_tokens TO authenticated;
   GRANT ALL ON password_reset_tokens TO anon;
