@@ -28,52 +28,49 @@ function ResetPasswordForm() {
   const { toast } = useToast();
 
   useEffect(() => {
-    const token = searchParams.get('token');
-    if (token) {
-      validateResetToken(token);
-    } else {
-      setError('Invalid reset link. Please check your email or request a new password reset.');
-    }
-  }, [searchParams]);
+    // Check if we have a valid session for password reset
+    checkSession();
+  }, []);
 
-  const validateResetToken = async (token: string) => {
+  const checkSession = async () => {
     try {
-      const { data, error } = await supabase
-        .from('password_reset_tokens')
-        .select('*')
-        .eq('token', token)
-        .eq('used', false)
-        .single();
-
-      if (error || !data) {
-        setError('Invalid or expired reset link. Please request a new password reset.');
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Session check error:', error);
+        setError('Invalid reset link. Please check your email or request a new password reset.');
+        setIsValidToken(false);
         return;
       }
 
-      // Check if token is expired
-      const expiresAt = new Date(data.expires_at);
-      if (expiresAt < new Date()) {
-        setError('This reset link has expired. Please request a new password reset.');
-        return;
-      }
+      if (session) {
+        console.log('Valid session found for password reset');
+        setIsValidToken(true);
+        setError('');
+        
+        // Get user email and username
+        if (session.user?.email) {
+          setEmail(session.user.email);
+          
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('email', session.user.email)
+            .single();
 
-      setEmail(data.email);
-      setIsValidToken(true);
-      setError('');
-
-      // Get username for confirmation email
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('email', data.email)
-        .single();
-
-      if (profileData) {
-        setUsername(profileData.username || 'User');
+          if (profileData) {
+            setUsername(profileData.username || 'User');
+          }
+        }
+      } else {
+        console.log('No valid session found');
+        setError('Invalid reset link. Please check your email or request a new password reset.');
+        setIsValidToken(false);
       }
     } catch (error) {
-      console.error('Token validation error:', error);
+      console.error('Session validation failed:', error);
       setError('Invalid reset link. Please request a new password reset.');
+      setIsValidToken(false);
     }
   };
 
@@ -94,11 +91,6 @@ function ResetPasswordForm() {
     setError('');
 
     try {
-      const token = searchParams.get('token');
-      if (!token) {
-        throw new Error('No reset token found');
-      }
-
       // Update the user's password using Supabase auth
       const { error: updateError } = await supabase.auth.updateUser({ 
         password: password 
@@ -106,37 +98,6 @@ function ResetPasswordForm() {
 
       if (updateError) {
         throw updateError;
-      }
-
-      // Mark the token as used
-      await supabase
-        .from('password_reset_tokens')
-        .update({ used: true })
-        .eq('token', token);
-
-      // Send confirmation email via Resend
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      
-      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/resend`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: email,
-          subject: 'Password Reset Successful - Trader\'s Journal',
-          type: 'passwordResetConfirmation',
-          newPassword: password,
-          username: username
-        }),
-      });
-
-      if (!emailResponse.ok) {
-        const errorData = await emailResponse.json();
-        console.error('Confirmation email sending failed:', errorData);
-        // Don't throw error here as password was already reset successfully
       }
 
       console.log('Password reset successful');

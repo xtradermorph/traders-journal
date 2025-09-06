@@ -27,80 +27,14 @@ export default function ForgotPassword() {
     try {
       console.log('Sending password reset email to:', email);
       
-      // Generate a unique reset token
-      const resetToken = uuidv4();
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-      
-      // Store the reset token in the database
-      const { error: tokenError } = await supabase
-        .from('password_reset_tokens')
-        .insert({
-          email: email,
-          token: resetToken,
-          expires_at: expiresAt.toISOString(),
-          used: false
-        });
-
-      if (tokenError) {
-        // If table doesn't exist, try to create it
-        if (tokenError.message.includes('relation "password_reset_tokens" does not exist')) {
-          console.log('Creating password reset table...');
-          const { error: createError } = await supabase.rpc('create_password_reset_table');
-          
-          if (createError) {
-            console.error('Failed to create password reset table:', createError);
-            throw new Error('Password reset system is not properly configured. Please contact support.');
-          }
-          
-          // Retry inserting the token
-          const { error: retryError } = await supabase
-            .from('password_reset_tokens')
-            .insert({
-              email: email,
-              token: resetToken,
-              expires_at: expiresAt.toISOString(),
-              used: false
-            });
-            
-          if (retryError) {
-            throw retryError;
-          }
-        } else {
-          throw tokenError;
-        }
-      }
-
-      // Generate the reset link
-      const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-      const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
-
-      // Send email via Resend
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-      
-      console.log('Supabase URL:', supabaseUrl);
-      console.log('Supabase Key exists:', !!supabaseKey);
-      
-      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/resend`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${supabaseKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          to: email,
-          subject: 'Password Reset Request - Trader\'s Journal',
-          type: 'passwordReset',
-          resetLink: resetLink
-        }),
+      // Use Supabase's built-in password reset (FREE and works with any email)
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
-      if (!emailResponse.ok) {
-        const errorData = await emailResponse.json();
-        console.error('Email sending failed:', errorData);
-        console.error('Response status:', emailResponse.status);
-        console.error('Response headers:', Object.fromEntries(emailResponse.headers.entries()));
-        throw new Error(errorData.error || 'Failed to send reset email');
+      if (resetError) {
+        console.error('Password reset error:', resetError);
+        throw new Error(resetError.message);
       }
 
       console.log('Password reset email sent successfully');
