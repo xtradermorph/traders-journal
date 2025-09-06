@@ -2,94 +2,57 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase/index';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import Image from 'next/image';
 import { LOGO_CONFIG } from '@/lib/logo-config';
+import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 
 // Separate component that uses useSearchParams
 function ResetPasswordForm() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isValidToken, setIsValidToken] = useState(false);
+  const [isValidSession, setIsValidSession] = useState(false);
   const [error, setError] = useState('');
-  const [email, setEmail] = useState('');
-  const [username, setUsername] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
   const { toast } = useToast();
-  
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!, 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
   useEffect(() => {
-    // Check if we have the reset token
-    const token = searchParams.get('token');
+    // Check if we have a valid session for password reset
+    checkSession();
+  }, []);
 
-    console.log('Reset password page loaded with token:', !!token);
-
-    if (token) {
-      // Validate the token by checking if it exists and is not expired
-      validateResetToken(token);
-    } else {
-      console.log('No reset token found');
-      setError('Invalid reset link. Please check your email or request a new password reset.');
-      setIsValidToken(false);
-    }
-  }, [searchParams]);
-
-  const validateResetToken = async (token: string) => {
+  const checkSession = async () => {
     try {
-      // Check if the token exists and is valid
-      const { data, error } = await supabase
-        .from('password_reset_tokens')
-        .select('*')
-        .eq('token', token)
-        .eq('used', false)
-        .single();
-
-      if (error || !data) {
-        console.error('Token validation error:', error);
-        setError('Invalid or expired reset link. Please request a new password reset.');
-        setIsValidToken(false);
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      if (error) {
+        console.error('Session check error:', error);
+        setError('Invalid reset link. Please check your email or request a new password reset.');
+        setIsValidSession(false);
         return;
       }
 
-      // Check if token is expired
-      const expiresAt = new Date(data.expires_at);
-      if (expiresAt < new Date()) {
-        console.log('Token expired');
-        setError('Reset link has expired. Please request a new password reset.');
-        setIsValidToken(false);
-        return;
+      if (session) {
+        console.log('Valid session found for password reset');
+        setIsValidSession(true);
+        setError('');
+      } else {
+        console.log('No valid session found');
+        setError('Invalid reset link. Please check your email or request a new password reset.');
+        setIsValidSession(false);
       }
-
-      console.log('Token validation successful');
-      setEmail(data.email);
-      
-      // Fetch username from profiles table
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('email', data.email)
-        .single();
-      
-      if (profileData) {
-        setUsername(profileData.username || 'User');
-      }
-      
-      setIsValidToken(true);
-      setError('');
     } catch (error) {
-      console.error('Token validation failed:', error);
+      console.error('Session validation failed:', error);
       setError('Invalid reset link. Please request a new password reset.');
-      setIsValidToken(false);
+      setIsValidSession(false);
     }
   };
 
@@ -110,11 +73,6 @@ function ResetPasswordForm() {
     setError('');
 
     try {
-      const token = searchParams.get('token');
-      if (!token) {
-        throw new Error('No reset token found');
-      }
-
       // Update the user's password using Supabase auth
       const { error: updateError } = await supabase.auth.updateUser({ 
         password: password 
@@ -124,46 +82,19 @@ function ResetPasswordForm() {
         throw updateError;
       }
 
-      // Mark the token as used
-      await supabase
-        .from('password_reset_tokens')
-        .update({ used: true })
-        .eq('token', token);
-
-      // Send confirmation email via Resend
-      try {
-        const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/resend`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            to: email,
-            subject: 'Password Reset Successful - Trader\'s Journal',
-            type: 'passwordResetConfirmation',
-            newPassword: password,
-            username: username
-          }),
-        });
-
-        if (!emailResponse.ok) {
-          console.error('Failed to send confirmation email:', await emailResponse.text());
-          // Don't fail the request if email fails, just log it
-        }
-      } catch (emailError) {
-        console.error('Error sending confirmation email:', emailError);
-        // Don't fail the request if email fails, just log it
-      }
-
+      console.log('Password reset successful');
+      setSuccess(true);
+      
       toast({
         id: `password-reset-success-${Date.now()}`,
         title: 'Success',
         description: 'Your password has been reset successfully. You can now log in with your new password.'
       });
 
-      // Redirect to login page
-      router.push('/login');
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       setError(errorMessage);
@@ -178,25 +109,27 @@ function ResetPasswordForm() {
     }
   };
 
-  if (!isValidToken && error) {
+  if (!isValidSession && error) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="w-full max-w-md p-8 space-y-6">
           <div className="flex flex-col items-center">
             <Link href="/" className="hover:opacity-80 transition-opacity">
-              <Image 
+              <img 
                 src={LOGO_CONFIG.MAIN_LOGO_URL} 
                 alt={LOGO_CONFIG.ALT_TEXT} 
-                width={64}
-                height={64}
-                className="h-16 w-16 mb-4" 
+                className="h-20 w-20 mb-4" 
               />
             </Link>
             <h2 className="text-3xl font-bold text-foreground">Reset Password</h2>
           </div>
           
+          <div className="bg-destructive/15 border border-destructive/20 text-destructive px-4 py-3 rounded-md flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">{error}</span>
+          </div>
+          
           <div className="text-center space-y-4">
-            <p className="text-destructive">{error}</p>
             <Link href="/forgot-password">
               <Button variant="outline" className="w-full">
                 Request New Reset Link
@@ -213,17 +146,50 @@ function ResetPasswordForm() {
     );
   }
 
+  if (success) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-full max-w-md p-8 space-y-6">
+          <div className="flex flex-col items-center">
+            <Link href="/" className="hover:opacity-80 transition-opacity">
+              <img 
+                src={LOGO_CONFIG.MAIN_LOGO_URL} 
+                alt={LOGO_CONFIG.ALT_TEXT} 
+                className="h-20 w-20 mb-4" 
+              />
+            </Link>
+            <div className="flex justify-center mb-4">
+              <div className="h-16 w-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-8 w-8 text-green-600 dark:text-green-400" />
+              </div>
+            </div>
+            <h2 className="text-3xl font-bold text-foreground">Password Reset Successful!</h2>
+            <p className="text-muted-foreground text-center">
+              Your password has been reset successfully. You will be redirected to the login page shortly.
+            </p>
+          </div>
+          
+          <div className="text-center">
+            <Link href="/login">
+              <Button className="w-full">
+                Go to Login
+              </Button>
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-background">
       <div className="w-full max-w-md p-8 space-y-6">
         <div className="flex flex-col items-center">
           <Link href="/" className="hover:opacity-80 transition-opacity">
-            <Image 
+            <img 
               src={LOGO_CONFIG.MAIN_LOGO_URL} 
               alt={LOGO_CONFIG.ALT_TEXT} 
-              width={64}
-              height={64}
-              className="h-16 w-16 mb-4" 
+              className="h-20 w-20 mb-4" 
             />
           </Link>
           <h2 className="text-3xl font-bold text-foreground">Reset Password</h2>
@@ -232,33 +198,76 @@ function ResetPasswordForm() {
           </p>
         </div>
 
+        {error && (
+          <div className="bg-destructive/15 border border-destructive/20 text-destructive px-4 py-3 rounded-md flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4" />
+            <span className="text-sm">{error}</span>
+          </div>
+        )}
+
         <form onSubmit={handlePasswordReset} className="space-y-4">
-          <Input
-            type="password"
-            placeholder="New Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={8}
-          />
-          <Input
-            type="password"
-            placeholder="Confirm New Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-          />
-          
-          {error && (
-            <p className="text-sm text-destructive text-center">{error}</p>
-          )}
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium text-foreground">
+              New Password
+            </label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                placeholder="Enter new password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={8}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="confirmPassword" className="text-sm font-medium text-foreground">
+              Confirm New Password
+            </label>
+            <div className="relative">
+              <Input
+                id="confirmPassword"
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm new password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
+          </div>
           
           <Button 
             type="submit" 
             className="w-full" 
-            disabled={isLoading || !isValidToken}
+            disabled={isLoading || !isValidSession}
           >
-            {isLoading ? 'Resetting...' : 'Reset Password'}
+            {isLoading ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Resetting...
+              </>
+            ) : (
+              'Reset Password'
+            )}
           </Button>
         </form>
 

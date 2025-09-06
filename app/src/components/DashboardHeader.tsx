@@ -27,6 +27,7 @@ import {
   MessageSquare, // Added MessageSquare for Messages
   BarChart3, // Added BarChart3
   ListOrdered, // Added ListOrdered
+  Menu, // Added Menu for mobile menu
 
 } from "lucide-react";
 import { supabase } from '../lib/supabase';
@@ -143,8 +144,10 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
   const [userTrades, setUserTrades] = useState<Trade[]>([]);
   const [medalType, setMedalType] = useState<MedalType | null>(null);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
   const { theme } = useTheme();
 
   const fetchUserTrades = useCallback(async () => {
@@ -694,16 +697,19 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setUserMenuOpen(false);
       }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
+      }
     };
 
-    if (userMenuOpen) {
+    if (userMenuOpen || mobileMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     }
 
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [userMenuOpen]);
+  }, [userMenuOpen, mobileMenuOpen]);
 
   return (
     <header 
@@ -711,21 +717,21 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
         isHeaderVisible ? 'translate-y-0' : '-translate-y-full'
       }`}
     >
-      <div className="container mx-auto flex items-center justify-between py-4 px-6">
-        <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-semibold gradient-heading select-none">
+      <div className="container mx-auto flex items-center justify-between py-4 px-4 sm:px-6">
+        <div className="flex items-center space-x-2 sm:space-x-4 min-w-0 flex-1">
+          <h1 className="text-lg sm:text-2xl font-semibold gradient-heading select-none truncate">
             {pageTitle}
           </h1>
           {isAdmin && (
-            <Link href="/admin/monitoring" className="flex items-center px-3 py-1 rounded-md bg-muted hover:bg-primary/10 text-primary font-medium transition-colors ml-3">
+            <Link href="/admin/monitoring" className="hidden sm:flex items-center px-3 py-1 rounded-md bg-muted hover:bg-primary/10 text-primary font-medium transition-colors ml-3">
               <MonitorCheck className="h-5 w-5 mr-1" />
-              Monitoring
+              <span className="hidden lg:inline">Monitoring</span>
             </Link>
           )}
         </div>
 
-        {/* Feature Buttons */}
-        <div className="flex items-center space-x-4">
+        {/* Feature Buttons - Hidden on mobile */}
+        <div className="hidden md:flex items-center space-x-4">
           {/* Top Down Analysis Button */}
           <Button
             onClick={() => setIsTopDownAnalysisOpen(true)}
@@ -1105,6 +1111,72 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
             )}
           </div>
 
+          {/* Mobile Menu Button */}
+          <div className="md:hidden flex items-center space-x-2">
+            <div className="relative" ref={mobileMenuRef}>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="h-10 w-10 p-0"
+              >
+                <Menu className="h-5 w-5" />
+              </Button>
+              
+              {/* Mobile Menu Dropdown */}
+              <div className={`absolute right-0 top-full mt-2 w-64 bg-popover border border-border rounded-md shadow-lg transition-all duration-200 z-50 ${mobileMenuOpen ? 'opacity-100 visible' : 'opacity-0 invisible'}`}>
+                <div className="p-4 space-y-3">
+                  <h3 className="text-sm font-semibold text-muted-foreground">Quick Actions</h3>
+                  
+                  <Button
+                    onClick={() => {
+                      setIsTopDownAnalysisOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    Top Down Analysis
+                  </Button>
+                  
+                  <Button
+                    onClick={() => {
+                      setIsTradeSetupOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <PlusIcon className="h-4 w-4 mr-2" />
+                    Create Trade Setup
+                  </Button>
+                  
+                  <Button
+                    onClick={() => {
+                      setIsTradersDropdownOpen(true);
+                      setMobileMenuOpen(false);
+                    }}
+                    variant="outline"
+                    className="w-full justify-start"
+                  >
+                    <Users className="h-4 w-4 mr-2" />
+                    Find Traders
+                  </Button>
+                  
+                  {isAdmin && (
+                    <Button asChild variant="outline" className="w-full justify-start">
+                      <Link href="/admin/monitoring" onClick={() => setMobileMenuOpen(false)}>
+                        <MonitorCheck className="h-4 w-4 mr-2" />
+                        Admin Monitoring
+                      </Link>
+                    </Button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+
           {(
             <div className="relative group" ref={userMenuRef}>
               <div className="flex items-center space-x-1">
@@ -1115,11 +1187,11 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
                 )}
                 <Button 
                   variant="ghost" 
-                  className="relative h-14 w-14 rounded-full p-0 ml-4 mr-2 overflow-visible"
+                  className="relative h-10 w-10 sm:h-14 sm:w-14 rounded-full p-0 ml-2 sm:ml-4 mr-2 overflow-visible"
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
                 >
-                  <div className="relative h-14 w-14">
-                    <Avatar className="h-14 w-14 relative z-10 ring-2 ring-white ring-offset-2 ring-offset-background shadow-lg">
+                  <div className="relative h-10 w-10 sm:h-14 sm:w-14">
+                    <Avatar className="h-10 w-10 sm:h-14 sm:w-14 relative z-10 ring-2 ring-white ring-offset-2 ring-offset-background shadow-lg">
                       <AvatarImage src={currentUser?.avatar_url || undefined} alt={currentUser?.username || 'User avatar'} className="object-cover object-center" />
                       <AvatarFallback>{getInitials(currentUser?.username ?? undefined)}</AvatarFallback>
                     </Avatar>

@@ -794,21 +794,21 @@ export default function MonitoringPage() {
                     <div className="w-3 h-3 bg-blue-500 rounded-full" />
                     <div>
                       <p className="text-sm font-medium">Query Count (24h)</p>
-                      <p className="text-2xl font-bold">{performanceMetrics.queryCount.toLocaleString()}</p>
+                      <p className="text-2xl font-bold">{performanceMetrics?.queryCount?.toLocaleString() || '0'}</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                     <div className="w-3 h-3 bg-green-500 rounded-full" />
                     <div>
                       <p className="text-sm font-medium">Avg Query Time</p>
-                      <p className="text-2xl font-bold">{performanceMetrics.avgQueryTime.toFixed(2)}ms</p>
+                      <p className="text-2xl font-bold">{performanceMetrics?.avgQueryTime?.toFixed(2) || '0.00'}ms</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                     <div className="w-3 h-3 bg-yellow-500 rounded-full" />
                     <div>
                       <p className="text-sm font-medium">Slow Queries</p>
-                      <p className="text-2xl font-bold">{performanceMetrics.slowQueries}</p>
+                      <p className="text-2xl font-bold">{performanceMetrics?.slowQueries || '0'}</p>
                     </div>
                   </div>
                 </div>
@@ -818,14 +818,14 @@ export default function MonitoringPage() {
                     <div className="w-3 h-3 bg-purple-500 rounded-full" />
                     <div>
                       <p className="text-sm font-medium">Index Usage</p>
-                      <p className="text-2xl font-bold">{performanceMetrics.indexUsage}%</p>
+                      <p className="text-2xl font-bold">{performanceMetrics?.indexUsage || '0'}%</p>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 p-3 bg-muted rounded-lg">
                     <div className="w-3 h-3 bg-indigo-500 rounded-full" />
                     <div>
                       <p className="text-sm font-medium">Cache Hit Rate</p>
-                      <p className="text-2xl font-bold">{performanceMetrics.cacheHitRate}%</p>
+                      <p className="text-2xl font-bold">{performanceMetrics?.cacheHitRate || '0'}%</p>
                     </div>
                   </div>
                 </div>
@@ -861,7 +861,7 @@ export default function MonitoringPage() {
                 </div>
 
                 <div className="text-xs text-muted-foreground">
-                  Last updated: {new Date(performanceMetrics.lastUpdated).toLocaleString()}
+                  Last updated: {performanceMetrics?.lastUpdated ? new Date(performanceMetrics.lastUpdated).toLocaleString() : 'Never'}
                 </div>
               </div>
             ) : (
