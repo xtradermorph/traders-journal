@@ -98,6 +98,8 @@ export default function ForgotPassword() {
       if (!emailResponse.ok) {
         const errorData = await emailResponse.json();
         console.error('Email sending failed:', errorData);
+        console.error('Response status:', emailResponse.status);
+        console.error('Response headers:', Object.fromEntries(emailResponse.headers.entries()));
         throw new Error(errorData.error || 'Failed to send reset email');
       }
 

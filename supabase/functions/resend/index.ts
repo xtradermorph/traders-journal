@@ -404,7 +404,7 @@ serve(async (req)=>{
         'Authorization': `Bearer ${resendApiKey}`
       },
       body: JSON.stringify({
-        from: "Trader's Journal <onboarding@resend.dev>",
+        from: "Trader's Journal <noreply@tradersjournal.pro>",
         to,
         subject,
         html: emailHtml
@@ -415,9 +415,16 @@ serve(async (req)=>{
 
     // Check if Resend API returned an error
     if (!res.ok) {
+      console.error('Resend API error:', {
+        status: res.status,
+        statusText: res.statusText,
+        data: data
+      });
       return new Response(JSON.stringify({
         error: "Failed to send email",
-        details: data
+        details: data,
+        status: res.status,
+        statusText: res.statusText
       }), {
         headers,
         status: res.status
