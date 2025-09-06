@@ -389,9 +389,8 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
       // Get all public traders except current user
       const { data, error } = await supabase
         .from('profiles')
-        .select('*, user_presence(status, last_seen_at)')
+        .select('*, user_presence(status, last_seen_at), user_settings(public_profile)')
         .neq('id', session.session.user.id)
-        .eq('public_profile', true)
         .order('username', { ascending: true });
       
       // If direct query fails, try a different approach
@@ -404,8 +403,13 @@ const DashboardHeader = ({ pageTitle = "Dashboard", mainScrollRef }: DashboardHe
       }
       
       if (data) {
+        // Filter for public profiles only
+        const publicTraders = data.filter(trader => 
+          trader.user_settings?.[0]?.public_profile === true
+        );
+        
         // Add online status indicator
-        const tradersWithOnlineStatus = data.map(trader => {
+        const tradersWithOnlineStatus = publicTraders.map(trader => {
           const presence = trader.user_presence || {};
           const lastActive = presence.last_seen_at ? new Date(presence.last_seen_at).getTime() : 0;
           const isOnline = presence.status === 'ONLINE' && (Date.now() - lastActive < 15 * 60 * 1000);
