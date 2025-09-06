@@ -75,10 +75,16 @@ export default function ForgotPassword() {
       const resetLink = `${baseUrl}/reset-password?token=${resetToken}`;
 
       // Send email via Resend
-      const emailResponse = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/resend`, {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      console.log('Supabase URL:', supabaseUrl);
+      console.log('Supabase Key exists:', !!supabaseKey);
+      
+      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/resend`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${supabaseKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -91,6 +97,7 @@ export default function ForgotPassword() {
 
       if (!emailResponse.ok) {
         const errorData = await emailResponse.json();
+        console.error('Email sending failed:', errorData);
         throw new Error(errorData.error || 'Failed to send reset email');
       }
 
@@ -134,8 +141,8 @@ export default function ForgotPassword() {
           <div className="flex flex-col items-center">
             <Link href="/" className="hover:opacity-80 transition-all duration-300 hover:scale-105">
               <img 
-                src={LOGO_CONFIG.MAIN_LOGO_URL} 
-                alt={LOGO_CONFIG.ALT_TEXT} 
+                src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png" 
+                alt="Trader's Journal Logo" 
                 className="h-20 w-20 mb-4 drop-shadow-lg" 
               />
             </Link>

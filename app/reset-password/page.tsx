@@ -115,10 +115,13 @@ function ResetPasswordForm() {
         .eq('token', token);
 
       // Send confirmation email via Resend
-      await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/resend`, {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      
+      const emailResponse = await fetch(`${supabaseUrl}/functions/v1/resend`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY}`,
+          'Authorization': `Bearer ${supabaseKey}`,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
@@ -129,6 +132,12 @@ function ResetPasswordForm() {
           username: username
         }),
       });
+
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.json();
+        console.error('Confirmation email sending failed:', errorData);
+        // Don't throw error here as password was already reset successfully
+      }
 
       console.log('Password reset successful');
       setSuccess(true);
@@ -165,8 +174,8 @@ function ResetPasswordForm() {
             <div className="flex flex-col items-center">
               <Link href="/" className="hover:opacity-80 transition-all duration-300 hover:scale-105">
                 <img 
-                  src={LOGO_CONFIG.MAIN_LOGO_URL} 
-                  alt={LOGO_CONFIG.ALT_TEXT} 
+                  src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png" 
+                  alt="Trader's Journal Logo" 
                   className="h-20 w-20 mb-4 drop-shadow-lg" 
                 />
               </Link>
@@ -204,8 +213,8 @@ function ResetPasswordForm() {
             <div className="flex flex-col items-center">
               <Link href="/" className="hover:opacity-80 transition-all duration-300 hover:scale-105">
                 <img 
-                  src={LOGO_CONFIG.MAIN_LOGO_URL} 
-                  alt={LOGO_CONFIG.ALT_TEXT} 
+                  src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png" 
+                  alt="Trader's Journal Logo" 
                   className="h-20 w-20 mb-4 drop-shadow-lg" 
                 />
               </Link>
