@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { LOGO_CONFIG } from '@/lib/logo-config';
+import { LOGO_CONFIG } from '../lib/logo-config';
 import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2, X, Lock } from 'lucide-react';
 
 // Separate component that uses useSearchParams
@@ -157,8 +157,15 @@ function ResetPasswordForm() {
       return;
     }
 
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long');
+    // Password validation (same as registration)
+    const hasMinLength = password.length >= 8;
+    const hasUpperCase = /[A-Z]/.test(password);
+    const hasLowerCase = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
+
+    if (!hasMinLength || !hasUpperCase || !hasLowerCase || !hasNumber || !hasSpecialChar) {
+      setError('Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character');
       return;
     }
 
@@ -173,6 +180,27 @@ function ResetPasswordForm() {
 
       if (updateError) {
         throw new Error(updateError.message);
+      }
+
+      // Send confirmation email with new password
+      try {
+        const emailResponse = await fetch('/api/auth/send-password-confirmation', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email: email,
+            username: username,
+            newPassword: password
+          }),
+        });
+
+        if (!emailResponse.ok) {
+          console.error('Failed to send confirmation email');
+        }
+      } catch (emailError) {
+        console.error('Error sending confirmation email:', emailError);
       }
 
       setSuccess(true);
@@ -325,6 +353,30 @@ function ResetPasswordForm() {
                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
               </button>
             </div>
+            
+            {/* Password strength indicator */}
+            {password && (
+              <div className="mt-2 space-y-2">
+                <div className="text-xs text-muted-foreground">Password strength:</div>
+                <div className="space-y-1">
+                  <div className={`text-xs ${password.length >= 8 ? 'text-green-600' : 'text-gray-400'}`}>
+                    ✓ At least 8 characters
+                  </div>
+                  <div className={`text-xs ${/[A-Z]/.test(password) ? 'text-green-600' : 'text-gray-400'}`}>
+                    ✓ One uppercase letter
+                  </div>
+                  <div className={`text-xs ${/[a-z]/.test(password) ? 'text-green-600' : 'text-gray-400'}`}>
+                    ✓ One lowercase letter
+                  </div>
+                  <div className={`text-xs ${/[0-9]/.test(password) ? 'text-green-600' : 'text-gray-400'}`}>
+                    ✓ One number
+                  </div>
+                  <div className={`text-xs ${/[!@#$%^&*(),.?":{}|<>]/.test(password) ? 'text-green-600' : 'text-gray-400'}`}>
+                    ✓ One special character
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
 
           <div className="space-y-2">
