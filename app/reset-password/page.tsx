@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { LOGO_CONFIG } from '@/src/lib/logo-config';
+import { LOGO_CONFIG } from '@/lib/logo-config';
 import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2, X, Lock } from 'lucide-react';
 
 // Separate component that uses useSearchParams
@@ -199,11 +199,11 @@ function ResetPasswordForm() {
         <div className="w-full max-w-md">
           <div className="bg-background/95 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl p-8 space-y-6">
             <div className="flex flex-col items-center">
-              <Link href="/" className="hover:opacity-80 transition-all duration-300 hover:scale-105">
+              <Link href="/" className="hover:opacity-80 transition-opacity">
                 <img 
-                  src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png" 
-                  alt="Trader's Journal Logo" 
-                  className="h-20 w-20 mb-4 drop-shadow-lg" 
+                  src={LOGO_CONFIG.MAIN_LOGO_URL} 
+                  alt={LOGO_CONFIG.ALT_TEXT} 
+                  className="h-20 w-20 mb-4" 
                 />
               </Link>
               <h2 className="text-3xl font-bold text-foreground mb-2">Reset Password</h2>
@@ -238,11 +238,11 @@ function ResetPasswordForm() {
         <div className="w-full max-w-md">
           <div className="bg-background/95 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl p-8 space-y-6">
             <div className="flex flex-col items-center">
-              <Link href="/" className="hover:opacity-80 transition-all duration-300 hover:scale-105">
+              <Link href="/" className="hover:opacity-80 transition-opacity">
                 <img 
-                  src="https://oweimywvzmqoizsyotrt.supabase.co/storage/v1/object/public/tj.images/traders-journal_pro.png" 
-                  alt="Trader's Journal Logo" 
-                  className="h-20 w-20 mb-4 drop-shadow-lg" 
+                  src={LOGO_CONFIG.MAIN_LOGO_URL} 
+                  alt={LOGO_CONFIG.ALT_TEXT} 
+                  className="h-20 w-20 mb-4" 
                 />
               </Link>
               <div className="flex justify-center mb-4">
