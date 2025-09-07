@@ -31,7 +31,7 @@ function ResetPasswordForm() {
   useEffect(() => {
     // Check if we have a valid token for password reset
     checkToken();
-  }, []);
+  }, [searchParams]);
 
   const checkToken = async () => {
     try {
@@ -121,18 +121,24 @@ function ResetPasswordForm() {
         return;
       }
 
-      setEmail(session.user.email || '');
-      setIsValidToken(true);
+      // Check if this is a password recovery session
+      if (session.user && session.user.aud === 'recovery') {
+        setEmail(session.user.email || '');
+        setIsValidToken(true);
 
-      // Get username from profiles table
-      const { data: profileData } = await supabase
-        .from('profiles')
-        .select('username')
-        .eq('email', session.user.email)
-        .single();
+        // Get username from profiles table
+        const { data: profileData } = await supabase
+          .from('profiles')
+          .select('username')
+          .eq('email', session.user.email)
+          .single();
 
-      if (profileData) {
-        setUsername(profileData.username);
+        if (profileData) {
+          setUsername(profileData.username);
+        }
+      } else {
+        setError('Invalid reset link. Please check your email or request a new password reset.');
+        setIsValidToken(false);
       }
 
     } catch (err) {
