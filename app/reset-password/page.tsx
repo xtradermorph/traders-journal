@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { supabase } from '@/lib/supabase/index';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -94,53 +93,22 @@ function ResetPasswordForm() {
         throw new Error('Invalid reset link. Please request a new password reset.');
       }
 
-      // Exchange the code for a session ONLY when user submits the form
-      console.log('Exchanging code for session to reset password...');
-      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
-
-      if (exchangeError) {
-        throw new Error('Invalid or expired reset link. Please request a new password reset.');
-      }
-
-      if (!data.session || !data.session.user) {
-        throw new Error('Invalid reset link. Please request a new password reset.');
-      }
-
-      // Now update the password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password
+      // Use direct API endpoint that doesn't create any client-side session
+      const response = await fetch('/api/auth/reset-password-direct', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code: code,
+          password: password
+        }),
       });
 
-      if (updateError) {
-        throw new Error(updateError.message);
-      }
+      const result = await response.json();
 
-      // Get user info for confirmation email
-      const userEmail = data.session.user.email || '';
-      const userUsername = username || 'User';
-
-      // Sign out the user after password reset to ensure they must log in again
-      await supabase.auth.signOut();
-
-      // Send confirmation email with new password
-      try {
-        const emailResponse = await fetch('/api/auth/send-password-confirmation', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            email: userEmail,
-            username: userUsername,
-            newPassword: password
-          }),
-        });
-
-        if (!emailResponse.ok) {
-          console.error('Failed to send confirmation email');
-        }
-      } catch (emailError) {
-        console.error('Error sending confirmation email:', emailError);
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to reset password');
       }
 
       setSuccess(true);
