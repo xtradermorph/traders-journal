@@ -35,123 +35,24 @@ function ResetPasswordForm() {
 
   const checkToken = async () => {
     try {
-      // Get URL parameters that Supabase includes in the reset link
-      const accessToken = searchParams.get('access_token');
-      const refreshToken = searchParams.get('refresh_token');
-      const type = searchParams.get('type');
+      // Get URL parameters
       const code = searchParams.get('code');
+      const type = searchParams.get('type');
 
-      console.log('URL params:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type, code: !!code });
+      console.log('URL params:', { code: !!code, type });
 
-      // If we have tokens in the URL, set the session
-      if (accessToken && refreshToken && type === 'recovery') {
-        const { data, error } = await supabase.auth.setSession({
-          access_token: accessToken,
-          refresh_token: refreshToken
-        });
-
-        if (error) {
-          console.error('Session setting error:', error);
-          setError('Invalid reset link. Please check your email or request a new password reset.');
-          setIsValidToken(false);
-          return;
-        }
-
-        if (data.session) {
-          setEmail(data.session.user.email || '');
-          setIsValidToken(true);
-
-          // Get username from profiles table
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('email', data.session.user.email)
-            .single();
-
-          if (profileData) {
-            setUsername(profileData.username);
-          }
-          return;
-        }
-      }
-
-      // If we have a code parameter, this might be from the auth callback
+      // For recovery flow, we should have a code but NO session yet
       if (code && type === 'recovery') {
-        // The auth callback should have already handled this, but let's check the session
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
-        if (error) {
-          console.error('Session error after callback:', error);
-          setError('Invalid reset link. Please check your email or request a new password reset.');
-          setIsValidToken(false);
-          return;
-        }
-
-        if (session && session.user) {
-          setEmail(session.user.email || '');
-          setIsValidToken(true);
-
-          // Get username from profiles table
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('email', session.user.email)
-            .single();
-
-          if (profileData) {
-            setUsername(profileData.username);
-          }
-          return;
-        }
-      }
-
-      // Fallback: check existing session
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      if (error) {
-        console.error('Session error:', error);
-        setError('Invalid reset link. Please check your email or request a new password reset.');
-        setIsValidToken(false);
+        // Store the code for later use, but don't create a session yet
+        // This prevents dashboard access
+        setEmail(''); // We'll get this when we exchange the code
+        setIsValidToken(true);
         return;
       }
 
-      if (!session) {
-        setError('Invalid reset link. Please check your email or request a new password reset.');
-        setIsValidToken(false);
-        return;
-      }
-
-      // For recovery sessions, we need to check if this is a valid reset session
-      // Recovery sessions should only allow password reset, not dashboard access
-      if (session.user) {
-        // Check if this is coming from a recovery flow (either from URL params or session type)
-        const isRecoveryFlow = type === 'recovery' || 
-                              searchParams.get('type') === 'recovery' ||
-                              session.user.aud === 'recovery';
-        
-        if (isRecoveryFlow) {
-          setEmail(session.user.email || '');
-          setIsValidToken(true);
-
-          // Get username from profiles table
-          const { data: profileData } = await supabase
-            .from('profiles')
-            .select('username')
-            .eq('email', session.user.email)
-            .single();
-
-          if (profileData) {
-            setUsername(profileData.username);
-          }
-        } else {
-          // This is a regular authenticated session, not a recovery session
-          setError('Invalid reset link. Please check your email or request a new password reset.');
-          setIsValidToken(false);
-        }
-      } else {
-        setError('Invalid reset link. Please check your email or request a new password reset.');
-        setIsValidToken(false);
-      }
+      // If no code, this is an invalid reset link
+      setError('Invalid reset link. Please check your email or request a new password reset.');
+      setIsValidToken(false);
 
     } catch (err) {
       console.error('Token check error:', err);
@@ -185,7 +86,27 @@ function ResetPasswordForm() {
     setError('');
 
     try {
-      // Update password using Supabase Auth
+      // Get the code from URL params
+      const code = searchParams.get('code');
+      const type = searchParams.get('type');
+
+      if (!code || type !== 'recovery') {
+        throw new Error('Invalid reset link. Please request a new password reset.');
+      }
+
+      // Exchange the code for a session ONLY when user submits the form
+      console.log('Exchanging code for session to reset password...');
+      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (exchangeError) {
+        throw new Error('Invalid or expired reset link. Please request a new password reset.');
+      }
+
+      if (!data.session || !data.session.user) {
+        throw new Error('Invalid reset link. Please request a new password reset.');
+      }
+
+      // Now update the password
       const { error: updateError } = await supabase.auth.updateUser({
         password: password
       });
@@ -193,6 +114,10 @@ function ResetPasswordForm() {
       if (updateError) {
         throw new Error(updateError.message);
       }
+
+      // Get user info for confirmation email
+      const userEmail = data.session.user.email || '';
+      const userUsername = username || 'User';
 
       // Sign out the user after password reset to ensure they must log in again
       await supabase.auth.signOut();
@@ -205,8 +130,8 @@ function ResetPasswordForm() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            email: email,
-            username: username,
+            email: userEmail,
+            username: userUsername,
             newPassword: password
           }),
         });
