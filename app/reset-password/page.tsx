@@ -121,20 +121,32 @@ function ResetPasswordForm() {
         return;
       }
 
-      // Check if this is a password recovery session
-      if (session.user && session.user.aud === 'recovery') {
-        setEmail(session.user.email || '');
-        setIsValidToken(true);
+      // For recovery sessions, we need to check if this is a valid reset session
+      // Recovery sessions should only allow password reset, not dashboard access
+      if (session.user) {
+        // Check if this is coming from a recovery flow (either from URL params or session type)
+        const isRecoveryFlow = type === 'recovery' || 
+                              searchParams.get('type') === 'recovery' ||
+                              session.user.aud === 'recovery';
+        
+        if (isRecoveryFlow) {
+          setEmail(session.user.email || '');
+          setIsValidToken(true);
 
-        // Get username from profiles table
-        const { data: profileData } = await supabase
-          .from('profiles')
-          .select('username')
-          .eq('email', session.user.email)
-          .single();
+          // Get username from profiles table
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('email', session.user.email)
+            .single();
 
-        if (profileData) {
-          setUsername(profileData.username);
+          if (profileData) {
+            setUsername(profileData.username);
+          }
+        } else {
+          // This is a regular authenticated session, not a recovery session
+          setError('Invalid reset link. Please check your email or request a new password reset.');
+          setIsValidToken(false);
         }
       } else {
         setError('Invalid reset link. Please check your email or request a new password reset.');
@@ -181,6 +193,9 @@ function ResetPasswordForm() {
       if (updateError) {
         throw new Error(updateError.message);
       }
+
+      // Sign out the user after password reset to ensure they must log in again
+      await supabase.auth.signOut();
 
       // Send confirmation email with new password
       try {

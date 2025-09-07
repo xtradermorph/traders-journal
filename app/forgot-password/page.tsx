@@ -122,10 +122,13 @@ export default function ForgotPasswordPage() {
           </DialogHeader>
           <div className="flex flex-col space-y-2">
             <Button
-              onClick={() => setShowSuccessModal(false)}
+              onClick={() => {
+                setShowSuccessModal(false);
+                router.push('/login');
+              }}
               className="w-full"
             >
-              Close
+              Go to Login
             </Button>
           </div>
         </DialogContent>

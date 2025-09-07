@@ -42,8 +42,18 @@ export async function GET(request) {
     
     // Handle different types of auth flows
     if (type === 'recovery') {
-      // Password reset flow - redirect to reset password page
-      return NextResponse.redirect(requestUrl.origin + '/reset-password');
+      // Password reset flow - redirect to reset password page with tokens
+      const accessToken = data.session?.access_token;
+      const refreshToken = data.session?.refresh_token;
+      
+      if (accessToken && refreshToken) {
+        return NextResponse.redirect(
+          requestUrl.origin + 
+          `/reset-password?access_token=${accessToken}&refresh_token=${refreshToken}&type=recovery`
+        );
+      } else {
+        return NextResponse.redirect(requestUrl.origin + '/reset-password');
+      }
     } else if (type === 'signup') {
       // Email confirmation flow - redirect to dashboard
       return NextResponse.redirect(requestUrl.origin + '/dashboard');
