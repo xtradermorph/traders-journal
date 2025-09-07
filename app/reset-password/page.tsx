@@ -39,8 +39,9 @@ function ResetPasswordForm() {
       const accessToken = searchParams.get('access_token');
       const refreshToken = searchParams.get('refresh_token');
       const type = searchParams.get('type');
+      const code = searchParams.get('code');
 
-      console.log('URL params:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
+      console.log('URL params:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type, code: !!code });
 
       // If we have tokens in the URL, set the session
       if (accessToken && refreshToken && type === 'recovery') {
@@ -65,6 +66,36 @@ function ResetPasswordForm() {
             .from('profiles')
             .select('username')
             .eq('email', data.session.user.email)
+            .single();
+
+          if (profileData) {
+            setUsername(profileData.username);
+          }
+          return;
+        }
+      }
+
+      // If we have a code parameter, this might be from the auth callback
+      if (code && type === 'recovery') {
+        // The auth callback should have already handled this, but let's check the session
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) {
+          console.error('Session error after callback:', error);
+          setError('Invalid reset link. Please check your email or request a new password reset.');
+          setIsValidToken(false);
+          return;
+        }
+
+        if (session && session.user) {
+          setEmail(session.user.email || '');
+          setIsValidToken(true);
+
+          // Get username from profiles table
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('email', session.user.email)
             .single();
 
           if (profileData) {
