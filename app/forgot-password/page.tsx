@@ -134,11 +134,11 @@ export default function ForgotPassword() {
         {/* Main Card */}
         <div className="bg-background/95 backdrop-blur-sm border border-border/50 rounded-2xl shadow-2xl p-8 space-y-6">
           <div className="flex flex-col items-center">
-            <Link href="/" className="hover:opacity-80 transition-all duration-300 hover:scale-105">
+            <Link href="/" className="hover:opacity-80 transition-opacity">
               <img 
                 src={LOGO_CONFIG.MAIN_LOGO_URL} 
                 alt={LOGO_CONFIG.ALT_TEXT} 
-                className="h-20 w-20 mb-4 drop-shadow-lg" 
+                className="h-20 w-20 mb-4" 
               />
             </Link>
             <h2 className="text-3xl font-bold text-foreground mb-2">Forgot Password?</h2>
