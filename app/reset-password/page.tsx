@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import Link from 'next/link';
-import { LOGO_CONFIG } from '../src/lib/logo-config';
+import { LOGO_CONFIG } from '@/lib/logo-config';
 import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2, X, Lock } from 'lucide-react';
 
 // Separate component that uses useSearchParams
@@ -35,7 +35,46 @@ function ResetPasswordForm() {
 
   const checkToken = async () => {
     try {
-      // Check if user is authenticated (Supabase handles token validation)
+      // Get URL parameters that Supabase includes in the reset link
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
+      const type = searchParams.get('type');
+
+      console.log('URL params:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
+
+      // If we have tokens in the URL, set the session
+      if (accessToken && refreshToken && type === 'recovery') {
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken
+        });
+
+        if (error) {
+          console.error('Session setting error:', error);
+          setError('Invalid reset link. Please check your email or request a new password reset.');
+          setIsValidToken(false);
+          return;
+        }
+
+        if (data.session) {
+          setEmail(data.session.user.email || '');
+          setIsValidToken(true);
+
+          // Get username from profiles table
+          const { data: profileData } = await supabase
+            .from('profiles')
+            .select('username')
+            .eq('email', data.session.user.email)
+            .single();
+
+          if (profileData) {
+            setUsername(profileData.username);
+          }
+          return;
+        }
+      }
+
+      // Fallback: check existing session
       const { data: { session }, error } = await supabase.auth.getSession();
       
       if (error) {

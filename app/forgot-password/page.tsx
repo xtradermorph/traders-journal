@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { AlertCircle, ArrowLeft, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LOGO_CONFIG } from '../src/lib/logo-config';
+import { LOGO_CONFIG } from '@/lib/logo-config';
 import { supabase } from '@/lib/supabase/index';
 
 export default function ForgotPasswordPage() {
