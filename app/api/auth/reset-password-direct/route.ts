@@ -5,11 +5,11 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, password } = await request.json();
+    const { code, accessToken, refreshToken, password } = await request.json();
 
-    if (!code || !password) {
+    if (!password) {
       return NextResponse.json(
-        { error: 'Code and password are required' },
+        { error: 'Password is required' },
         { status: 400 }
       );
     }
@@ -20,26 +20,50 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     );
 
-    // Exchange the code for a session using service role
-    const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+    let userId: string;
+    let userEmail: string;
 
-    if (exchangeError) {
-      console.error('Code exchange error:', exchangeError);
+    if (code) {
+      // Exchange the code for a session using service role
+      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+
+      if (exchangeError) {
+        console.error('Code exchange error:', exchangeError);
+        return NextResponse.json(
+          { error: 'Invalid or expired reset link' },
+          { status: 400 }
+        );
+      }
+
+      if (!data.session || !data.session.user) {
+        return NextResponse.json(
+          { error: 'Invalid reset link' },
+          { status: 400 }
+        );
+      }
+
+      userId = data.session.user.id;
+      userEmail = data.session.user.email;
+    } else if (accessToken && refreshToken) {
+      // Use the provided tokens to get user info
+      const { data, error: tokenError } = await supabase.auth.getUser(accessToken);
+
+      if (tokenError || !data.user) {
+        console.error('Token validation error:', tokenError);
+        return NextResponse.json(
+          { error: 'Invalid or expired reset link' },
+          { status: 400 }
+        );
+      }
+
+      userId = data.user.id;
+      userEmail = data.user.email || '';
+    } else {
       return NextResponse.json(
-        { error: 'Invalid or expired reset link' },
+        { error: 'Invalid reset link parameters' },
         { status: 400 }
       );
     }
-
-    if (!data.session || !data.session.user) {
-      return NextResponse.json(
-        { error: 'Invalid reset link' },
-        { status: 400 }
-      );
-    }
-
-    const userId = data.session.user.id;
-    const userEmail = data.session.user.email;
 
     // Update password directly using admin API
     const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {

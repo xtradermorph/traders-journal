@@ -34,22 +34,23 @@ function ResetPasswordForm() {
 
   const checkToken = async () => {
     try {
-      // Get URL parameters
+      // Get URL parameters - Supabase might send different parameters
       const code = searchParams.get('code');
       const type = searchParams.get('type');
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
 
-      console.log('URL params:', { code: !!code, type });
+      console.log('URL params:', { code: !!code, type, accessToken: !!accessToken, refreshToken: !!refreshToken });
 
-      // For recovery flow, we should have a code but NO session yet
-      if (code && type === 'recovery') {
-        // Store the code for later use, but don't create a session yet
-        // This prevents dashboard access
-        setEmail(''); // We'll get this when we exchange the code
+      // Check if we have recovery parameters (either code or tokens)
+      if ((code && type === 'recovery') || (accessToken && refreshToken && type === 'recovery')) {
+        // Valid reset link - show the form
+        setEmail(''); // We'll get this when we process the reset
         setIsValidToken(true);
         return;
       }
 
-      // If no code, this is an invalid reset link
+      // If no valid parameters, this is an invalid reset link
       setError('Invalid reset link. Please check your email or request a new password reset.');
       setIsValidToken(false);
 
@@ -85,11 +86,13 @@ function ResetPasswordForm() {
     setError('');
 
     try {
-      // Get the code from URL params
+      // Get parameters from URL
       const code = searchParams.get('code');
       const type = searchParams.get('type');
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
 
-      if (!code || type !== 'recovery') {
+      if (type !== 'recovery') {
         throw new Error('Invalid reset link. Please request a new password reset.');
       }
 
@@ -101,6 +104,8 @@ function ResetPasswordForm() {
         },
         body: JSON.stringify({
           code: code,
+          accessToken: accessToken,
+          refreshToken: refreshToken,
           password: password
         }),
       });
