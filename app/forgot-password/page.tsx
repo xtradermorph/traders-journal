@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { LOGO_CONFIG } from '@/lib/logo-config';
+import { LOGO_CONFIG } from '@/src/lib/logo-config';
 import { ArrowLeft, Mail, CheckCircle, AlertCircle, Loader2, X } from 'lucide-react';
 import { v4 as uuidv4 } from 'uuid';
 

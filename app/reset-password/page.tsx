@@ -7,7 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { LOGO_CONFIG } from '@/lib/logo-config';
+import { LOGO_CONFIG } from '@/src/lib/logo-config';
 import { Eye, EyeOff, CheckCircle, AlertCircle, Loader2, X, Lock } from 'lucide-react';
 
 // Separate component that uses useSearchParams

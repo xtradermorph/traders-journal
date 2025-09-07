@@ -335,28 +335,6 @@ serve(async (req)=>{
     const body = await req.json();
     const { to, subject, html, type = 'default', resetLink, verificationLink, newPassword, username } = body;
 
-    // Validate authorization
-    const authHeader = req.headers.get('authorization');
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return new Response(JSON.stringify({
-        error: "Unauthorized: Missing or invalid authorization header"
-      }), {
-        headers,
-        status: 401
-      });
-    }
-
-    // Extract the token from the authorization header
-    const token = authHeader.replace('Bearer ', '');
-    if (!token) {
-      return new Response(JSON.stringify({
-        error: "Unauthorized: Invalid token"
-      }), {
-        headers,
-        status: 401
-      });
-    }
-
     // Validate required fields
     if (!to || !subject) {
       return new Response(JSON.stringify({
