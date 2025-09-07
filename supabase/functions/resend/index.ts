@@ -418,13 +418,21 @@ serve(async (req)=>{
       console.error('Resend API error:', {
         status: res.status,
         statusText: res.statusText,
-        data: data
+        data: data,
+        url: 'https://api.resend.com/emails',
+        from: "Trader's Journal <onboarding@resend.dev>",
+        to: to
       });
       return new Response(JSON.stringify({
         error: "Failed to send email",
         details: data,
         status: res.status,
-        statusText: res.statusText
+        statusText: res.statusText,
+        debug: {
+          from: "Trader's Journal <onboarding@resend.dev>",
+          to: to,
+          subject: subject
+        }
       }), {
         headers,
         status: res.status
