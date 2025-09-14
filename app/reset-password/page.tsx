@@ -111,8 +111,8 @@ function ResetPasswordForm() {
         throw new Error('Invalid reset link. Please request a new password reset.');
       }
 
-      // Try client-side password reset first (this is the standard approach)
-      console.log('=== ATTEMPTING CLIENT-SIDE PASSWORD RESET ===');
+      // For PKCE flow, we need to use verifyOtp instead of exchangeCodeForSession
+      console.log('=== ATTEMPTING PKCE PASSWORD RESET ===');
       console.log('Code:', code);
       console.log('Type:', type);
       
@@ -121,34 +121,38 @@ function ResetPasswordForm() {
       const { supabase } = await import('@/utils/supabase');
       console.log('Supabase client imported successfully');
       
-      // Try to exchange the code for a session with timeout
-      console.log('Attempting to exchange code for session...');
+      // For password recovery with PKCE, use verifyOtp
+      console.log('Attempting to verify OTP for password recovery...');
       
-      const exchangePromise = supabase.auth.exchangeCodeForSession(code);
+      const verifyPromise = supabase.auth.verifyOtp({
+        token_hash: code,
+        type: 'recovery'
+      });
+      
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Session exchange timeout')), 10000)
+        setTimeout(() => reject(new Error('OTP verification timeout')), 10000)
       );
       
-      const { data: sessionData, error: sessionError } = await Promise.race([
-        exchangePromise,
+      const { data: verifyData, error: verifyError } = await Promise.race([
+        verifyPromise,
         timeoutPromise
       ]) as any;
       
-      console.log('Session exchange completed');
-      console.log('Session exchange result:', {
-        hasData: !!sessionData,
-        hasSession: !!sessionData?.session,
-        hasUser: !!sessionData?.user,
-        error: sessionError?.message,
-        fullError: sessionError
+      console.log('OTP verification completed');
+      console.log('OTP verification result:', {
+        hasData: !!verifyData,
+        hasUser: !!verifyData?.user,
+        error: verifyError?.message,
+        fullError: verifyError
       });
       
-      if (sessionError || !sessionData?.session || !sessionData?.user) {
-        console.error('Session exchange failed:', sessionError);
+      if (verifyError || !verifyData?.user) {
+        console.error('OTP verification failed:', verifyError);
         throw new Error('Invalid or expired reset link. Please request a new password reset.');
       }
       
-      // Now update the password using the session
+      // Now update the password using the verified user
+      console.log('Updating password for user:', verifyData.user.id);
       const { error: updateError } = await supabase.auth.updateUser({
         password: password
       });
@@ -158,7 +162,7 @@ function ResetPasswordForm() {
         throw new Error(updateError.message || 'Failed to update password');
       }
       
-      console.log('Password updated successfully via client-side method');
+      console.log('Password updated successfully via OTP verification method');
 
       setSuccess(true);
       setShowSuccessModal(true);
