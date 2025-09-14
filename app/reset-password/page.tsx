@@ -34,43 +34,37 @@ function ResetPasswordForm() {
 
   const checkToken = async () => {
     try {
-      // For PKCE flow, we check if there's an active session instead of URL parameters
-      console.log('Checking for active recovery session...');
-      
-      // Import supabase client to check session (use auth helpers for consistency)
-      const { supabase } = await import('@/lib/supabase/index');
-      
-      // Get the current session
-      const { data: { session }, error } = await supabase.auth.getSession();
-      
-      console.log('Session check result:', {
-        hasSession: !!session,
-        hasUser: !!session?.user,
-        userEmail: session?.user?.email,
-        error: error?.message
+      // Get URL parameters - check for code or token
+      const code = searchParams.get('code');
+      const token = searchParams.get('token');
+      const type = searchParams.get('type');
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
+
+      console.log('URL params:', { 
+        code: !!code, 
+        token: !!token, 
+        type, 
+        accessToken: !!accessToken, 
+        refreshToken: !!refreshToken 
       });
-      
-      if (error) {
-        console.error('Session check error:', error);
-        setError('Session error. Please request a new password reset.');
-        setIsValidToken(false);
-        return;
-      }
-      
-      if (session?.user) {
-        console.log('Valid recovery session detected!');
-        setEmail(session.user.email || '');
+      console.log('All search params:', Object.fromEntries(searchParams.entries()));
+
+      // Check if we have any valid reset parameters
+      if (code || token || (accessToken && refreshToken)) {
+        console.log('Valid reset link detected!');
+        setEmail(''); // We'll get this when we process the reset
         setIsValidToken(true);
         return;
       }
-      
-      console.log('No active session found');
-      setError('No active password reset session. Please request a new password reset.');
+
+      console.log('Invalid reset link - no valid parameters found');
+      setError('Invalid reset link. Please check your email or request a new password reset.');
       setIsValidToken(false);
 
     } catch (err) {
-      console.error('Session check error:', err);
-      setError('Session check failed. Please request a new password reset.');
+      console.error('Token check error:', err);
+      setError('An error occurred while validating the reset link. Please try again.');
       setIsValidToken(false);
     }
   };
@@ -100,37 +94,38 @@ function ResetPasswordForm() {
     setError('');
 
     try {
-      // For PKCE flow, we use the established session to update password
-      console.log('=== ATTEMPTING PKCE PASSWORD RESET ===');
+      // Get parameters from URL
+      const code = searchParams.get('code');
+      const token = searchParams.get('token');
+      const accessToken = searchParams.get('access_token');
+      const refreshToken = searchParams.get('refresh_token');
+
+      console.log('=== ATTEMPTING DIRECT PASSWORD RESET ===');
+      console.log('Parameters:', { code: !!code, token: !!token, accessToken: !!accessToken, refreshToken: !!refreshToken });
       
-      // Import supabase client (use auth helpers for consistency)
-      console.log('Importing Supabase client...');
-      const { supabase } = await import('@/lib/supabase/index');
-      console.log('Supabase client imported successfully');
-      
-      // Get the current session to verify we have a valid recovery session
-      console.log('Checking current session...');
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-      
-      if (sessionError || !session?.user) {
-        console.error('No valid session found:', sessionError);
-        throw new Error('No active password reset session. Please request a new password reset.');
-      }
-      
-      console.log('Valid session found for user:', session.user.email);
-      
-      // Update the password using the current session
-      console.log('Updating password...');
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password
+      // Use the direct API approach
+      const response = await fetch('/api/auth/reset-password-direct', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          code,
+          token,
+          accessToken,
+          refreshToken,
+          password
+        }),
       });
+
+      const result = await response.json();
       
-      if (updateError) {
-        console.error('Password update failed:', updateError);
-        throw new Error(updateError.message || 'Failed to update password');
+      if (!response.ok) {
+        console.error('Password reset API error:', result);
+        throw new Error(result.error || 'Failed to reset password');
       }
-      
-      console.log('Password updated successfully via session method');
+
+      console.log('Password reset successful:', result);
 
       setSuccess(true);
       setShowSuccessModal(true);
