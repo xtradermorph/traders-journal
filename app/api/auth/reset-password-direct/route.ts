@@ -24,26 +24,23 @@ export async function POST(request: NextRequest) {
     let userEmail: string;
 
     if (code) {
-      // Exchange the code for a session using service role
-      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      // For server-side password reset with code, we need to verify the code
+      // and get user info without creating a session
+      const { data, error: verifyError } = await supabase.auth.verifyOtp({
+        token_hash: code,
+        type: 'recovery'
+      });
 
-      if (exchangeError) {
-        console.error('Code exchange error:', exchangeError);
+      if (verifyError || !data.user) {
+        console.error('Code verification error:', verifyError);
         return NextResponse.json(
           { error: 'Invalid or expired reset link' },
           { status: 400 }
         );
       }
 
-      if (!data.session || !data.session.user) {
-        return NextResponse.json(
-          { error: 'Invalid reset link' },
-          { status: 400 }
-        );
-      }
-
-      userId = data.session.user.id;
-      userEmail = data.session.user.email;
+      userId = data.user.id;
+      userEmail = data.user.email || '';
     } else if (token) {
       // Handle PKCE token flow - verify the token and get user info
       const { data, error: tokenError } = await supabase.auth.verifyOtp({
