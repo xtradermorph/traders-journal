@@ -34,16 +34,25 @@ function ResetPasswordForm() {
 
   const checkToken = async () => {
     try {
-      // Get URL parameters - Supabase might send different parameters
+      // Get URL parameters - Supabase sends different parameters depending on flow
       const code = searchParams.get('code');
+      const token = searchParams.get('token');
       const type = searchParams.get('type');
       const accessToken = searchParams.get('access_token');
       const refreshToken = searchParams.get('refresh_token');
 
-      console.log('URL params:', { code: !!code, type, accessToken: !!accessToken, refreshToken: !!refreshToken });
+      console.log('URL params:', { 
+        code: !!code, 
+        token: !!token, 
+        type, 
+        accessToken: !!accessToken, 
+        refreshToken: !!refreshToken 
+      });
 
-      // Check if we have recovery parameters (either code or tokens)
-      if ((code && type === 'recovery') || (accessToken && refreshToken && type === 'recovery')) {
+      // Check if we have recovery parameters (either code, token, or access tokens)
+      if ((code && type === 'recovery') || 
+          (token && type === 'recovery') || 
+          (accessToken && refreshToken && type === 'recovery')) {
         // Valid reset link - show the form
         setEmail(''); // We'll get this when we process the reset
         setIsValidToken(true);
@@ -88,6 +97,7 @@ function ResetPasswordForm() {
     try {
       // Get parameters from URL
       const code = searchParams.get('code');
+      const token = searchParams.get('token');
       const type = searchParams.get('type');
       const accessToken = searchParams.get('access_token');
       const refreshToken = searchParams.get('refresh_token');
@@ -104,6 +114,7 @@ function ResetPasswordForm() {
         },
         body: JSON.stringify({
           code: code,
+          token: token,
           accessToken: accessToken,
           refreshToken: refreshToken,
           password: password

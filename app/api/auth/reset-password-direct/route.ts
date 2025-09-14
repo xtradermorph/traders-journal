@@ -5,7 +5,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
-    const { code, accessToken, refreshToken, password } = await request.json();
+    const { code, token, accessToken, refreshToken, password } = await request.json();
 
     if (!password) {
       return NextResponse.json(
@@ -44,6 +44,23 @@ export async function POST(request: NextRequest) {
 
       userId = data.session.user.id;
       userEmail = data.session.user.email;
+    } else if (token) {
+      // Handle PKCE token flow - verify the token and get user info
+      const { data, error: tokenError } = await supabase.auth.verifyOtp({
+        token_hash: token,
+        type: 'recovery'
+      });
+
+      if (tokenError || !data.user) {
+        console.error('Token verification error:', tokenError);
+        return NextResponse.json(
+          { error: 'Invalid or expired reset link' },
+          { status: 400 }
+        );
+      }
+
+      userId = data.user.id;
+      userEmail = data.user.email || '';
     } else if (accessToken && refreshToken) {
       // Use the provided tokens to get user info
       const { data, error: tokenError } = await supabase.auth.getUser(accessToken);
