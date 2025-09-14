@@ -117,16 +117,30 @@ function ResetPasswordForm() {
       console.log('Type:', type);
       
       // Import supabase client
+      console.log('Importing Supabase client...');
       const { supabase } = await import('@/lib/supabase/index');
+      console.log('Supabase client imported successfully');
       
-      // Try to exchange the code for a session
-      const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+      // Try to exchange the code for a session with timeout
+      console.log('Attempting to exchange code for session...');
       
+      const exchangePromise = supabase.auth.exchangeCodeForSession(code);
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Session exchange timeout')), 10000)
+      );
+      
+      const { data: sessionData, error: sessionError } = await Promise.race([
+        exchangePromise,
+        timeoutPromise
+      ]) as any;
+      
+      console.log('Session exchange completed');
       console.log('Session exchange result:', {
         hasData: !!sessionData,
         hasSession: !!sessionData?.session,
         hasUser: !!sessionData?.user,
-        error: sessionError?.message
+        error: sessionError?.message,
+        fullError: sessionError
       });
       
       if (sessionError || !sessionData?.session || !sessionData?.user) {
