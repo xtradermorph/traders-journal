@@ -48,18 +48,23 @@ function ResetPasswordForm() {
         accessToken: !!accessToken, 
         refreshToken: !!refreshToken 
       });
+      
+      // Debug: Log all search params
+      console.log('All search params:', Object.fromEntries(searchParams.entries()));
 
       // Check if we have recovery parameters (either code, token, or access tokens)
       if ((code && type === 'recovery') || 
           (token && type === 'recovery') || 
           (accessToken && refreshToken && type === 'recovery')) {
         // Valid reset link - show the form
+        console.log('Valid reset link detected!');
         setEmail(''); // We'll get this when we process the reset
         setIsValidToken(true);
         return;
       }
 
       // If no valid parameters, this is an invalid reset link
+      console.log('Invalid reset link - no valid parameters found');
       setError('Invalid reset link. Please check your email or request a new password reset.');
       setIsValidToken(false);
 
