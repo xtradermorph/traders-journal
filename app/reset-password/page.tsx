@@ -116,9 +116,9 @@ function ResetPasswordForm() {
       console.log('Code:', code);
       console.log('Type:', type);
       
-      // Import supabase client
+      // Import supabase client (use the direct client, not auth helpers)
       console.log('Importing Supabase client...');
-      const { supabase } = await import('@/lib/supabase/index');
+      const { supabase } = await import('@/utils/supabase');
       console.log('Supabase client imported successfully');
       
       // Try to exchange the code for a session with timeout
