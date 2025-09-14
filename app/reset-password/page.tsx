@@ -34,43 +34,43 @@ function ResetPasswordForm() {
 
   const checkToken = async () => {
     try {
-      // Get URL parameters - Supabase sends different parameters depending on flow
-      const code = searchParams.get('code');
-      const token = searchParams.get('token');
-      const type = searchParams.get('type');
-      const accessToken = searchParams.get('access_token');
-      const refreshToken = searchParams.get('refresh_token');
-
-      console.log('URL params:', { 
-        code: !!code, 
-        token: !!token, 
-        type, 
-        accessToken: !!accessToken, 
-        refreshToken: !!refreshToken 
+      // For PKCE flow, we check if there's an active session instead of URL parameters
+      console.log('Checking for active recovery session...');
+      
+      // Import supabase client to check session
+      const { supabase } = await import('@/utils/supabase');
+      
+      // Get the current session
+      const { data: { session }, error } = await supabase.auth.getSession();
+      
+      console.log('Session check result:', {
+        hasSession: !!session,
+        hasUser: !!session?.user,
+        userEmail: session?.user?.email,
+        error: error?.message
       });
       
-      // Debug: Log all search params
-      console.log('All search params:', Object.fromEntries(searchParams.entries()));
-
-      // Check if we have recovery parameters (either code, token, or access tokens)
-      if ((code && type === 'recovery') || 
-          (token && type === 'recovery') || 
-          (accessToken && refreshToken && type === 'recovery')) {
-        // Valid reset link - show the form
-        console.log('Valid reset link detected!');
-        setEmail(''); // We'll get this when we process the reset
+      if (error) {
+        console.error('Session check error:', error);
+        setError('Session error. Please request a new password reset.');
+        setIsValidToken(false);
+        return;
+      }
+      
+      if (session?.user) {
+        console.log('Valid recovery session detected!');
+        setEmail(session.user.email || '');
         setIsValidToken(true);
         return;
       }
-
-      // If no valid parameters, this is an invalid reset link
-      console.log('Invalid reset link - no valid parameters found');
-      setError('Invalid reset link. Please check your email or request a new password reset.');
+      
+      console.log('No active session found');
+      setError('No active password reset session. Please request a new password reset.');
       setIsValidToken(false);
 
     } catch (err) {
-      console.error('Token check error:', err);
-      setError('An error occurred while validating the reset link. Please try again.');
+      console.error('Session check error:', err);
+      setError('Session check failed. Please request a new password reset.');
       setIsValidToken(false);
     }
   };
@@ -100,59 +100,27 @@ function ResetPasswordForm() {
     setError('');
 
     try {
-      // Get parameters from URL
-      const code = searchParams.get('code');
-      const token = searchParams.get('token');
-      const type = searchParams.get('type');
-      const accessToken = searchParams.get('access_token');
-      const refreshToken = searchParams.get('refresh_token');
-
-      if (type !== 'recovery') {
-        throw new Error('Invalid reset link. Please request a new password reset.');
-      }
-
-      // For PKCE flow, we need to use verifyOtp instead of exchangeCodeForSession
+      // For PKCE flow, we use the established session to update password
       console.log('=== ATTEMPTING PKCE PASSWORD RESET ===');
-      console.log('Code:', code);
-      console.log('Type:', type);
       
-      // Import supabase client (use the direct client, not auth helpers)
+      // Import supabase client
       console.log('Importing Supabase client...');
       const { supabase } = await import('@/utils/supabase');
       console.log('Supabase client imported successfully');
       
-      // For password recovery with PKCE, use verifyOtp
-      console.log('Attempting to verify OTP for password recovery...');
+      // Get the current session to verify we have a valid recovery session
+      console.log('Checking current session...');
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
       
-      const verifyPromise = supabase.auth.verifyOtp({
-        token_hash: code,
-        type: 'recovery'
-      });
-      
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('OTP verification timeout')), 10000)
-      );
-      
-      const { data: verifyData, error: verifyError } = await Promise.race([
-        verifyPromise,
-        timeoutPromise
-      ]) as any;
-      
-      console.log('OTP verification completed');
-      console.log('OTP verification result:', {
-        hasData: !!verifyData,
-        hasUser: !!verifyData?.user,
-        error: verifyError?.message,
-        fullError: verifyError
-      });
-      
-      if (verifyError || !verifyData?.user) {
-        console.error('OTP verification failed:', verifyError);
-        throw new Error('Invalid or expired reset link. Please request a new password reset.');
+      if (sessionError || !session?.user) {
+        console.error('No valid session found:', sessionError);
+        throw new Error('No active password reset session. Please request a new password reset.');
       }
       
-      // Now update the password using the verified user
-      console.log('Updating password for user:', verifyData.user.id);
+      console.log('Valid session found for user:', session.user.email);
+      
+      // Update the password using the current session
+      console.log('Updating password...');
       const { error: updateError } = await supabase.auth.updateUser({
         password: password
       });
@@ -162,7 +130,7 @@ function ResetPasswordForm() {
         throw new Error(updateError.message || 'Failed to update password');
       }
       
-      console.log('Password updated successfully via OTP verification method');
+      console.log('Password updated successfully via session method');
 
       setSuccess(true);
       setShowSuccessModal(true);

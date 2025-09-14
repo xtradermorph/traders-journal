@@ -25,14 +25,26 @@ export async function GET(request) {
     const isRecoveryFlow = type === 'recovery' || (code && !type);
     
     if (isRecoveryFlow) {
-      // For password reset, pass the parameters directly to reset page WITHOUT creating a session
-      console.log('Password recovery flow detected - passing parameters to reset page');
-      const resetUrl = new URL('/reset-password', requestUrl.origin);
-      resetUrl.searchParams.set('type', 'recovery');
-      if (code) resetUrl.searchParams.set('code', code);
-      if (token) resetUrl.searchParams.set('token', token);
+      // For password reset with PKCE, we need to exchange the code for a session first
+      console.log('Password recovery flow detected - exchanging code for session');
       
-      return NextResponse.redirect(resetUrl.toString());
+      const cookieStore = cookies();
+      const supabase = createRouteHandlerClient({ 
+        cookies: () => cookieStore,
+      });
+      
+      console.log('Exchanging recovery code for session...');
+      const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+      
+      if (error) {
+        console.error('Error exchanging recovery code for session:', error);
+        return NextResponse.redirect(requestUrl.origin + `/login?error=${encodeURIComponent(error.message)}`);
+      }
+      
+      console.log('Recovery session exchange successful');
+      
+      // Redirect to reset password page - the session is now established
+      return NextResponse.redirect(requestUrl.origin + '/reset-password');
     } else {
       // For other flows, we need a code
       if (!code) {
