@@ -100,32 +100,91 @@ function ResetPasswordForm() {
       const accessToken = searchParams.get('access_token');
       const refreshToken = searchParams.get('refresh_token');
 
-      console.log('=== ATTEMPTING DIRECT PASSWORD RESET ===');
+      console.log('=== ATTEMPTING CLIENT-SIDE PASSWORD RESET ===');
       console.log('Parameters:', { code: !!code, token: !!token, accessToken: !!accessToken, refreshToken: !!refreshToken });
       
-      // Use the direct API approach
-      const response = await fetch('/api/auth/reset-password-direct', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code,
-          token,
-          accessToken,
-          refreshToken,
-          password
-        }),
-      });
-
-      const result = await response.json();
+      // Import the correct Supabase client
+      const { supabase } = await import('@/utils/supabase');
       
-      if (!response.ok) {
-        console.error('Password reset API error:', result);
-        throw new Error(result.error || 'Failed to reset password');
+      if (code) {
+        // For PKCE flow, exchange code for session on client side
+        console.log('Exchanging code for session...');
+        const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+        
+        if (sessionError || !sessionData?.session || !sessionData?.user) {
+          console.error('Session exchange failed:', sessionError);
+          throw new Error('Invalid or expired reset link. Please request a new password reset.');
+        }
+        
+        console.log('Session exchange successful for user:', sessionData.user.email);
+        
+        // Update password using the established session
+        console.log('Updating password...');
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: password
+        });
+        
+        if (updateError) {
+          console.error('Password update failed:', updateError);
+          throw new Error(updateError.message || 'Failed to update password');
+        }
+        
+        console.log('Password updated successfully');
+        
+      } else if (token) {
+        // For token-based flow
+        console.log('Verifying token...');
+        const { data: verifyData, error: verifyError } = await supabase.auth.verifyOtp({
+          token_hash: token,
+          type: 'recovery'
+        });
+        
+        if (verifyError || !verifyData?.user) {
+          console.error('Token verification failed:', verifyError);
+          throw new Error('Invalid or expired reset link. Please request a new password reset.');
+        }
+        
+        console.log('Token verification successful for user:', verifyData.user.email);
+        
+        // Update password using the verified user
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: password
+        });
+        
+        if (updateError) {
+          console.error('Password update failed:', updateError);
+          throw new Error(updateError.message || 'Failed to update password');
+        }
+        
+        console.log('Password updated successfully');
+        
+      } else if (accessToken && refreshToken) {
+        // For access token flow
+        console.log('Using access token...');
+        const { data: userData, error: userError } = await supabase.auth.getUser(accessToken);
+        
+        if (userError || !userData?.user) {
+          console.error('User validation failed:', userError);
+          throw new Error('Invalid or expired reset link. Please request a new password reset.');
+        }
+        
+        console.log('User validation successful for:', userData.user.email);
+        
+        // Update password using the access token
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: password
+        });
+        
+        if (updateError) {
+          console.error('Password update failed:', updateError);
+          throw new Error(updateError.message || 'Failed to update password');
+        }
+        
+        console.log('Password updated successfully');
+        
+      } else {
+        throw new Error('No valid reset parameters found');
       }
-
-      console.log('Password reset successful:', result);
 
       setSuccess(true);
       setShowSuccessModal(true);
