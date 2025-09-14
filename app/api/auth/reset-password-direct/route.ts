@@ -5,15 +5,21 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
+    // Log to both console and return in response for debugging
+    const logData: any = {};
+    
     console.log('=== PASSWORD RESET API CALLED ===');
     const { code, token, accessToken, refreshToken, password } = await request.json();
-    console.log('Received parameters:', { 
+    
+    logData.receivedParams = { 
       code: !!code, 
       token: !!token, 
       accessToken: !!accessToken, 
       refreshToken: !!refreshToken,
       passwordLength: password?.length 
-    });
+    };
+    
+    console.log('Received parameters:', logData.receivedParams);
 
     if (!password) {
       console.log('ERROR: No password provided');
@@ -34,6 +40,8 @@ export async function POST(request: NextRequest) {
 
     if (code) {
       console.log('Processing code-based reset with code:', code);
+      logData.processingCode = code;
+      
       // For server-side password reset with code, we need to verify the code
       // and get user info without creating a session
       const { data, error: verifyError } = await supabase.auth.verifyOtp({
@@ -41,22 +49,29 @@ export async function POST(request: NextRequest) {
         type: 'recovery'
       });
 
-      console.log('Code verification result:', { 
+      logData.verificationResult = { 
         hasData: !!data, 
         hasUser: !!data?.user, 
         error: verifyError?.message 
-      });
+      };
+
+      console.log('Code verification result:', logData.verificationResult);
 
       if (verifyError || !data.user) {
         console.error('Code verification error:', verifyError);
+        logData.finalError = 'Code verification failed: ' + (verifyError?.message || 'No user data');
         return NextResponse.json(
-          { error: 'Invalid or expired reset link' },
+          { 
+            error: 'Invalid or expired reset link',
+            debug: logData
+          },
           { status: 400 }
         );
       }
 
       userId = data.user.id;
       userEmail = data.user.email || '';
+      logData.userInfo = { userId, userEmail };
       console.log('Code verification successful:', { userId, userEmail });
     } else if (token) {
       // Handle PKCE token flow - verify the token and get user info
@@ -149,7 +164,8 @@ export async function POST(request: NextRequest) {
       success: true,
       message: 'Password reset successfully',
       email: userEmail,
-      username: username
+      username: username,
+      debug: logData
     });
 
   } catch (error) {
