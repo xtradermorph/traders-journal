@@ -42,24 +42,22 @@ export async function POST(request: NextRequest) {
       console.log('Processing code-based reset with code:', code);
       logData.processingCode = code;
       
-      // For server-side password reset with code, we need to verify the code
-      // and get user info without creating a session
-      const { data, error: verifyError } = await supabase.auth.verifyOtp({
-        token_hash: code,
-        type: 'recovery'
-      });
+      // For password recovery, we need to exchange the code for a session
+      // but we'll use the service role to do this server-side
+      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
-      logData.verificationResult = { 
+      logData.exchangeResult = { 
         hasData: !!data, 
+        hasSession: !!data?.session,
         hasUser: !!data?.user, 
-        error: verifyError?.message 
+        error: exchangeError?.message 
       };
 
-      console.log('Code verification result:', logData.verificationResult);
+      console.log('Code exchange result:', logData.exchangeResult);
 
-      if (verifyError || !data.user) {
-        console.error('Code verification error:', verifyError);
-        logData.finalError = 'Code verification failed: ' + (verifyError?.message || 'No user data');
+      if (exchangeError || !data.session || !data.user) {
+        console.error('Code exchange error:', exchangeError);
+        logData.finalError = 'Code exchange failed: ' + (exchangeError?.message || 'No session or user data');
         return NextResponse.json(
           { 
             error: 'Invalid or expired reset link',
@@ -72,7 +70,7 @@ export async function POST(request: NextRequest) {
       userId = data.user.id;
       userEmail = data.user.email || '';
       logData.userInfo = { userId, userEmail };
-      console.log('Code verification successful:', { userId, userEmail });
+      console.log('Code exchange successful:', { userId, userEmail });
     } else if (token) {
       // Handle PKCE token flow - verify the token and get user info
       const { data, error: tokenError } = await supabase.auth.verifyOtp({
