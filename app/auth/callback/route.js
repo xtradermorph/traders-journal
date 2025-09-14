@@ -10,28 +10,23 @@ export async function GET(request) {
   const error_description = requestUrl.searchParams.get('error_description');
   const type = requestUrl.searchParams.get('type');
   
+  // Debug logging
+  console.log('Auth callback received:', { code: !!code, token: !!token, type, error });
+  
   // Handle OAuth errors
   if (error) {
     console.error('OAuth error:', error, error_description);
     return NextResponse.redirect(requestUrl.origin + `/login?error=${encodeURIComponent(error_description || error)}`);
   }
   
-  // For recovery flow, we need either code or token
-  if (type === 'recovery') {
-    if (!code && !token) {
-      console.error('No code or token provided in recovery callback');
-      return NextResponse.redirect(requestUrl.origin + '/login?error=missing_auth_parameter');
-    }
-  } else if (!code) {
-    console.error('No code provided in callback');
-    return NextResponse.redirect(requestUrl.origin + '/login?error=missing_code');
-  }
-  
   try {
-    // Handle different types of auth flows
-    if (type === 'recovery') {
+    // Check if this is a password recovery flow
+    // We can detect this by checking if we have a code but no type, or if type is recovery
+    const isRecoveryFlow = type === 'recovery' || (code && !type);
+    
+    if (isRecoveryFlow) {
       // For password reset, pass the parameters directly to reset page WITHOUT creating a session
-      console.log('Password recovery flow - passing parameters to reset page');
+      console.log('Password recovery flow detected - passing parameters to reset page');
       const resetUrl = new URL('/reset-password', requestUrl.origin);
       resetUrl.searchParams.set('type', 'recovery');
       if (code) resetUrl.searchParams.set('code', code);
@@ -39,6 +34,11 @@ export async function GET(request) {
       
       return NextResponse.redirect(resetUrl.toString());
     } else {
+      // For other flows, we need a code
+      if (!code) {
+        console.error('No code provided in callback');
+        return NextResponse.redirect(requestUrl.origin + '/login?error=missing_code');
+      }
       // For other flows (signup, oauth), create a session normally
       const cookieStore = cookies();
       
