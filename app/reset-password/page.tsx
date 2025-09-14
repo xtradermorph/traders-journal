@@ -127,6 +127,8 @@ function ResetPasswordForm() {
       
       const debugResult = await debugResponse.json();
       console.log('Debug result:', debugResult);
+      console.log('=== FULL DEBUG RESULT ===');
+      console.log(JSON.stringify(debugResult, null, 2));
 
       // Use direct API endpoint that doesn't create any client-side session
       const response = await fetch('/api/auth/reset-password-direct', {

@@ -48,24 +48,31 @@ export async function POST(request: NextRequest) {
       errorCode: verifyError?.status
     });
 
+    const debugInfo = {
+      code,
+      exchangeResult: {
+        hasData: !!exchangeData,
+        hasSession: !!exchangeData?.session,
+        hasUser: !!exchangeData?.user,
+        error: exchangeError?.message,
+        errorCode: exchangeError?.status,
+        fullError: exchangeError
+      },
+      verifyResult: {
+        hasData: !!verifyData,
+        hasUser: !!verifyData?.user,
+        error: verifyError?.message,
+        errorCode: verifyError?.status,
+        fullError: verifyError
+      }
+    };
+
+    console.log('=== FULL DEBUG INFO ===');
+    console.log(JSON.stringify(debugInfo, null, 2));
+
     return NextResponse.json({
       success: true,
-      debug: {
-        code,
-        exchangeResult: {
-          hasData: !!exchangeData,
-          hasSession: !!exchangeData?.session,
-          hasUser: !!exchangeData?.user,
-          error: exchangeError?.message,
-          errorCode: exchangeError?.status
-        },
-        verifyResult: {
-          hasData: !!verifyData,
-          hasUser: !!verifyData?.user,
-          error: verifyError?.message,
-          errorCode: verifyError?.status
-        }
-      }
+      debug: debugInfo
     });
 
   } catch (error) {
