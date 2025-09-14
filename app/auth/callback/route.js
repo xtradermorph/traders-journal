@@ -5,6 +5,7 @@ import { NextResponse } from 'next/server';
 export async function GET(request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const token = requestUrl.searchParams.get('token');
   const error = requestUrl.searchParams.get('error');
   const error_description = requestUrl.searchParams.get('error_description');
   const type = requestUrl.searchParams.get('type');
@@ -15,7 +16,13 @@ export async function GET(request) {
     return NextResponse.redirect(requestUrl.origin + `/login?error=${encodeURIComponent(error_description || error)}`);
   }
   
-  if (!code) {
+  // For recovery flow, we need either code or token
+  if (type === 'recovery') {
+    if (!code && !token) {
+      console.error('No code or token provided in recovery callback');
+      return NextResponse.redirect(requestUrl.origin + '/login?error=missing_auth_parameter');
+    }
+  } else if (!code) {
     console.error('No code provided in callback');
     return NextResponse.redirect(requestUrl.origin + '/login?error=missing_code');
   }
@@ -23,11 +30,14 @@ export async function GET(request) {
   try {
     // Handle different types of auth flows
     if (type === 'recovery') {
-      // For password reset, pass the code directly to reset page WITHOUT creating a session
-      console.log('Password recovery flow - passing code to reset page');
-      return NextResponse.redirect(
-        requestUrl.origin + `/reset-password?code=${code}&type=recovery`
-      );
+      // For password reset, pass the parameters directly to reset page WITHOUT creating a session
+      console.log('Password recovery flow - passing parameters to reset page');
+      const resetUrl = new URL('/reset-password', requestUrl.origin);
+      resetUrl.searchParams.set('type', 'recovery');
+      if (code) resetUrl.searchParams.set('code', code);
+      if (token) resetUrl.searchParams.set('token', token);
+      
+      return NextResponse.redirect(resetUrl.toString());
     } else {
       // For other flows (signup, oauth), create a session normally
       const cookieStore = cookies();
