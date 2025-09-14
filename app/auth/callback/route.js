@@ -42,6 +42,15 @@ export async function GET(request) {
       }
       
       console.log('Recovery session exchange successful');
+      console.log('Session data:', {
+        hasSession: !!data.session,
+        hasUser: !!data.user,
+        userEmail: data.user?.email,
+        sessionExpiry: data.session?.expires_at
+      });
+      
+      // Small delay to ensure session is properly set
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Redirect to reset password page - the session is now established
       return NextResponse.redirect(requestUrl.origin + '/reset-password');

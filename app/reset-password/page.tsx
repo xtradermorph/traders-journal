@@ -37,8 +37,8 @@ function ResetPasswordForm() {
       // For PKCE flow, we check if there's an active session instead of URL parameters
       console.log('Checking for active recovery session...');
       
-      // Import supabase client to check session
-      const { supabase } = await import('@/utils/supabase');
+      // Import supabase client to check session (use auth helpers for consistency)
+      const { supabase } = await import('@/lib/supabase/index');
       
       // Get the current session
       const { data: { session }, error } = await supabase.auth.getSession();
@@ -103,9 +103,9 @@ function ResetPasswordForm() {
       // For PKCE flow, we use the established session to update password
       console.log('=== ATTEMPTING PKCE PASSWORD RESET ===');
       
-      // Import supabase client
+      // Import supabase client (use auth helpers for consistency)
       console.log('Importing Supabase client...');
-      const { supabase } = await import('@/utils/supabase');
+      const { supabase } = await import('@/lib/supabase/index');
       console.log('Supabase client imported successfully');
       
       // Get the current session to verify we have a valid recovery session
