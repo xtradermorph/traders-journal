@@ -111,45 +111,40 @@ function ResetPasswordForm() {
         throw new Error('Invalid reset link. Please request a new password reset.');
       }
 
-      // First, let's debug what's happening with the code
-      console.log('=== DEBUGGING PASSWORD RESET ===');
+      // Try client-side password reset first (this is the standard approach)
+      console.log('=== ATTEMPTING CLIENT-SIDE PASSWORD RESET ===');
       console.log('Code:', code);
       console.log('Type:', type);
       
-      // Call debug endpoint first
-      const debugResponse = await fetch('/api/debug-password-reset', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ code }),
+      // Import supabase client
+      const { supabase } = await import('@/lib/supabase/index');
+      
+      // Try to exchange the code for a session
+      const { data: sessionData, error: sessionError } = await supabase.auth.exchangeCodeForSession(code);
+      
+      console.log('Session exchange result:', {
+        hasData: !!sessionData,
+        hasSession: !!sessionData?.session,
+        hasUser: !!sessionData?.user,
+        error: sessionError?.message
       });
       
-      const debugResult = await debugResponse.json();
-      console.log('Debug result:', debugResult);
-      console.log('=== FULL DEBUG RESULT ===');
-      console.log(JSON.stringify(debugResult, null, 2));
-
-      // Use direct API endpoint that doesn't create any client-side session
-      const response = await fetch('/api/auth/reset-password-direct', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          code: code,
-          token: token,
-          accessToken: accessToken,
-          refreshToken: refreshToken,
-          password: password
-        }),
-      });
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.error || 'Failed to reset password');
+      if (sessionError || !sessionData?.session || !sessionData?.user) {
+        console.error('Session exchange failed:', sessionError);
+        throw new Error('Invalid or expired reset link. Please request a new password reset.');
       }
+      
+      // Now update the password using the session
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: password
+      });
+      
+      if (updateError) {
+        console.error('Password update failed:', updateError);
+        throw new Error(updateError.message || 'Failed to update password');
+      }
+      
+      console.log('Password updated successfully via client-side method');
 
       setSuccess(true);
       setShowSuccessModal(true);

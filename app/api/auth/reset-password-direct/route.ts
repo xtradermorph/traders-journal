@@ -30,10 +30,22 @@ export async function POST(request: NextRequest) {
     }
 
     // Create a Supabase client with service role key for admin operations
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    
+    console.log('Supabase URL:', supabaseUrl);
+    console.log('Service role key exists:', !!serviceRoleKey);
+    console.log('Service role key length:', serviceRoleKey?.length);
+    
+    if (!supabaseUrl || !serviceRoleKey) {
+      console.error('Missing Supabase configuration');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
+    const supabase = createClient(supabaseUrl, serviceRoleKey);
 
     let userId: string;
     let userEmail: string;
