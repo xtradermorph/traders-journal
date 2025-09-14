@@ -29,15 +29,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a Supabase client with service role key for admin operations
+    // Create a Supabase client with anon key for code exchange
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
     
     console.log('Supabase URL:', supabaseUrl);
+    console.log('Anon key exists:', !!anonKey);
     console.log('Service role key exists:', !!serviceRoleKey);
-    console.log('Service role key length:', serviceRoleKey?.length);
     
-    if (!supabaseUrl || !serviceRoleKey) {
+    if (!supabaseUrl || !anonKey || !serviceRoleKey) {
       console.error('Missing Supabase configuration');
       return NextResponse.json(
         { error: 'Server configuration error' },
@@ -45,7 +46,9 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    const supabase = createClient(supabaseUrl, serviceRoleKey);
+    // Use anon key for code exchange, service role for admin operations
+    const supabaseAnon = createClient(supabaseUrl, anonKey);
+    const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey);
 
     let userId: string;
     let userEmail: string;
@@ -54,9 +57,8 @@ export async function POST(request: NextRequest) {
       console.log('Processing code-based reset with code:', code);
       logData.processingCode = code;
       
-      // For password recovery, we need to exchange the code for a session
-      // but we'll use the service role to do this server-side
-      const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+      // For password recovery, we need to exchange the code for a session using anon key
+      const { data, error: exchangeError } = await supabaseAnon.auth.exchangeCodeForSession(code);
 
       logData.exchangeResult = { 
         hasData: !!data, 
@@ -85,7 +87,7 @@ export async function POST(request: NextRequest) {
       console.log('Code exchange successful:', { userId, userEmail });
     } else if (token) {
       // Handle PKCE token flow - verify the token and get user info
-      const { data, error: tokenError } = await supabase.auth.verifyOtp({
+      const { data, error: tokenError } = await supabaseAnon.auth.verifyOtp({
         token_hash: token,
         type: 'recovery'
       });
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
       userEmail = data.user.email || '';
     } else if (accessToken && refreshToken) {
       // Use the provided tokens to get user info
-      const { data, error: tokenError } = await supabase.auth.getUser(accessToken);
+      const { data, error: tokenError } = await supabaseAnon.auth.getUser(accessToken);
 
       if (tokenError || !data.user) {
         console.error('Token validation error:', tokenError);
@@ -123,7 +125,7 @@ export async function POST(request: NextRequest) {
 
     // Update password directly using admin API
     console.log('Updating password for user:', userId);
-    const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
+    const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(userId, {
       password: password
     });
 
