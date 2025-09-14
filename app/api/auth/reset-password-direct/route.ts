@@ -5,9 +5,18 @@ export const dynamic = "force-dynamic";
 
 export async function POST(request: NextRequest) {
   try {
+    console.log('=== PASSWORD RESET API CALLED ===');
     const { code, token, accessToken, refreshToken, password } = await request.json();
+    console.log('Received parameters:', { 
+      code: !!code, 
+      token: !!token, 
+      accessToken: !!accessToken, 
+      refreshToken: !!refreshToken,
+      passwordLength: password?.length 
+    });
 
     if (!password) {
+      console.log('ERROR: No password provided');
       return NextResponse.json(
         { error: 'Password is required' },
         { status: 400 }
@@ -24,11 +33,18 @@ export async function POST(request: NextRequest) {
     let userEmail: string;
 
     if (code) {
+      console.log('Processing code-based reset with code:', code);
       // For server-side password reset with code, we need to verify the code
       // and get user info without creating a session
       const { data, error: verifyError } = await supabase.auth.verifyOtp({
         token_hash: code,
         type: 'recovery'
+      });
+
+      console.log('Code verification result:', { 
+        hasData: !!data, 
+        hasUser: !!data?.user, 
+        error: verifyError?.message 
       });
 
       if (verifyError || !data.user) {
@@ -41,6 +57,7 @@ export async function POST(request: NextRequest) {
 
       userId = data.user.id;
       userEmail = data.user.email || '';
+      console.log('Code verification successful:', { userId, userEmail });
     } else if (token) {
       // Handle PKCE token flow - verify the token and get user info
       const { data, error: tokenError } = await supabase.auth.verifyOtp({
@@ -80,6 +97,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Update password directly using admin API
+    console.log('Updating password for user:', userId);
     const { error: updateError } = await supabase.auth.admin.updateUserById(userId, {
       password: password
     });
@@ -91,6 +109,8 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    console.log('Password updated successfully');
 
     // Get username from profiles table
     const { data: profileData } = await supabase
