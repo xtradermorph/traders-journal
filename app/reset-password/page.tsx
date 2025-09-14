@@ -111,6 +111,23 @@ function ResetPasswordForm() {
         throw new Error('Invalid reset link. Please request a new password reset.');
       }
 
+      // First, let's debug what's happening with the code
+      console.log('=== DEBUGGING PASSWORD RESET ===');
+      console.log('Code:', code);
+      console.log('Type:', type);
+      
+      // Call debug endpoint first
+      const debugResponse = await fetch('/api/debug-password-reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code }),
+      });
+      
+      const debugResult = await debugResponse.json();
+      console.log('Debug result:', debugResult);
+
       // Use direct API endpoint that doesn't create any client-side session
       const response = await fetch('/api/auth/reset-password-direct', {
         method: 'POST',
